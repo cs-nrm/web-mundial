@@ -1,0 +1,77 @@
+---
+export interface Props {
+    post: {
+      imagePath: string;
+      title: {
+         rendered: string;
+      }
+      acf:{
+        ds: string;
+      }
+      content: string;
+      slug: string;
+      categories : {};
+      yoast_head_json: {
+         og_image: [
+            {
+               url: string;
+            }
+         ]
+         article_published_time: string;
+         author:string;         
+      }
+      _embedded: {
+         'wp:featuredmedia': [
+            {
+               alt_text: string;
+                media_details: {
+                    sizes: {
+                      'medium_large': {
+                          source_url: string;
+                      }
+                    }
+                }
+            }
+         ]
+      }
+    };
+    
+}
+
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg';
+const { post } = Astro.props;
+console.log(post);
+---
+<!--div class="card w-full md:w-1/2 md:p-4 p-2 pb-4 rounded-xl"-->
+<div class="card rounded-xl">
+  <a href={`/retropical/${post.slug}/`}>
+    <article>
+      <div class="flex flex-col items-center justify-between leading-tight p-2 md:p-4 min-h-28 rounded-xl">
+        <img loading="lazy" class="w-full h-auto rounded-xl aspect-video" src={post?._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.['medium_large']?.source_url|| PLACEHOLDER_IMG}  alt={post._embedded['wp:featuredmedia'][0].alt_text||"Imagen Videos"}/>
+        <h2 class="py-4 text-xl text-purple-900 leading-none spartan" set:html={post.title.rendered}></h2>        
+      </div>
+    </article>
+  </a>
+</div>
+<!--div class="card w-full lg:w-1/2 md:p-4 p-2 pb-4 audiopod cursor-pointer rounded-xl">
+    <article>
+      <div class="flex items-center justify-between leading-tight p-2 md:p-4 min-h-28 rounded-xl">
+        <h2 class="text-base text-purple-900 font-bold" set:html={post.title.rendered}></h2>
+        <div class="play-pause-podcast" data-podcast-status="ready"> 
+          <svg xmlns="https://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-player-play" width="80" height="80" viewBox="0 0 24 24" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 4v16l13 -8z" /></svg>
+        </div>           
+      </div>
+      <div class="data-iframe" data-iframe={post.acf.ds}></div>
+    </article>
+</div-->
+
+<style>
+.card article{
+  background: #281031; 
+  border-radius: 0.75rem;
+  transition: all 0.3s;
+}
+.card article:hover{
+  background: #451c54;
+}
+</style>

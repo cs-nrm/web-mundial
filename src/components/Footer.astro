@@ -1,0 +1,408 @@
+---
+import Player from './Player.astro';
+import { Image } from 'astro:assets';
+const currentPath = Astro.url.pathname;
+import Salsaman from './Salsaman.astro';
+---
+
+<div><Player transition:persist /></div>
+<div><Salsaman /></div>
+
+<div class="preloader">
+    <!--div class="circle-container">
+      <div class="circle"></div>
+    </div>
+    <div class="circle-container">
+      <div class="circle"></div>
+    </div>
+    <div class="circle-container">
+      <div class="circle"></div>
+    </div-->
+    <img src="https://storage.googleapis.com/nrm-web/sabrosita/resources/img/salsaman_bongo.gif" alt="Loading..." class="loading-gif" />
+	<!--div class="loader">
+		<ul class="hexagon-container">
+		  <li class="hexagon hex_1"></li>
+		  <li class="hexagon hex_2"></li>
+		  <li class="hexagon hex_3"></li>
+		  <li class="hexagon hex_4"></li>
+		  <li class="hexagon hex_5"></li>
+		  <li class="hexagon hex_6"></li>
+		  <li class="hexagon hex_7"></li>
+		</ul>
+	  </div-->
+</div>
+  <footer class="footer footer-estacion">
+    <!--div class="logo-est-footer"><img src="https://storage.googleapis.com/nrm-web/stereocien/12.svg"/></div-->
+    <div class="footer-container">
+      <!-- Sections Column -->
+      <div class="footer-column">
+        <h3>Nuestras Secciones</h3>
+        <ul class="roboto font-bold leading-[1.5]">
+          <li class={`menu-section${currentPath.startsWith('/nota-sabrosa') ? ' active' : ''}`}><a href="/nota-sabrosa">Nota Sabrosa</a></li>
+          <li class={`menu-section${currentPath.startsWith('/promociones') ? ' active' : ''}`}><a href="/promociones">Promociones</a></li>
+          <li class={`menu-section${currentPath.startsWith('/hot-parade') ? ' active' : ''}`} ><a href="/hot-parade">Hot Parade</a></li>
+          <li class={`menu-section${currentPath.startsWith('/podcast/momentos-irrepetibles') ? ' active' : ''}`}><a href="/podcast/momentos-irrepetibles">Podcast</a></li>
+          <li class={`menu-section${currentPath.startsWith('/entrevistas') ? ' active' : ''}`}><a href="/entrevistas">Entrevistas</a></li>
+          <li class={`menu-section${currentPath.startsWith('/son-sonidero') ? ' active' : ''}`}><a href="/son-sonidero">Son Sonidero</a></li>
+        </ul>
+      </div>
+
+      <!-- Radio Column -->
+      <div class="footer-column">
+        <h3>Radio en vivo</h3>
+        <p class="roboto">Escucha nuestras señales de <a href="/en-vivo" class="cursor-pointer"> Radio en vivo aquí.</a></p>
+        <div class="radio-logos">
+          <div class="cursor-pointer"><a href="/en-vivo"><img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/footer/sabrosita.png" alt="Sabrosita"></a></div>
+        </div>
+      </div>
+
+      <!-- Social Media Column -->
+      <div class="footer-column redes">
+        <h3>Síguenos en redes sociales</h3>
+        <div class="social-icons">
+          <a target="_blank" href="https://www.facebook.com/Sabrosita590Digital" aria-label="Facebook"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+          <a target="_blank" href="https://x.com/SabrositaD" aria-label="X"><svg xmlns="https://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2"> <path d="M4 4l11.733 16h4.267l-11.733 -16z"></path> <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"></path> </svg></a>
+          <a target="_blank" href="https://www.instagram.com/sabrosita590y1410/" aria-label="Instagram"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg></a>
+          <a target="_blank" href="https://www.youtube.com/channel/UChx7OD14e0j6KLAxQxfF9Lw" aria-label="YouTube"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg></a>
+          <a target="_blank" href="https://www.tiktok.com/@sabrosita5901410" aria-label="TikTok"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/></svg></a>
+        </div>
+        <div class="descarga-apps">
+          <h3>Descarga nuestras apps</h3>
+          <div class="app-buttons">
+            <a target="_blank" href="https://apps.apple.com/mx/app/sabrosita-590-14140/id444257982" class="app-store"> <img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/store.png" alt="App Store"/> </a>
+            <a target="_blank" href="https://play.google.com/store/apps/details?id=com.sferea.sabrosita&pli=1" class="app-store"> <img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/google2.png" alt="Play Store"/> </a>
+            <a target="_blank" href="/alexa" class="alexa"> <img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/alexa-blanco.png" alt="Alexa"> </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Apps Column -->
+      <div class="footer-column">
+
+      </div>
+    </div>
+
+    <!-- Copyright -->
+    <div class="copyright">
+      <p>© 2025 Sabrosita. Todos los derechos reservados. El material de este sitio no puede reproducirse, distribuirse, transmitirse, almacenarse en caché ni utilizarse de otro modo, excepto con el permiso previo por escrito de NRM Comunicaciones.</p>
+      <p>Sabrosita AM y Sabrosita 590 1410 son marcas registradas con derechos de autor de NRM Comunicaciones.</p>
+    </div>
+  </footer>
+
+	<div class="footer-2025">        
+		<div class="container">
+			<div class="logo-section">
+				<a target="_blank" href="https://nrm.com.mx/"><img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/footer/NRM-2.png" alt="NRM"></a>
+				<a target="_blank" href="https://beatdigital.mx/"><img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/footer/BEAT-2.png" alt="Beat"></a>
+				<a target="_blank" href="https://oyedigital.mx/"><img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/footer/OYE2.png" alt="Oye"></a>
+				<a target="_blank" href="https://stereociendigital.mx/"><img loading="lazy" src="https://storage.googleapis.com/nrm-web/nrm/images/footer/stereo.png" alt="Sabrosita"></a>
+				<a target="_blank" href="https://enfoquenoticias.com.mx/"><img loading="lazy" style="width: 80px;" src="https://storage.googleapis.com/nrm-web/nrm/images/footer/enfoque-footer.png" alt="Enfoque"></a>
+			</div>
+			<div class="second-section">
+				<div class="links-section">
+					<a target="_blank" href="https://nrm.com.mx/contacto/" class="link-ventas">Ventas</a>
+					<span class="separator">|</span>
+					<a href="/aviso-de-privacidad/" class="link-privacy">Aviso de privacidad</a>
+					<span class="separator">|</span>
+					<a href="/terminos-y-condiciones/" class="link-terms">Términos y condiciones</a>
+				</div>
+				<div class="copyrightf">NRM Comunicaciones (C) 2025 Todos los Derechos Reservados</div>
+			</div>
+		</div>
+	</div>
+
+
+
+<style>
+.footer {
+  background: #111;
+  padding: 4rem 0 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3rem;
+  z-index: 1;
+  position: relative;
+}
+
+.footer-column h3 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: white;
+}
+
+.footer-column ul {
+  list-style: none;
+  text-align: left;
+  /*padding-left: 40px;*/
+}
+
+.footer-column ul li{
+  line-height: 1;
+  margin-bottom: 20px
+}
+
+.footer-column a {
+  color: rgb(193, 193, 193);
+  text-decoration: none;
+  transition: color 0.3s ease;
+  font-size: 17px;
+  font-weight: lighter;
+}
+
+.footer-column a:hover {
+  color: #ef4444;
+}
+
+.footer-column p {
+  color: white;
+  font-size: 17px;
+  line-height: 1.5;
+  color: rgb(193, 193, 193);
+  font-weight: lighter;
+}
+
+.footer-estacion {position: relative;}
+.footer-estacion::before {
+    content: '';
+    background-image: url('https://storage.googleapis.com/nrm-web/sabrosita/resources/img/logo-sabrosita.svg');
+    background-repeat: no-repeat;
+    background-size: contain;
+    bottom: -15%;
+    position: absolute;
+    left: 40%;
+    width: 140%;
+    height: 150%;
+    background-position: 0;
+    opacity: 0.02;
+    filter: grayscale(100%);
+}
+.logo-est-footer{
+  position: absolute;
+  right: 10px; top: 10px;
+  width: 180px;
+}
+.radio-link {
+  color: white;
+  font-weight: bold !important;
+}
+
+.radio-link:hover {
+  text-decoration: underline;
+}
+
+.radio-logos {
+  display: block;
+  gap: 1rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.radio-logos img {
+  width: 150px;
+  height: auto;
+  filter: grayscale(100%);
+  transition: filter 0.3s ease;
+}
+
+.radio-logos img:hover {
+  filter: grayscale(0);
+}
+
+.social-icons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.social-icons a {
+  color: #d1d1d1;
+  transition: color 0.3s ease;
+}
+
+.social-icons a:hover {
+  color: #ef4444;
+}
+
+.app-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.app-buttons a {
+  display: block;
+}
+
+.app-buttons img {
+  width: 140px;
+  height: auto;
+  transition: opacity 0.3s ease;
+}
+
+/*.app-buttons img:hover {
+  opacity: 0.8;
+}*/
+
+.descarga-apps {
+margin-top: 40px;
+
+}
+.copyright {
+  max-width: 1200px;
+  margin: 3rem auto 0;
+  padding: 2rem 1.5rem 0;
+  border-top: 1px solid #333;
+  text-align: center;
+}
+
+.copyright p {
+  color: #666;
+  font-size: 0.6rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+	i{
+		background-color: white;
+		color: black;
+	}
+
+	.preloader {z-index:9999; }
+	.loader {  position: fixed;  top: 50%;  left: 50%;  width: 160px;  height: 160px;  margin: -80px 0px 0px -80px;  background-color: transparent;  border-radius: 50%;  /*border: 2px solid #e3e4dc;	*/}
+	.loader:before {  content: "";  width: 164px;  height: 164px;  display: block;  position: absolute;    border-radius: 50%;  top: -2px;  left: -2px;  box-sizing: border-box;  clip: rect(0px, 35px, 35px, 0px);  z-index: 10;  animation: rotate infinite;  animation-duration: 3s;  animation-timing-function: linear; border: 4px solid var(--amarillo-beat);	}
+	.loader:after {  content: "";  width: 164px;  height: 164px;  display: block;  position: absolute;    border-radius: 50%;  top: -2px;  left: -2px;  box-sizing: border-box;  clip: rect(0px, 164px, 150px, 0px);  z-index: 9;  animation: rotate2 3s linear infinite;	    border: 2px solid var(--amarillo-beat); }
+	.hexagon-container {  position: relative;  top: 33px;  left: 41px;  border-radius: 50%;	}	
+	.hexagon {  position: absolute;  width: 40px;  height: 23px;  background-color: var(--amarillo-beat);	    box-shadow: var(--amarillo-beat) 0px 4px 8px, var(--amarillo-beat) 0px 1px 5px;}
+	.hexagon:before {  content: "";  position: absolute;  top: -11px;  left: 0;  width: 0;  height: 0;  border-left: 20px solid transparent;  border-right: 20px solid transparent;  border-bottom: 11.5px solid var(--amarillo-beat);	}
+	.hexagon:after {	content: "";  position: absolute;  top: 23px;  left: 0;  width: 0;  height: 0;  border-left: 20px solid transparent;  border-right: 20px solid transparent;  border-top: 11.5px solid var(--amarillo-beat);	}
+	.hexagon.hex_1 {  top: 0px;  left: 0px;  animation: Animasearch 3s ease-in-out infinite;  animation-delay: 0.2142857143s;	}
+	.hexagon.hex_2 {  top: 0px;  left: 42px;  animation: Animasearch 3s ease-in-out infinite;  animation-delay: 0.4285714286s;	}
+	.hexagon.hex_3 {  top: 36px;  left: 63px;  animation: Animasearch 3s ease-in-out infinite;  animation-delay: 0.6428571429s;	}
+	.hexagon.hex_4 {  top: 72px;  left: 42px;  animation: Animasearch 3s ease-in-out infinite;  animation-delay: 0.8571428571s;	}
+	.hexagon.hex_5 {  top: 72px;  left: 0px;  animation: Animasearch 3s ease-in-out infinite;  animation-delay: 1.0714285714s;	}
+	.hexagon.hex_6 {  top: 36px;  left: -21px;  animation: Animasearch 3s ease-in-out infinite;  animation-delay: 1.2857142857s;	}
+	.hexagon.hex_7 {  top: 36px;  left: 21px;  animation: Animasearch 3s ease-in-out infinite;  animation-delay: 1.5s;	}
+	@keyframes Animasearch {  0% {    transform: scale(1);    opacity: 1;  }
+  							15%, 50% {    transform: scale(0.5);    opacity: 0;  }
+  							65% {    transform: scale(1);    opacity: 1;  }
+	}
+	@keyframes rotate {  0% {    transform: rotate(0);    clip: rect(0px, 35px, 35px, 0px);  }
+  						50% {    clip: rect(0px, 40px, 40px, 0px);  }
+					  100% {    transform: rotate(360deg);    clip: rect(0px, 35px, 35px, 0px);  }
+	}
+	@keyframes rotate2 {  0% {    transform: rotate(0deg);    clip: rect(0px, 164px, 150px, 0px);  }
+  						50% {    clip: rect(0px, 164px, 0px, 0px);    transform: rotate(360deg);  }
+  						100% {    transform: rotate(720deg);    clip: rect(0px, 164px, 150px, 0px);  }
+	}
+	@keyframes rotate3 {  0% {    transform: rotate(0deg);  }
+						  100% {    transform: rotate(360deg);  }
+	}
+
+.footer-2025 {
+	font-family: "Roboto";
+  font-size: 16px;
+    background-color: black;
+    color: white;
+    padding: 2rem 0;
+	padding-bottom: 150px;
+}
+.footer-2025 .container {
+    margin: 0 auto;
+    padding: 0 1rem;
+	max-width: 1320px;
+}
+
+/* Logo section */
+.footer-2025 .logo-section, .footer-2025 .second-section {
+    display: flex;
+    /*flex-wrap: wrap;*/
+    justify-content: space-between;
+	align-items: center;
+    gap: 2rem;
+    /*margin-bottom: 1.5rem;
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 10px;
+	grid-auto-rows: minmax(100px, auto);*/
+}
+.footer-2025 .second-section{
+	align-items: normal;
+	margin-top: 1rem;
+}
+.footer-2025 .logo-section img {
+    object-fit: contain;
+}
+
+.footer-2025 .links-section {
+    display: flex;
+    flex-wrap: wrap;
+	align-items: center;
+    justify-content: center;
+    gap: 10px;
+	line-height: 1;
+    margin-bottom: 1rem;
+}
+.footer-2025 .link-ventas {
+    color: #FCD34D;
+    text-decoration: none;
+}
+.footer-2025 .link-privacy,
+.footer-2025 .link-terms {
+    color: #60A5FA;
+    text-decoration: none;
+}
+.footer-2025 .link-ventas:hover,
+.footer-2025 .link-privacy:hover,
+.footer-2025 .link-terms:hover {
+  text-decoration: underline;
+	color: white;
+}
+.footer-2025 .separator {
+    color: #6B7280;
+}
+
+/* Copyright */
+.footer-2025 .copyrightf {
+    text-align: center;
+    color: #9CA3AF;
+}
+
+/* Responsive design */
+@media (min-width: 1000px) {
+	.footer-2025 .logo-section img {
+   		max-width: 110px;
+	}
+}
+@media (max-width: 768px) {
+  .footer-2025 .logo-section {
+    gap: 1.5rem;
+  }
+  .footer-2025 .second-section {
+    flex-direction: column;
+		gap:0;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-container{
+    grid-template-columns: repeat(1, 45%);
+    margin-top: 20px;
+  }
+  .footer-container .redes{
+    grid-column: span 2/2;
+    text-align: center;
+  }
+}
+@media (max-width: 600px) {
+  .footer-2025 .separator {
+   	display: none;
+  }
+}
+</style>	

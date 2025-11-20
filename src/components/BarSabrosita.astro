@@ -1,0 +1,111 @@
+---
+import Menu from '../components/Menu.astro';
+import MenuRadio from '../components/MenuRadio.astro';
+const currentPath = Astro.url.pathname;
+---
+
+<div class="flex gap-4 md:gap-12 bar-sabrosita is-pinned">
+    <div class="logo sec-menu"><a href="/"><img src="https://storage.googleapis.com/nrm-web/sabrosita/LOGO_SABROSITA_NEW.png" alt="Logo Sabrosita"/></a></div>
+    <div class="header-buttons sec-menu">
+      <div><Menu /></div> 
+      <div><MenuRadio /></div>
+    </div>
+    <div class="opacity-back"></div>
+</div>
+
+<style>
+.opacity-back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    -webkit-backdrop-filter: brightness(60%) blur(16px);
+    backdrop-filter: brightness(60%) blur(16px);
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.bar-sabrosita {
+  padding: 0.2rem 1.5rem;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Roboto';
+  overflow: hidden;
+  position: sticky;
+  top: -1px;
+  z-index: 10001;
+  /*height: 140px;*/
+  transition: height 0.5s;
+  overflow: initial;
+}
+
+.compress{  height: 80px; transition: height 0.5s; position: fixed; width: 100%;}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  display: flex;
+  width: 14%;
+  transition: all 0.5s;
+}
+
+.logo img{
+  width: 100%;
+  height: auto;
+  transition: all 0.5s;
+}
+
+.compress-logo img{
+  /*height: 50px;*/
+  transition: all 0.5s;
+}
+
+.header-buttons {
+  display: flex;
+  /*align-items: end;*/
+  gap: 0rem;
+  /*justify-content: end;*/
+  flex-direction: column;
+  width: 100%;
+  overflow: scroll;
+  scrollbar-width: none; 
+}
+
+li a:hover{
+  color: #717171;
+}
+
+.dark-mode{
+    color:black;
+    transition: all 0.2s;
+    stroke: black;
+}
+
+.logo-dark-mode{
+  filter: invert(80%);
+  
+  transition: all 0.4s;
+}
+@media (min-width: 991px) {
+  .header-buttons {align-items: end; overflow:visible;}
+}
+@media (max-width: 1024px) {
+    .white-space{
+        display: none;
+    }
+    .logo{
+        justify-content: flex-start;
+    }
+}
+@media (max-width: 450px) {
+  .hh{flex-direction: column; align-items: flex-end;}
+}
+@media (max-width: 768px) {
+
+  .logo{
+    width: 30%;
+  }
+}
+
+</style>

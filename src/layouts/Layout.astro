@@ -1,0 +1,79 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import BarNrm from '../components/BarNrm.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+export interface Props {
+  title?: string;
+  img?: string;
+  description?: string;
+  tags?: {
+    title?: string;
+    description?: string;
+    og_image?: { url: string }[];
+    og_description?: string;
+    og_locale?: string;
+    og_type?: string;
+    article_published_time?: string;
+    article_modified_time?: string;
+  };
+}
+
+const { title, img, tags, description } = Astro.props as Props;
+const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site) : Astro.url;
+
+const metaTitle = tags?.title ?? title ?? SITE_TITLE;
+const metaDesc  = tags?.og_description ?? tags?.description ?? description ?? SITE_DESCRIPTION;
+const ogImage   = tags?.og_image?.[0]?.url ?? img ?? '/default-og.jpg';
+const ogLocale  = tags?.og_locale ?? 'es_MX';
+const ogType    = tags?.og_type ?? 'article';
+const pubTime   = tags?.article_published_time ?? '';
+const modTime   = tags?.article_modified_time ?? '';
+const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImage;
+
+---
+
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <BaseHead title={SITE_TITLE} seccion={metaTitle} description={metaDesc} />
+    <link rel="canonical" href={canonicalURL} class="yoast-seo-meta-tag" />
+    <meta property="og:locale" content={ogLocale} class="yoast-seo-meta-tag" />
+    <meta property="og:type" content={ogType} class="yoast-seo-meta-tag" />
+    <meta property="og:title" content={metaTitle} class="yoast-seo-meta-tag" />
+    <meta property="og:description" content={metaDesc} class="yoast-seo-meta-tag" />
+    <meta property="og:url" content={canonicalURL} class="yoast-seo-meta-tag" />
+    <meta property="og:site_name" content="Sabrosita 590-1410" class="yoast-seo-meta-tag" />
+    <meta property="og:image" content={ogImageAbs} class="yoast-seo-meta-tag" />
+    <meta name="author" content="Sabrosita 590-1410" class="yoast-seo-meta-tag" />
+    <meta name="twitter:card" content="summary_large_image" class="yoast-seo-meta-tag" />
+    <meta name="twitter:creator" content="@SabrositaD" class="yoast-seo-meta-tag" />
+    <meta name="twitter:title" content={metaTitle} class="yoast-seo-meta-tag" />
+    <meta name="twitter:description" content={metaDesc} class="yoast-seo-meta-tag" />
+    <meta name="twitter:image" content={ogImageAbs} class="yoast-seo-meta-tag" />
+    {pubTime && <meta property="article:published_time" content={pubTime} class="yoast-seo-meta-tag" />}
+    {modTime && <meta property="article:modified_time" content={modTime} class="yoast-seo-meta-tag" />}
+    <title>{SITE_TITLE} | {metaTitle}</title>
+  </head>
+  <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PMZGN4C" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    
+    <!-- Comscore (noscript) -->
+    <noscript>
+        <img src="https://sb.scorecardresearch.com/p?c1=2&amp;c2=6906652&amp;cv=cv=4.4.0&amp;cj=1" width="1" height="1" alt="" style="display:none;"/>
+    </noscript>
+    <!-- End Comscore (noscript) -->
+
+    <BarNrm />
+    <Header title={metaTitle} />
+
+    <main class="min-h-screen flex flex-col">
+      <slot />
+    </main>
+
+    <Footer />
+  </body>
+</html>

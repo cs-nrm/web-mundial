@@ -1,0 +1,43 @@
+---
+import { SITE_DESCRIPTION } from '../../consts';
+import Card from '../../layouts/CardsHotParade.astro';
+import DoubleBox from '../../components/DoubleBox.astro';
+import BoxBanner from '../../components/BoxBanner.astro';
+import Layout from '../../layouts/Layout.astro';
+
+const res = await fetch("https://sabrositadigital.com.mx/wp-json/wp/v2/posts?_embed&per_page=20&categories=292&_fields=id,title,yoast_head_json,content,slug,categories,acf");
+const posts = await res.json();
+
+posts.sort(function(a, b){ 
+    return ((a.acf.posicion > b.acf.posicion) ? 1 : (a.acf.posicion < b.acf.posicion) ? -1 : 0);
+});
+---
+<Layout title="Hot Parade" description={SITE_DESCRIPTION}>
+  <div class="container mb-12 px-[5px] mx-auto md:px-12" id="content-w-video">
+    <div class="my-8"><img class="max-w-[200px] m-auto" src="https://storage.googleapis.com/nrm-web/sabrosita/titulos/HOTPARADE.png" alt="Título Hot Parade"/></div>
+    <div class="flex flex-col lg:flex-row">
+      <div class="sm:min-w-[calc(100%-400px)] lg:mr-10">
+        <section class="flex flex-wrap w-full m-auto">
+          {posts.map((post:any) => (<Card {post} />))}
+        </section>
+      </div>
+      <div class="bg-black/20 p-5 rounded-xl sm:min-w-[350px] relative text-center md:text-left">
+        <div class="sticky top-0 left-0 right-0">
+          <BoxBanner />
+          </br>
+          <DoubleBox />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page-specific assets -->
+  <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/nrm-web/nrm/lib/toastify.css" />
+  <script is:inline src="https://storage.googleapis.com/nrm-web/nrm/lib/toastify.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/nrm-web/nrm/lib/plyr.css" />
+  <script is:inline src="https://storage.googleapis.com/nrm-web/nrm/lib/plyr.js"></script>
+
+  <style>
+    iframe { width: 100%; }
+  </style>
+</Layout>

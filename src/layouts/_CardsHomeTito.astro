@@ -1,0 +1,126 @@
+---
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg';
+const res = await fetch("https://sabrositadigital.com.mx/wp-json/wp/v2/posts?_fields=date,title,slug,sticky,acf,yoast_head_json,content,excerpt,_links,_embedded&_embed&per_page=5&categories=1639");
+const posts = await res.json();
+const filteredPosts = posts.filter((post:any) => !post.acf?.fijo);
+
+---
+<div class="max-w-[700px] m-auto text-center">
+  <img loading="lazy" class="max-w-[350px] m-auto text-center" src="https://storage.googleapis.com/nrm-web/sabrosita/titulo-tito.png" alt="Título Tito"/>
+  <div class="primera-tito flex items-center">
+    <article class="news-card">
+      <a href={`/tito-nieves/${posts[0].slug}/`}>
+        <div class="relative h-full">
+          <img loading="lazy" class="rounded-xl aspect-not" src={posts[0]._embedded['wp:featuredmedia'][0].media_details.sizes['full'].source_url || PLACEHOLDER_IMG} alt={posts[0]._embedded['wp:featuredmedia'][0].alt_text || "Imagen Tito Nieves"} />
+          <div class="news-content absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-2 w-full rounded-b-xl ">
+            <h6 class="leading-none m-0" set:html={posts[0].title.rendered}></h6>
+          </div>
+        </div>
+      </a>  
+    </article>
+    <img loading="lazy" class="max-w-[170px]" src="https://storage.googleapis.com/nrm-web/sabrosita/logo-tito.png" alt="Logo Tito"/>
+  </div>
+  <div class="container cards mt-8">
+    <div class="film">
+      <div class="news-grid py-4 grid grid-cols-3 md:grid-cols-4">
+        {
+          filteredPosts.slice(1, 5).map((post:any, idx:number) => (
+            <div class={`cards-filtro-${idx}`}>
+              <article class="news-card">
+                <a href={`/tito-nieves/${post.slug}/`}>
+                  <div class="relative h-full">
+                    <img loading="lazy" class="aspect-not" src={post?._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.['small-feature']?.source_url || PLACEHOLDER_IMG} alt={post._embedded['wp:featuredmedia'][0].alt_text || "Imagen Tito Nieves"} />
+                    <div class="news-content absolute bottom-0 left-0 bg-black bg-opacity-60 p-[5px] text-white w-full">
+                      <p class="leading-none text-xs mb-0" set:html={post.title.rendered}></p>
+                      <!--div class="text-sm resumen" set:html={post.excerpt.rendered}></div>
+                      <span class="roboto font-bold text-xs mt-4">por {post.yoast_head_json.author}</span-->
+                    </div>
+                  </div>
+                </a>  
+              </article>
+            </div>
+          ))
+        }
+        </div>
+
+      </div>
+
+
+      </div>
+</div>
+
+<div class="m-auto text-center">
+    <a href="/tito-nieves">
+        <button class="ver-mas group relative h-8 m-4 text-xl px-4 rounded-full spartan bold overflow-hidden bg-[#EA262A] border-4 border-[#EA262A] hover:border-[#FDCF27] font-bold">
+            <span>Más noticias aquí</span>
+        </button>
+    </a>
+</div>
+
+<style>
+  
+@media (max-width: 768px){
+  .cards-filtro-3{display: none;}
+  .news-content p{ font-size: 0.6rem;}
+  h6{font-size: 0.9rem;}
+}
+.film {
+  position: relative;
+  /*top: 200px;
+  left: 50%;
+  transform: translate(-50%);
+  width: 300px;
+  height: 100px;*/
+  background: #111111;
+  overflow: hidden;
+}
+
+.film::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 0px;
+  width: 8px;
+  height: 8px;
+  background: #F0DAB5;
+  box-shadow: 14px 0px 0px #F0DAB5, 28px 0px 0px #F0DAB5, 42px 0px 0px #F0DAB5, 56px 0px 0px #F0DAB5, 70px 0px 0px #F0DAB5, 84px 0px 0px #F0DAB5, 98px 0px 0px #F0DAB5, 112px 0px 0px #F0DAB5, 126px 0px 0px #F0DAB5, 140px 0px 0px #F0DAB5, 154px 0px 0px #F0DAB5, 168px 0px 0px #F0DAB5, 182px 0px 0px #F0DAB5, 196px 0px 0px #F0DAB5, 210px 0px 0px #F0DAB5, 224px 0px 0px #F0DAB5, 238px 0px 0px #F0DAB5, 252px 0px 0px #F0DAB5, 266px 0px 0px #F0DAB5, 280px 0px 0px #F0DAB5, 294px 0px 0px #F0DAB5, 308px 0px 0px #F0DAB5, 322px 0px 0px #F0DAB5, 336px 0px 0px #F0DAB5, 350px 0px 0px #F0DAB5, 364px 0px 0px #F0DAB5, 378px 0px 0px #F0DAB5, 392px 0px 0px #F0DAB5, 406px 0px 0px #F0DAB5, 420px 0px 0px #F0DAB5, 434px 0px 0px #F0DAB5, 448px 0px 0px #F0DAB5, 462px 0px 0px #F0DAB5, 476px 0px 0px #F0DAB5, 490px 0px 0px #F0DAB5, 504px 0px 0px #F0DAB5, 518px 0px 0px #F0DAB5, 532px 0px 0px #F0DAB5, 546px 0px 0px #F0DAB5, 560px 0px 0px #F0DAB5, 574px 0px 0px #F0DAB5, 588px 0px 0px #F0DAB5, 602px 0px 0px #F0DAB5, 616px 0px 0px #F0DAB5, 630px 0px 0px #F0DAB5, 644px 0px 0px #F0DAB5, 658px 0px 0px #F0DAB5, 672px 0px 0px #F0DAB5, 686px 0px 0px #F0DAB5, 700px 0px 0px #F0DAB5, 714px 0px 0px #F0DAB5, 728px 0px 0px #F0DAB5, 742px 0px 0px #F0DAB5, 756px 0px 0px #F0DAB5, 770px 0px 0px #F0DAB5, 784px 0px 0px #F0DAB5, 798px 0px 0px #F0DAB5, 812px 0px 0px #F0DAB5, 826px 0px 0px #F0DAB5, 840px 0px 0px #F0DAB5, 854px 0px 0px #F0DAB5, 868px 0px 0px #F0DAB5, 882px 0px 0px #F0DAB5, 896px 0px 0px #F0DAB5, 910px 0px 0px #F0DAB5, 924px 0px 0px #F0DAB5, 938px 0px 0px #F0DAB5, 952px 0px 0px #F0DAB5, 966px 0px 0px #F0DAB5, 980px 0px 0px #F0DAB5, 994px 0px 0px #F0DAB5, 1008px 0px 0px #F0DAB5, 1022px 0px 0px #F0DAB5, 1036px 0px 0px #F0DAB5, 1050px 0px 0px #F0DAB5, 1064px 0px 0px #F0DAB5, 1078px 0px 0px #F0DAB5, 1092px 0px 0px #F0DAB5, 1106px 0px 0px #F0DAB5, 1120px 0px 0px #F0DAB5, 1134px 0px 0px #F0DAB5, 1148px 0px 0px #F0DAB5, 1162px 0px 0px #F0DAB5, 1176px 0px 0px #F0DAB5, 1190px 0px 0px #F0DAB5, 1204px 0px 0px #F0DAB5, 1218px 0px 0px #F0DAB5, 1232px 0px 0px #F0DAB5, 1246px 0px 0px #F0DAB5, 1260px 0px 0px #F0DAB5, 1274px 0px 0px #F0DAB5, 1288px 0px 0px #F0DAB5;
+}
+
+.film::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 0px;
+  width: 8px;
+  height: 8px;
+  background: #F0DAB5;
+  box-shadow: 14px 0px 0px #F0DAB5, 28px 0px 0px #F0DAB5, 42px 0px 0px #F0DAB5, 56px 0px 0px #F0DAB5, 70px 0px 0px #F0DAB5, 84px 0px 0px #F0DAB5, 98px 0px 0px #F0DAB5, 112px 0px 0px #F0DAB5, 126px 0px 0px #F0DAB5, 140px 0px 0px #F0DAB5, 154px 0px 0px #F0DAB5, 168px 0px 0px #F0DAB5, 182px 0px 0px #F0DAB5, 196px 0px 0px #F0DAB5, 210px 0px 0px #F0DAB5, 224px 0px 0px #F0DAB5, 238px 0px 0px #F0DAB5, 252px 0px 0px #F0DAB5, 266px 0px 0px #F0DAB5, 280px 0px 0px #F0DAB5, 294px 0px 0px #F0DAB5, 308px 0px 0px #F0DAB5, 322px 0px 0px #F0DAB5, 336px 0px 0px #F0DAB5, 350px 0px 0px #F0DAB5, 364px 0px 0px #F0DAB5, 378px 0px 0px #F0DAB5, 392px 0px 0px #F0DAB5, 406px 0px 0px #F0DAB5, 420px 0px 0px #F0DAB5, 434px 0px 0px #F0DAB5, 448px 0px 0px #F0DAB5, 462px 0px 0px #F0DAB5, 476px 0px 0px #F0DAB5, 490px 0px 0px #F0DAB5, 504px 0px 0px #F0DAB5, 518px 0px 0px #F0DAB5, 532px 0px 0px #F0DAB5, 546px 0px 0px #F0DAB5, 560px 0px 0px #F0DAB5, 574px 0px 0px #F0DAB5, 588px 0px 0px #F0DAB5, 602px 0px 0px #F0DAB5, 616px 0px 0px #F0DAB5, 630px 0px 0px #F0DAB5, 644px 0px 0px #F0DAB5, 658px 0px 0px #F0DAB5, 672px 0px 0px #F0DAB5, 686px 0px 0px #F0DAB5, 700px 0px 0px #F0DAB5, 714px 0px 0px #F0DAB5, 728px 0px 0px #F0DAB5, 742px 0px 0px #F0DAB5, 756px 0px 0px #F0DAB5, 770px 0px 0px #F0DAB5, 784px 0px 0px #F0DAB5, 798px 0px 0px #F0DAB5, 812px 0px 0px #F0DAB5, 826px 0px 0px #F0DAB5, 840px 0px 0px #F0DAB5, 854px 0px 0px #F0DAB5, 868px 0px 0px #F0DAB5, 882px 0px 0px #F0DAB5, 896px 0px 0px #F0DAB5, 910px 0px 0px #F0DAB5, 924px 0px 0px #F0DAB5, 938px 0px 0px #F0DAB5, 952px 0px 0px #F0DAB5, 966px 0px 0px #F0DAB5, 980px 0px 0px #F0DAB5, 994px 0px 0px #F0DAB5, 1008px 0px 0px #F0DAB5, 1022px 0px 0px #F0DAB5, 1036px 0px 0px #F0DAB5, 1050px 0px 0px #F0DAB5, 1064px 0px 0px #F0DAB5, 1078px 0px 0px #F0DAB5, 1092px 0px 0px #F0DAB5, 1106px 0px 0px #F0DAB5, 1120px 0px 0px #F0DAB5, 1134px 0px 0px #F0DAB5, 1148px 0px 0px #F0DAB5, 1162px 0px 0px #F0DAB5, 1176px 0px 0px #F0DAB5, 1190px 0px 0px #F0DAB5, 1204px 0px 0px #F0DAB5, 1218px 0px 0px #F0DAB5, 1232px 0px 0px #F0DAB5, 1246px 0px 0px #F0DAB5, 1260px 0px 0px #F0DAB5, 1274px 0px 0px #F0DAB5, 1288px 0px 0px #F0DAB5;
+}
+/*
+.film div {
+  width: 90px;
+  height: 60%;
+  top: 50%;
+  transform: translate(0%, -50%);
+  margin-left: 4px;
+  box-shadow: inset 0px 0px 10px 0px #b7410e;
+  display: inline-block;
+  margin-top: 50px;
+}
+
+.film div:nth-child(1) {
+  background: url(http://i.ytimg.com/vi/on7C1XuUAdY/maxresdefault.jpg) center center no-repeat;
+  background-size: cover;
+}
+
+.film div:nth-child(2) {
+  background: url(https://static.guim.co.uk/sys-images/Books/Pix/pictures/2013/8/27/1377623225716/Pain-and-Gain----2013-011.jpg) center center no-repeat;
+  background-size: cover;
+}
+
+.film div:nth-child(3) {
+  background: url(http://assets.nydailynews.com/polopoly_fs/1.1763504!/img/httpImage/image.jpg_gen/derivatives/article_970/pain-gain.jpg) center center no-repeat;
+  background-size: cover;
+}*/
+</style>
+

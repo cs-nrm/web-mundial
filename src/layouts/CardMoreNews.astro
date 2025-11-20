@@ -1,0 +1,86 @@
+---
+export interface Props {
+    post: {
+      imagePath: string;
+      title: {
+         rendered: string;
+      }
+      content: string;
+      slug: string;
+      categories : {};
+      yoast_head_json: {
+         og_image: [
+            {
+               url: string;
+            }
+         ]
+         article_published_time: string;
+         author:string;         
+      };
+      _embedded: {};
+    };
+    
+}
+
+const { post } = Astro.props;
+
+var url_seccion;
+//console.log(post.categories[0]);
+switch (post.categories[0]){
+    case 143:        
+        url_seccion = 'nota-sabrosa';
+    break;
+    case 505:        
+        url_seccion = 'promociones';
+    break;
+    case 1632:
+        url_seccion = 'son-sonidero';
+    break;
+    case 791:
+        url_seccion = 'entrevistas';
+    break;
+    case 1639:
+        url_seccion = 'tito-nieves';
+    break;
+    case 1642:
+        url_seccion = 'locutores';
+    break;
+    case 789:
+        url_seccion = 'retropical';
+    break;
+    case 1643:
+        url_seccion = 'historias-con-salsa';
+    break;
+    case 1646:
+        url_seccion = 'fiestas-patrias';
+    break;
+    case 1648:
+        url_seccion = 'celia-cruz';
+    break;
+    case 1647:
+        url_seccion = 'dia-de-muertos';
+    break;
+    default:
+        url_seccion = 'nota-sabrosa';    
+    break;      
+}
+
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg';
+
+---
+
+<div class="card w-full p-4">
+    <div class="overflow-hidden bg-zinc-800 hover:shadow-[0_2px_12px_6px_rgba(29,29,29,0.5)] group">
+        <a href={`/${url_seccion}/${post.slug}/`}>
+            <img loading="lazy" class="block h-auto w-full aspect-video object-cover group-hover:text-[var(--amarillo-beat)]" src={post?._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.['medium_large']?.source_url|| PLACEHOLDER_IMG} alt={post.yoast_head_json['schema']['@graph'][2].caption||"Imagen Más Noticias"} />
+        </a>
+        <div class="flex items-center justify-between leading-tight px-2">
+            <a class="no-underline" href={`/${url_seccion}/${post.slug}/`}>
+                <h2 class="text-base text-gray-200 group-hover:text-[#ef4444] leading-normal" set:html={post.title.rendered}></h2>
+            </a>
+        </div>
+        <div class="roboto flex items-center justify-between text-xs font-bold uppercase text-gray-500 px-2">            
+            <p>{post.yoast_head_json.article_published_time.substring(0, 10)}</p>            
+        </div>
+    </div>
+</div>
