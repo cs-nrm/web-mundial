@@ -1,93 +1,32 @@
 ---
-import CardNews from '../layouts/CardsHomeNews.astro';
-import CardEntrevistas from '../layouts/CardsHomeEntrevistas.astro';
-import Separator from '../components/Separator.astro'; 
-import DoubleBox from '../components/DoubleBox.astro';
-import BoxBanner from '../components/BoxBanner.astro';
-import LeaderBoard from'../components/LeaderBoard.astro';
-import Modal from'../components/Modal.astro';
-import LeaderBoard2 from'../components/LeaderBoard2.astro';
-import SuperLeader from '../components/SuperLeader.astro';
-import BillBoard from '../components/BillBoard.astro';
-import BillBoard2 from '../components/BillBoard2.astro';
-import Notificacion from '../components/Notificacion.astro';
-import NotaPrincipal from '../layouts/CardsHomePrincipal.astro';
-import CardsHomeMuertos from '../layouts/CardsHomeMuertos.astro';
-import Promociones from '../layouts/SliderPromociones.astro';
-import SliderHotParade from '../layouts/SliderHotParade.astro';
-import SliderPodcast from '../layouts/SliderPodcast.astro';
-import DataFactory from '../components/DataFactory.astro';
-import Layout from '../layouts/Layout.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
-//import SliderBuenFin from '../layouts/SliderBuen.astro';
+import Layout from "../layouts/Layout.astro";
+import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+import { getArticles } from "../lib/api.js";
+import ArticleCard from "../components/ArticleCard.astro";
+
+const posts = await getArticles();
 ---
 
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-  <Notificacion />
-  <main id="home">
-    <section>                   
-      <div class="container-home p-4 mx-auto">                        
-        <NotaPrincipal />
-        <CardNews />
+  <main id="home" class="bg-gray-100 min-h-screen">
+    <section class="container mx-auto px-4 py-8">
+      <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">
+        Últimas Noticias
+      </h1>
+
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      >
+        {posts.map((post) => <ArticleCard post={post} />)}
       </div>
-    </section>
-    <!section>
-      <div>
-        <img class="w-full h-auto hidden md:block" src="https://storage.googleapis.com/nrm-web/nrm/adManager/buen-fin%202.png"/>
-        <img class="w-full h-auto block md:hidden" src="https://storage.googleapis.com/nrm-web/nrm/adManager/buen-fin-movil2.png"/>
-      </div>
-      <div class="bg-[#e20612]">
-        <!--SliderBuenFin /-->
-        <div class="flex justify-end"><img class="w-full max-w-[100px]" src="https://storage.googleapis.com/nrm-web/nrm/adManager/buen-fin-qr.png"/></div>
-      </div>
-    </section>
-    <LeaderBoard/>
-    <!--section class="patrio">
-        <CardsHomeMuertos />
-    </section-->
-    <!--div class="container-home p-4 mx-auto">
-      <div class="flex flex-col md:flex-row justify-center items-center">
-        <div class="px-2 w-[80%] datafactory" >  
-          <img class="max-w-[200px] m-auto" src="https://storage.googleapis.com/nrm-web/sabrosita/titulos/DEPORTES.png" alt="Título Deportes" />
-          <DataFactory /> 
-        </div>
-        <div class="flex items-end md:pt-14 px-2 w-[350px] lotenal m-auto">
-          <a href="https://www.loterianacional.gob.mx/Mascarillas/ListasPremios" target="_blank" rel="noopener noreferrer"> 
-            <img class="w-[300px] rounded-xl" src="https://storage.googleapis.com/nrm-web/sabrosita/IMG_LOTERIA-min.jpg" alt="Lotería Nacional" />
-          </a>
-        </div>
-      </div>
-    </div-->
-    <BillBoard/>
-    <section>
-      <div class="container-home p-4 mx-auto">                        
-        <SliderHotParade/>
-      </div>
-    </section>
-    <BillBoard2/>
-    <section>
-      <div class="container-home p-4 mx-auto">                        
-        <SliderPodcast />    
-      </div>
-    </section>
-    <section>
-      <div class="container-home p-4 mx-auto">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-16">
-          <div class="lg:col-span-2">
-            <CardEntrevistas />
+
+      {
+        posts.length === 0 && (
+          <div class="text-center py-20">
+            <p class="text-xl text-gray-500">Cargando noticias...</p>
           </div>
-          <div class="">
-            <BoxBanner />
-          </div>
-        </div>                
-      </div>
+        )
+      }
     </section>
-    <LeaderBoard2 />
-    <section class="">
-      <div class="container-home p-4 mx-auto">
-        <Promociones />    
-      </div>
-    </section>
-    <!--Modal /-->
   </main>
 </Layout>
