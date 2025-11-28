@@ -1,0 +1,84 @@
+---
+import { categoryMapping } from "../config/sites.js";
+
+const { post } = Astro.props;
+
+let url_seccion = "fiesta-futbolera"; // Default fallback
+
+// Try to find the category slug from embedded terms to determine the section color/link
+if (
+    post._embedded &&
+    post._embedded["wp:term"] &&
+    post._embedded["wp:term"][0]
+) {
+    const categories = post._embedded["wp:term"][0];
+    for (const cat of categories) {
+        if (categoryMapping[cat.slug]) {
+            url_seccion = categoryMapping[cat.slug];
+            break;
+        }
+    }
+}
+
+const PLACEHOLDER_IMG =
+    "https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg";
+const featuredImage =
+    post._embedded?.["wp:featuredmedia"]?.[0]?.media_details?.sizes
+        ?.medium_large?.source_url ||
+    post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+    PLACEHOLDER_IMG;
+
+const author =
+    post._embedded?.author?.[0]?.name ||
+    post.yoast_head_json?.author ||
+    "Redacción";
+---
+
+<article
+    class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+>
+    <a
+        href={`/${url_seccion}/${post.slug}/`}
+        class="block h-full flex flex-col"
+    >
+        <div class="aspect-video w-full overflow-hidden relative">
+            <img
+                loading="lazy"
+                class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                src={featuredImage}
+                alt={post.title.rendered}
+            />
+            <div
+                class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded uppercase"
+            >
+                {url_seccion.replace("-", " ")}
+            </div>
+        </div>
+        <div class="p-4 flex-1 flex flex-col justify-between">
+            <div>
+                <h3
+                    class="text-lg font-bold leading-tight mb-2 text-gray-900"
+                    set:html={post.title.rendered}
+                />
+                <div
+                    class="text-sm text-gray-600 line-clamp-3 mb-4"
+                    set:html={post.excerpt.rendered}
+                />
+            </div>
+            <div
+                class="flex items-center justify-between text-xs text-gray-500 mt-auto pt-4 border-t border-gray-100"
+            >
+                <span class="font-medium text-red-600">{author}</span>
+                <time datetime={post.date}
+                    >{
+                        new Date(post.date).toLocaleDateString("es-MX", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                        })
+                    }</time
+                >
+            </div>
+        </div>
+    </a>
+</article>
