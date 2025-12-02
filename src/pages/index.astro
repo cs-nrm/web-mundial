@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 import { getArticles } from "../lib/api.js";
 import ArticleCard from "../components/ArticleCard.astro";
+import WidgetSorteo from "../layouts/WidgetSorteo.astro";
 
 const posts = await getArticles();
 ---
@@ -27,6 +28,9 @@ const posts = await getArticles();
           </div>
         )
       }
+    </section>
+    <section>
+      <WidgetSorteo />
     </section>
   </main>
 </Layout>
