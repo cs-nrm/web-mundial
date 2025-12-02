@@ -5,10 +5,9 @@ const currentPath = Astro.url.pathname;
 ---
 
 <div class="flex gap-4 md:gap-12 bar-sabrosita is-pinned">
-    <div class="logo sec-menu"><a href="/"><img src="https://storage.googleapis.com/nrm-web/sabrosita/LOGO_SABROSITA_NEW.png" alt="Logo Sabrosita"/></a></div>
+    <div class="logo sec-menu"><a href="/"><img class="w-full h-full" src="https://storage.googleapis.com/nrm-web/mundial/logo_fiestafutbol.png" alt="Logo Fiesta Fútbol"/></a></div>
     <div class="header-buttons sec-menu">
-      <!--div><Menu /></div> 
-      <div><MenuRadio /></div-->
+      <a href="https://nrm.com.mx/"><img class="w-full h-full" src="https://storage.googleapis.com/nrm-web/mundial/nrm.png" alt="Logo NRM"/></a>
     </div>
     <div class="opacity-back"></div>
 </div>
@@ -38,6 +37,7 @@ const currentPath = Astro.url.pathname;
   /*height: 140px;*/
   transition: height 0.5s;
   overflow: initial;
+  max-height: 80px;
 }
 
 .compress{  height: 80px; transition: height 0.5s; position: fixed; width: 100%;}
@@ -46,7 +46,6 @@ const currentPath = Astro.url.pathname;
   font-size: 1.5rem;
   font-weight: bold;
   display: flex;
-  width: 14%;
   transition: all 0.5s;
 }
 
