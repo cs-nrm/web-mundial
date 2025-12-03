@@ -45,7 +45,9 @@ const posts = await getArticles();
       <div
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
-        {posts.map((post) => <ArticleCard post={post} />)}
+        {posts.map((post, i) => (
+          <ArticleCard post={post} listIndex={i} />
+        ))}
       </div>
 
       {
