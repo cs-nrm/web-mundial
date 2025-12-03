@@ -75,17 +75,19 @@ body {
 	color: white;
 	font-size: 20px;
 	line-height: 1.7;
-	background-color: #000;
+	background-color: #7af12b;
 }
 
 body::before{
   content:'';
-  background: url('https://storage.googleapis.com/nrm-web/mundial/back-futbol.jpg');
+  background: url('https://storage.googleapis.com/nrm-web/mundial/back-sorteo.png');
+  background-color: #7af12b;
   background-size: cover;
   width: 100%;
   height: 100%;
   background-position: top;
   position: fixed;
+  top: 80px;
   z-index: -1;
   /*filter: blur(2px);*/
   transition: all 05.s;  
