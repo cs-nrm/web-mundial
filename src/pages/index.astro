@@ -4,6 +4,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 import { getArticles } from "../lib/api.js";
 import ArticleCard from "../components/ArticleCard.astro";
 import WidgetSorteo from "../layouts/WidgetSorteo.astro";
+import BoxBanner from "../components/BoxBanner.astro";
 
 const posts = await getArticles();
 ---
@@ -42,9 +43,8 @@ const posts = await getArticles();
         Últimas Noticias
       </h1>
 
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-      >
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <BoxBanner />
         {posts.map((post, i) => (
           <ArticleCard post={post} listIndex={i} />
         ))}
