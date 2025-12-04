@@ -36,198 +36,7 @@ import Salsaman from "./Salsaman.astro";
 </div>
 <footer class="footer footer-estacion">
   <!--div class="logo-est-footer"><img src="https://storage.googleapis.com/nrm-web/stereocien/12.svg"/></div-->
-  <div class="footer-container">
-    <!-- Sections Column -->
-    <div class="footer-column">
-      <h3>Nuestras Secciones</h3>
-      <ul class="roboto font-bold leading-[1.5]">
-        <li
-          class={`menu-section${currentPath.startsWith("/nota-sabrosa") ? " active" : ""}`}
-        >
-          <a href="/nota-sabrosa">Nota Sabrosa</a>
-        </li>
-        <li
-          class={`menu-section${currentPath.startsWith("/promociones") ? " active" : ""}`}
-        >
-          <a href="/promociones">Promociones</a>
-        </li>
-        <li
-          class={`menu-section${currentPath.startsWith("/hot-parade") ? " active" : ""}`}
-        >
-          <a href="/hot-parade">Hot Parade</a>
-        </li>
-        <li
-          class={`menu-section${currentPath.startsWith("/podcast/momentos-irrepetibles") ? " active" : ""}`}
-        >
-          <a href="/podcast/momentos-irrepetibles">Podcast</a>
-        </li>
-        <li
-          class={`menu-section${currentPath.startsWith("/entrevistas") ? " active" : ""}`}
-        >
-          <a href="/entrevistas">Entrevistas</a>
-        </li>
-        <li
-          class={`menu-section${currentPath.startsWith("/son-sonidero") ? " active" : ""}`}
-        >
-          <a href="/son-sonidero">Son Sonidero</a>
-        </li>
-      </ul>
-    </div>
 
-    <!-- Radio Column -->
-    <div class="footer-column">
-      <h3>Radio en vivo</h3>
-      <p class="roboto">
-        Escucha nuestras señales de <a href="/en-vivo" class="cursor-pointer">
-          Radio en vivo aquí.</a
-        >
-      </p>
-      <div class="radio-logos">
-        <div class="cursor-pointer">
-          <a href="/en-vivo"
-            ><img
-              loading="lazy"
-              src="https://storage.googleapis.com/nrm-web/nrm/images/footer/sabrosita.png"
-              alt="Sabrosita"
-            /></a
-          >
-        </div>
-      </div>
-    </div>
-
-    <!-- Social Media Column -->
-    <div class="footer-column redes">
-      <h3>Síguenos en redes sociales</h3>
-      <div class="social-icons">
-        <a
-          target="_blank"
-          href="https://www.facebook.com/Sabrosita590Digital"
-          aria-label="Facebook"
-          ><svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path
-              d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
-            ></path></svg
-          ></a
-        >
-        <a target="_blank" href="https://x.com/SabrositaD" aria-label="X"
-          ><svg
-            xmlns="https://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            width="24"
-            height="24"
-            stroke-width="2"
-          >
-            <path d="M4 4l11.733 16h4.267l-11.733 -16z"></path>
-            <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"></path>
-          </svg></a
-        >
-        <a
-          target="_blank"
-          href="https://www.instagram.com/sabrosita590y1410/"
-          aria-label="Instagram"
-          ><svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path
-              d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line
-              x1="17.5"
-              x2="17.51"
-              y1="6.5"
-              y2="6.5"></line></svg
-          ></a
-        >
-        <a
-          target="_blank"
-          href="https://www.youtube.com/channel/UChx7OD14e0j6KLAxQxfF9Lw"
-          aria-label="YouTube"
-          ><svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path
-              d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"
-            ></path><path d="m10 15 5-3-5-3z"></path></svg
-          ></a
-        >
-        <a
-          target="_blank"
-          href="https://www.tiktok.com/@sabrosita5901410"
-          aria-label="TikTok"
-          ><svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg
-          ></a
-        >
-      </div>
-      <div class="descarga-apps">
-        <h3>Descarga nuestras apps</h3>
-        <div class="app-buttons">
-          <a
-            target="_blank"
-            href="https://apps.apple.com/mx/app/sabrosita-590-14140/id444257982"
-            class="app-store"
-          >
-            <img
-              loading="lazy"
-              src="https://storage.googleapis.com/nrm-web/nrm/images/store.png"
-              alt="App Store"
-            />
-          </a>
-          <a
-            target="_blank"
-            href="https://play.google.com/store/apps/details?id=com.sferea.sabrosita&pli=1"
-            class="app-store"
-          >
-            <img
-              loading="lazy"
-              src="https://storage.googleapis.com/nrm-web/nrm/images/google2.png"
-              alt="Play Store"
-            />
-          </a>
-          <a target="_blank" href="/alexa" class="alexa">
-            <img
-              loading="lazy"
-              src="https://storage.googleapis.com/nrm-web/nrm/images/alexa-blanco.png"
-              alt="Alexa"
-            />
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Apps Column -->
-    <div class="footer-column"></div>
-  </div>
 
   <!-- Copyright -->
   <div class="copyright">
@@ -329,7 +138,7 @@ import Salsaman from "./Salsaman.astro";
 <style>
   .footer {
     background: #111;
-    padding: 4rem 0 2rem;
+    padding: 2rem 0 2rem;
     position: relative;
     overflow: hidden;
   }
@@ -385,7 +194,7 @@ import Salsaman from "./Salsaman.astro";
   .footer-estacion {
     position: relative;
   }
-  .footer-estacion::before {
+  /*.footer-estacion::before {
     content: "";
     background-image: url("https://storage.googleapis.com/nrm-web/sabrosita/resources/img/logo-sabrosita.svg");
     background-repeat: no-repeat;
@@ -398,7 +207,7 @@ import Salsaman from "./Salsaman.astro";
     background-position: 0;
     opacity: 0.02;
     filter: grayscale(100%);
-  }
+  }*/
   .logo-est-footer {
     position: absolute;
     right: 10px;
@@ -473,7 +282,7 @@ import Salsaman from "./Salsaman.astro";
   }
   .copyright {
     max-width: 1200px;
-    margin: 3rem auto 0;
+    /*margin: 3rem auto 0;*/
     padding: 2rem 1.5rem 0;
     border-top: 1px solid #333;
     text-align: center;
