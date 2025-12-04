@@ -24,10 +24,10 @@ function initGPT() {
         var mapping31 = googletag.sizeMapping().addSize([320, 50]).build();
         var mapping4 = googletag.sizeMapping().addSize([300, 600]).build();
 
-        window.slot2 = googletag.defineSlot("/21799830913/Sabrosita", [300, 250], 'ad-slot2').defineSizeMapping(mapping2).addService(googletag.pubads());
-        window.slot3 = googletag.defineSlot("/21799830913/Sabrosita", [728, 90], 'ad-slot3').defineSizeMapping(mapping3).addService(googletag.pubads());
-        window.slot31 = googletag.defineSlot("/21799830913/Sabrosita", [320, 50], 'ad-slot31').defineSizeMapping(mapping31).addService(googletag.pubads());
-        window.slot4 = googletag.defineSlot("/21799830913/Sabrosita", [300, 600], 'ad-slot4').defineSizeMapping(mapping4).addService(googletag.pubads());
+        window.slot2 = googletag.defineSlot("/21799830913/Mundial-Enfoque", [300, 250], 'ad-slot2').defineSizeMapping(mapping2).addService(googletag.pubads());
+        window.slot3 = googletag.defineSlot("/21799830913/Mundial-Enfoque", [728, 90], 'ad-slot3').defineSizeMapping(mapping3).addService(googletag.pubads());
+        window.slot31 = googletag.defineSlot("/21799830913/Mundial-Enfoque", [320, 50], 'ad-slot31').defineSizeMapping(mapping31).addService(googletag.pubads());
+        window.slot4 = googletag.defineSlot("/21799830913/Mundial-Enfoque", [300, 600], 'ad-slot4').defineSizeMapping(mapping4).addService(googletag.pubads());
 
         googletag.pubads().setTargeting("test", "responsive");
         googletag.enableServices();
