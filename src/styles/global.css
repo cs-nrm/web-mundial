@@ -4,8 +4,7 @@
   License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
  */
 
-@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
  :root {
 	--accent: #2337ff;
@@ -54,18 +53,13 @@
   font-display: swap;
 }
 
-.roboto{
-  font-family: 'Roboto';
-}
 .spartan{
   font-family: 'League Spartan';
 }
-.poppins{
-  font-family: 'Poppins';
-}
+
 
 body {	
-  font-family: 'Poppins';
+  font-family: 'Open Sans';
   letter-spacing: 0.05em;
 	margin: 0;
 	padding: 0;
@@ -75,10 +69,10 @@ body {
 	color: white;
 	font-size: 20px;
 	line-height: 1.7;
-	background-color: #7af12b;
+	/*background-color: #7af12b;*/
 }
 
-body::before{
+/*body::before{
   content:'';
   background: url('https://storage.googleapis.com/nrm-web/mundial/back-sorteo.png');
   background-color: #7af12b;
@@ -89,9 +83,8 @@ body::before{
   position: fixed;
   top: 80px;
   z-index: -1;
-  /*filter: blur(2px);*/
   transition: all 05.s;  
-}
+}*/
 
 .compress{ transition: height 0.5s; position: fixed; width: 100%;}
 .compress .header-buttons div, .compress .header-buttons div nav{background: none; margin-top: 0;}

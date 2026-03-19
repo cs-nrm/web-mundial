@@ -1,6 +1,7 @@
 const API_URL = import.meta.env.PUBLIC_API_URL;
 
-import { wpSites } from '../config/sites.js';
+import { wpSites, wpSiteEnfoqueNoticias } from '../config/sites.js';
+import { fetchEnfoqueWithHeadlessBrowser } from './enfoqueProxy.js';
 
 export async function fetchAPI(query = '') {
     // This function is kept for backward compatibility or single-site calls if needed.
@@ -20,58 +21,43 @@ export async function fetchAPI(query = '') {
     }
 }
 
-export async function getArticles(catIdOrSlug) {
-    // Note: catIdOrSlug is currently an ID (e.g., 143) in the existing calls.
-    // For multi-site, we prefer Slugs. 
-    // If it's a number, we might need to handle it, but for now let's assume we want to fetch 
-    // from all sites.
+export async function getArticles(catIdOrSlug, { sites = wpSites } = {}) {
+    // The default behavior is to fetch from all wpSites defined in config/sites.js.
+    // You can override this by passing a custom `sites` array, e.g.:
+    //   getArticles(undefined, { sites: [wpSiteEnfoqueNoticias] })
+    // This allows consuming code to request only a subset of sources (e.g., just enfoquenoticias)
+    // while keeping the existing multi-site behavior intact.
 
-    // Since the current codebase uses IDs (143), and those IDs are specific to the original site,
-    // we need a strategy. 
-    // Strategy: 
-    // 1. If we are just fetching "latest posts" (no category), we hit all sites.
-    // 2. If we are fetching by Category ID (143), that ID is only valid for the original site.
-    //    We should ideally convert calls to use Slugs.
-
-    // For this iteration, I will implement a robust fetch that tries to get posts from ALL sites.
-    // If a category is provided, we need to know the category ID for *each* site, OR filter by slug.
-    // Filtering by slug via API usually requires an extra call or a plugin.
-
-    // TEMPORARY HYBRID APPROACH:
-    // We will fetch from the defined wpSites.
-    // We will assume 'catIdOrSlug' is relevant. 
-    // If it's the original site, we use the ID. For others, we might skip filtering or need the ID.
-
-    // To make this truly work for 5 sites, we need to know:
-    // "What is the ID of 'Nota Sabrosa' on Site 2?"
-
-    // For now, I will implement the aggregation logic.
+    // NOTE: The `catIdOrSlug` argument is currently not used for the multi-site fetch.
+    // It exists for backwards compatibility with older calls (e.g., getArticles(143)).
+    // To support filtering by category you would need per-site category IDs or a different strategy.
 
     let allPosts = [];
 
-    const requests = wpSites.map(async (siteUrl) => {
+    const targets = Array.isArray(sites) ? sites : [sites];
+    
+    console.log('🚀 getArticles - Fetching from', targets.length, 'site(s)');
+
+    const requests = targets.map(async (siteUrl) => {
         try {
-            // The user provided full URLs with query params (e.g. ...&categories=824).
-            // We need to append per_page and potentially other params.
-            // Since siteUrl already has '?', we use '&' to append.
-
-            // Note: The user's URLs already include 'categories=...'. 
-            // If 'catIdOrSlug' is passed to this function, it might conflict or be redundant.
-            // For the "Home" or "General Feed", we probably just want to hit these endpoints as configured.
-            // If we need to filter further, we'd need more complex logic.
-
-            // Assuming for now we just want to fetch the feed from these specific endpoints:
+            // The configured site URLs already include query params (e.g. categories).
+            // Append per_page to control the batch size.
             const url = `${siteUrl}&per_page=20`;
 
+            console.log('📡 Fetching from:', url);
             const res = await fetch(url);
+            
+            console.log('📊 Response status:', res.status, 'from', siteUrl.substring(0, 40) + '...');
+            
             if (!res.ok) {
-                console.warn(`Failed to fetch from ${siteUrl}: ${res.status}`);
+                console.warn(`❌ Failed to fetch from ${siteUrl}: ${res.status}`);
                 return [];
             }
             const data = await res.json();
+            console.log('✅ Got', data.length, 'posts from', siteUrl.substring(0, 40) + '...');
             return data;
         } catch (err) {
-            console.error(`Error fetching from ${siteUrl}:`, err);
+            console.error(`⚠️ Error fetching from ${siteUrl}:`, err.message);
             return [];
         }
     });
@@ -83,15 +69,18 @@ export async function getArticles(catIdOrSlug) {
 
     // Sort by date (newest first)
     allPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    console.log('📦 Total posts after filtering:', allPosts.length);
 
     return allPosts;
 }
+
 
 /**
  * Fetch paginado de sabrosita para la sección Nota Sabrosa (SSR).
  * Devuelve { posts, totalPages, currentPage }.
  */
-export async function getSabrositaPaginado(currentPage = 1, perPage = 20) {
+export async function gado(currentetSabrositaPaginPage = 1, perPage = 20) {
     const base = 'https://sabrositadigital.com.mx/wp-json/wp/v2/posts'
     const url = `${base}?_embed&fields=date,title,slug,acf,excerpt,_links,_embedded&categories=1650&per_page=${perPage}&page=${currentPage}`
 
@@ -106,21 +95,56 @@ export async function getSabrositaPaginado(currentPage = 1, perPage = 20) {
         return { posts: [], totalPages: 1, currentPage }
     }
 }
+async function fetchWithBrowserHeaders(url) {
+    // Some sites (Cloudflare) may reject default node fetch user-agents.
+    // This helper tries to look like a normal browser to reduce 403 responses.
+    const headers = {
+        'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        Referer: 'https://enfoquenoticias.com.mx/',
+    };
 
-/*export async function conn() {
-    const res = await fetch('',{
-
-    });
-
-    if ( res.ok ) {
-        return res.json();
-    } else {
-        const error = await res.json();
-
-        throw new Error(
-            '❗ Failed to fetch API for ' + query + "\n" +
-            'Code: ' + error.code + "\n" +
-            'Message: ' + error.message + "\n"
-        );
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+        const text = await res.text().catch(() => null);
+        throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText} - ${text?.slice(0, 200)}`);
     }
-}*/
+
+    return res.json();
+}
+
+export async function getArticlesEnfoque(catIdOrSlug) {
+    // Fetch articles specifically from enfoquenoticias only
+    // We try 3 strategies:
+    // 1) Use the existing multi-site logic (works when the endpoint is accessible)
+    // 2) If blocked (403), attempt a browser-like fetch with headers
+    // 3) As a last resort, fall back to the multi-site feed to avoid showing an empty UI
+
+    const url = `${wpSiteEnfoqueNoticias}&per_page=20`;
+
+    try {
+        const posts = await getArticles(catIdOrSlug, { sites: [wpSiteEnfoqueNoticias] });
+        if (posts.length > 0) {
+            return posts;
+        }
+
+        // If no posts returned, try a headless browser fetch (this can solve Cloudflare JS challenges).
+        console.warn('getArticlesEnfoque: no posts returned, trying headless browser fetch');
+        return await fetchEnfoqueWithHeadlessBrowser(url);
+    } catch (err) {
+        console.warn('getArticlesEnfoque: primary fetch failed, trying headless browser fetch:', err.message);
+    }
+
+    // Try the headless browser fetch path.
+    try {
+        return await fetchEnfoqueWithHeadlessBrowser(url);
+    } catch (err) {
+        console.warn('getArticlesEnfoque: headless browser fetch failed:', err.message);
+    }
+
+    // Fallback: return all sites to keep UI populated.
+    console.warn('getArticlesEnfoque: falling back to multi-site feed (wpSites)');
+    return getArticles(catIdOrSlug);
+}

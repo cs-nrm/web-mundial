@@ -1,18 +1,28 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
-import { getArticles } from "../lib/api.js";
+import { getArticlesEnfoque } from "../lib/api.js";
 import ArticleCard from "../components/ArticleCard.astro";
 import WidgetSorteo from "../layouts/WidgetSorteo.astro";
 import BoxBanner from "../components/BoxBanner.astro";
+import WidgetCalendario from "../layouts/WidgetCalendario.astro";
+import WidgetSedesEstadios from "../layouts/WidgetSedesEstadios.astro";
+import CardsHomeEnfoque from "../layouts/CardsHomeEnfoque.astro";
 
-const posts = await getArticles();
+const posts = await getArticlesEnfoque();
+console.log('📄 index.astro posts:', posts.length, 'posts loaded');
+if (posts.length > 0) {
+    console.log('   First post:', posts[0]?.title?.rendered);
+}
 ---
 
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <main id="home" class="">
+    <section><CardsHomeEnfoque posts={posts} /></section>
     <section>
       <WidgetSorteo />
+      <WidgetCalendario/>
+      <WidgetSedesEstadios/>
     </section>
     <section class="container mx-auto px-4 py-8">
       <h1 class="text-4xl font-bold text-center mb-8 text-gray-800">

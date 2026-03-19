@@ -1,0 +1,52 @@
+<div
+    class="df-widgets"
+    data-component="stadiums-widget"
+    data-theme="fifa-classic"
+    data-variant="light"
+    data-lang="es"
+    data-banner-img="https://storage.googleapis.com/nrm-web/mundial/titulo-sorteo.png"
+    data-banner-url=""
+>
+</div>
+<script is:inline>
+    // Function to load the widget script
+    function loadWidgetScript() {
+        // Remove existing script if present to force reload
+        const existingScript = document.getElementById("df-widget-script");
+        if (existingScript) {
+            existingScript.remove();
+        }
+
+        const script = document.createElement("script");
+        script.id = "df-widget-script";
+        script.src =
+            "https://1407747097.rsc.cdn77.org/worldcup/latest/df-draw-widget.iife.js";
+        document.body.appendChild(script);
+    }
+
+    // Load on initial page load
+    loadWidgetScript();
+
+    // Load on subsequent navigations (View Transitions)
+    document.addEventListener("astro:after-swap", () => {
+        // Only load if the widget container exists on the new page
+        if (document.querySelector(".df-widgets")) {
+            loadWidgetScript();
+        }
+    });
+</script>
+<style is:global>
+    .df-widgets .page-sorteo .page-header {
+        display: none !important;
+    }
+    .df-widgets[data-theme="fifa-classic"] .sorteo-page .header-adaptive {
+        background-blend-mode: difference;
+        display: none;
+    }
+    .df-widgets .sorteo-page .branding {
+        display: none !important;
+    }
+    .df-widgets .sorteo-page .modal {
+        top: 200px !important;
+    }
+</style>

@@ -1,0 +1,55 @@
+<div 
+        class="df-widgets"
+        data-component="calendar-widget"
+        data-mode=""
+        data-theme=""
+        data-variant="light"
+        data-lang="es"
+       data-banner-img="https://worldcup2026.datafactory.la/banners/banner-example-dsk.png"
+        data-banner-url="https://www.datafactory.la"
+        data-branding-img="https://worldcup2026.datafactory.la/banners/powerby-example.png"
+        data-branding-url="https://www.datafactory.la"
+></div>
+
+<script is:inline>
+    // Function to load the widget script
+    function loadWidgetScript() {
+        // Remove existing script if present to force reload
+        const existingScript = document.getElementById("df-widget-script");
+        if (existingScript) {
+            existingScript.remove();
+        }
+
+        const script = document.createElement("script");
+        script.id = "df-widget-script";
+        script.src =
+            "https://1407747097.rsc.cdn77.org/worldcup/latest/df-draw-widget.iife.js";
+        document.body.appendChild(script);
+    }
+
+    // Load on initial page load
+    loadWidgetScript();
+
+    // Load on subsequent navigations (View Transitions)
+    document.addEventListener("astro:after-swap", () => {
+        // Only load if the widget container exists on the new page
+        if (document.querySelector(".df-widgets")) {
+            loadWidgetScript();
+        }
+    });
+</script>
+<style is:global>
+    .df-widgets .page-sorteo .page-header {
+        display: none !important;
+    }
+    .df-widgets[data-theme="fifa-classic"] .sorteo-page .header-adaptive {
+        background-blend-mode: difference;
+        display: none;
+    }
+    .df-widgets .sorteo-page .branding {
+        display: none !important;
+    }
+    .df-widgets .sorteo-page .modal {
+        top: 200px !important;
+    }
+</style>
