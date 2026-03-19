@@ -1,21 +1,28 @@
 ---
-import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts.js';
-import { getArticles } from '../../lib/api.js';
+import { SITE_DESCRIPTION } from '../../consts.js';
+import { getSabrositaPaginado } from '../../lib/api.js';
 import Card from '../../layouts/Cardsq.astro';
 import DoubleBox from '../../components/DoubleBox.astro';
 import BoxBanner from '../../components/BoxBanner.astro';
 import Layout from '../../layouts/Layout.astro';
 
-export async function getStaticPaths({ paginate }) {
-  const data = await getArticles(143);  
-  return paginate(data, { pageSize: 20 });
+const pageParam = Astro.params.page
+const currentPage = pageParam ? parseInt(pageParam, 10) : 1
+
+if (isNaN(currentPage) || currentPage < 1) {
+  return Astro.redirect('/nota-sabrosa')
 }
 
-interface Props {
-  page: any;
+const { posts, totalPages } = await getSabrositaPaginado(currentPage, 20)
+
+if (currentPage > totalPages && totalPages > 0) {
+  return Astro.redirect('/nota-sabrosa')
 }
 
-const { page = [] } = Astro.props;
+const prevUrl = currentPage > 1
+  ? `/nota-sabrosa/${currentPage - 1 === 1 ? '' : currentPage - 1}`
+  : null
+const nextUrl = currentPage < totalPages ? `/nota-sabrosa/${currentPage + 1}` : null
 ---
 <Layout title="Nota Sabrosa" description={SITE_DESCRIPTION}>
   <main>
@@ -26,20 +33,20 @@ const { page = [] } = Astro.props;
       <div class="flex flex-col lg:flex-row">
         <div class="sm:min-w-[calc(100%-400px)] lg:mr-10">
           <section class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 md:gap-16 xl:gap-16">
-            {page.data.map((post: any) => (
+            {posts.map((post: any) => (
               <Card post={post} />
             ))}
           </section>
           <div class="m-auto text-center">
-            {page.url.prev && (
-              <a href={page.url.prev}>
+            {prevUrl && (
+              <a href={prevUrl}>
                 <button class="ver-mas group relative h-8 m-4 text-xl px-4 rounded-full spartan bold overflow-hidden bg-[#EA262A] border-4 border-[#EA262A] hover:border-[#FDCF27] font-bold">
                   <span>Anterior</span>
                 </button>
               </a>
             )}
-            {page.url.next && (
-              <a href={page.url.next}>
+            {nextUrl && (
+              <a href={nextUrl}>
                 <button class="ver-mas group relative h-8 m-4 text-xl px-4 rounded-full spartan bold overflow-hidden bg-[#EA262A] border-4 border-[#EA262A] hover:border-[#FDCF27] font-bold">
                   <span>Siguiente</span>
                 </button>

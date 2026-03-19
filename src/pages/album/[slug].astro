@@ -1,0 +1,407 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { createSupabaseServerClient } from '../../lib/supabase'
+
+const { slug } = Astro.params
+const { user } = Astro.locals
+
+if (!user) {
+  return Astro.redirect(`/auth/login?redirect=/album/${slug}`)
+}
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+// Cargar álbum
+const { data: album } = await supabase
+  .from('albums')
+  .select('id, slug, name, descripcion, cover_url')
+  .eq('slug', slug)
+  .eq('active', true)
+  .maybeSingle()
+
+if (!album) {
+  return Astro.redirect('/album')
+}
+
+// Cargar todas las figuritas del álbum
+const { data: cards } = await supabase
+  .from('cards')
+  .select('id, name, descripcion, image_url, posicion')
+  .eq('album_id', album.id)
+  .eq('active', true)
+  .order('posicion', { ascending: true })
+
+// Cargar figuritas que ya tiene el usuario en este álbum
+const cardIds = (cards ?? []).map((c: any) => c.id)
+let collectedSet = new Set<string>()
+
+if (cardIds.length > 0) {
+  const { data: userCards } = await supabase
+    .from('user_cards')
+    .select('card_id')
+    .eq('user_id', user.id)
+    .in('card_id', cardIds)
+
+  collectedSet = new Set((userCards ?? []).map((uc: any) => uc.card_id))
+}
+
+const total = (cards ?? []).length
+const collected = collectedSet.size
+const pct = total > 0 ? Math.round((collected / total) * 100) : 0
+---
+
+<Layout title={`${album.name} — Álbum`}>
+  <main class="album-page">
+    <div class="album-hero">
+      {album.cover_url && <img src={album.cover_url} alt={album.name} class="album-cover" />}
+      <div class="album-meta">
+        <h1>{album.name}</h1>
+        {album.descripcion && <p>{album.descripcion}</p>}
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div class="progress-fill" style={`width: ${pct}%`}></div>
+          </div>
+          <span class="progress-label">{collected} de {total} figuritas ({pct}%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canjear código manualmente -->
+    <div class="canjear-box">
+      <h2>¿Tienes un código?</h2>
+      <form id="canjear-form" class="canjear-form">
+        <input
+          id="codigo-input"
+          type="text"
+          placeholder="Ingresa tu código"
+          maxlength="20"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button type="submit" class="btn-canjear">Canjear</button>
+      </form>
+      <div id="canjear-resultado" class="canjear-resultado" hidden></div>
+    </div>
+
+    <!-- Grid de figuritas -->
+    <div class="figuritas-grid" id="figuritas-grid"
+      data-collected={collected} data-total={total}>
+      {(cards ?? []).map((card: any) => {
+        const tiene = collectedSet.has(card.id)
+        return (
+          <div class={`figurita-slot ${tiene ? 'obtenida' : 'pendiente'}`}
+            data-card-id={card.id}
+            data-name={card.name}
+            data-image={card.image_url ?? ''}>
+            <span class="figurita-num">#{card.posicion}</span>
+            {tiene && card.image_url ? (
+              <img src={card.image_url} alt={card.name} />
+            ) : (
+              <div class="figurita-placeholder">?</div>
+            )}
+            <span class="figurita-nombre">{tiene ? card.name : '???'}</span>
+          </div>
+        )
+      })}
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const form = document.getElementById('canjear-form') as HTMLFormElement
+  const input = document.getElementById('codigo-input') as HTMLInputElement
+  const resultado = document.getElementById('canjear-resultado') as HTMLDivElement
+  const grid = document.getElementById('figuritas-grid') as HTMLDivElement
+
+  function unlockCard(cardId: string, cardName: string, cardImage: string) {
+    const slot = grid?.querySelector<HTMLDivElement>(`[data-card-id="${cardId}"]`)
+    if (!slot) return
+
+    slot.classList.remove('pendiente')
+    slot.classList.add('obtenida', 'nueva')
+
+    // Reemplazar placeholder por imagen (o mantener placeholder si no hay imagen)
+    const placeholder = slot.querySelector('.figurita-placeholder')
+    if (placeholder) {
+      if (cardImage) {
+        const img = document.createElement('img')
+        img.src = cardImage
+        img.alt = cardName
+        placeholder.replaceWith(img)
+      } else {
+        placeholder.classList.add('sin-imagen')
+      }
+    }
+
+    // Mostrar nombre real
+    const nameEl = slot.querySelector('.figurita-nombre')
+    if (nameEl) nameEl.textContent = cardName
+
+    // Actualizar contador y barra
+    const collected = parseInt(grid.dataset.collected ?? '0') + 1
+    const total = parseInt(grid.dataset.total ?? '0')
+    grid.dataset.collected = String(collected)
+    const pct = total > 0 ? Math.round((collected / total) * 100) : 0
+
+    const progressFill = document.querySelector<HTMLDivElement>('.progress-fill')
+    if (progressFill) progressFill.style.width = `${pct}%`
+    const progressLabel = document.querySelector('.progress-label')
+    if (progressLabel) progressLabel.textContent = `${collected} de ${total} figuritas (${pct}%)`
+
+    // Scroll suave al slot desbloqueado
+    setTimeout(() => {
+      slot.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setTimeout(() => slot.classList.remove('nueva'), 1500)
+    }, 300)
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const code = input.value.trim()
+    if (!code) return
+
+    const btn = form.querySelector('button') as HTMLButtonElement
+    btn.disabled = true
+    btn.textContent = 'Canjeando...'
+    resultado.hidden = true
+
+    try {
+      const res = await fetch('/api/album/redimir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await res.json()
+
+      resultado.hidden = false
+      if (data.ok) {
+        resultado.className = 'canjear-resultado exito'
+        resultado.innerHTML = `🎉 ¡Figurita <strong>${data.card_name}</strong> desbloqueada!`
+        input.value = ''
+        unlockCard(data.card_id, data.card_name, data.card_image ?? '')
+      } else {
+        resultado.className = 'canjear-resultado error'
+        resultado.textContent = data.error ?? 'No se pudo canjear el código.'
+      }
+    } catch {
+      resultado.hidden = false
+      resultado.className = 'canjear-resultado error'
+      resultado.textContent = 'Error de conexión. Intenta de nuevo.'
+    } finally {
+      btn.disabled = false
+      btn.textContent = 'Canjear'
+    }
+  })
+</script>
+
+<style>
+  .album-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    color: #1a1a1a;
+  }
+
+  .album-hero {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .album-cover {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 1rem;
+    flex-shrink: 0;
+  }
+
+  .album-meta h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--morado);
+    margin-bottom: 0.5rem;
+  }
+
+  .album-meta p {
+    color: #666;
+    margin-bottom: 1rem;
+  }
+
+  .progress-wrap {
+    max-width: 320px;
+  }
+
+  .progress-bar {
+    background: #eee;
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 0.4rem;
+  }
+
+  .progress-fill {
+    background: var(--rojo);
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s;
+  }
+
+  .progress-label {
+    font-size: 0.85rem;
+    color: #888;
+    font-weight: 600;
+  }
+
+  /* Canjear box */
+  .canjear-box {
+    background: #f9f9f9;
+    border: 2px dashed #ddd;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2.5rem;
+    max-width: 480px;
+  }
+
+  .canjear-box h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--morado);
+    margin-bottom: 0.75rem;
+  }
+
+  .canjear-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .canjear-form input {
+    flex: 1;
+    padding: 0.6rem 0.85rem;
+    border: 1.5px solid #ccc;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    outline: none;
+    transition: border-color 0.2s;
+    background: white;
+    color: #1a1a1a;
+  }
+
+  .canjear-form input:focus {
+    border-color: var(--rojo);
+  }
+
+  .btn-canjear {
+    background: var(--rojo);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn-canjear:hover { opacity: 0.85; }
+  .btn-canjear:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .canjear-resultado {
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .canjear-resultado.exito {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .canjear-resultado.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  /* Grid de figuritas */
+  .figuritas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+  }
+
+  .figurita-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    border-radius: 0.75rem;
+    padding: 0.75rem 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    position: relative;
+    transition: transform 0.2s;
+  }
+
+  .figurita-slot.obtenida {
+    border: 2px solid var(--rojo);
+  }
+
+  @keyframes pop-in {
+    0%   { transform: scale(0.8); opacity: 0.5; }
+    60%  { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .figurita-slot.nueva {
+    animation: pop-in 0.5s ease-out forwards;
+    box-shadow: 0 0 0 4px rgba(234, 38, 42, 0.3);
+  }
+
+  .figurita-slot.pendiente {
+    opacity: 0.6;
+    filter: grayscale(1);
+  }
+
+  .figurita-slot:hover {
+    transform: translateY(-2px);
+  }
+
+  .figurita-num {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #999;
+    margin-bottom: 0.4rem;
+  }
+
+  .figurita-slot img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .figurita-placeholder {
+    width: 80px;
+    height: 80px;
+    background: #eee;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #ccc;
+    margin-bottom: 0.5rem;
+  }
+
+  .figurita-nombre {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: #444;
+    line-height: 1.2;
+  }
+</style>

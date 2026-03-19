@@ -87,6 +87,26 @@ export async function getArticles(catIdOrSlug) {
     return allPosts;
 }
 
+/**
+ * Fetch paginado de sabrosita para la sección Nota Sabrosa (SSR).
+ * Devuelve { posts, totalPages, currentPage }.
+ */
+export async function getSabrositaPaginado(currentPage = 1, perPage = 20) {
+    const base = 'https://sabrositadigital.com.mx/wp-json/wp/v2/posts'
+    const url = `${base}?_embed&fields=date,title,slug,acf,excerpt,_links,_embedded&categories=1650&per_page=${perPage}&page=${currentPage}`
+
+    try {
+        const res = await fetch(url)
+        if (!res.ok) return { posts: [], totalPages: 1, currentPage }
+
+        const posts = await res.json()
+        const total = parseInt(res.headers.get('X-WP-TotalPages') ?? '1', 10)
+        return { posts, totalPages: total, currentPage }
+    } catch {
+        return { posts: [], totalPages: 1, currentPage }
+    }
+}
+
 /*export async function conn() {
     const res = await fetch('',{
 

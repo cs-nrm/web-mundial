@@ -1,0 +1,71 @@
+---
+import Layout from '../../layouts/Layout.astro'
+
+const errorParam = Astro.url.searchParams.get('error')
+
+const errorMessages: Record<string, string> = {
+  contrasenas_no_coinciden: 'Las contraseñas no coinciden.',
+  contrasena_corta: 'La contraseña debe tener al menos 8 caracteres.',
+  sin_sesion: 'El enlace expiró. Solicita uno nuevo.',
+  error: 'Ocurrió un error. Intenta de nuevo.',
+}
+const errorMsg = errorParam ? (errorMessages[errorParam] ?? errorMessages.error) : null
+---
+<Layout title="Nueva contraseña">
+  <div class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold spartan text-white">Nueva contraseña</h1>
+        <p class="text-gray-400 mt-2">Elige una contraseña segura</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-xl p-8">
+
+        {errorMsg && (
+          <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-6 text-sm">
+            {errorMsg}
+          </div>
+        )}
+
+        <form method="POST" action="/api/auth/update-password" class="space-y-4">
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Nueva contraseña</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#EA262A] transition"
+              placeholder="Mínimo 8 caracteres"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="confirm_password">Confirmar contraseña</label>
+            <input
+              id="confirm_password"
+              name="confirm_password"
+              type="password"
+              required
+              autocomplete="new-password"
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#EA262A] transition"
+              placeholder="Repite tu contraseña"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full bg-[#EA262A] text-white font-bold py-3 rounded-xl hover:bg-red-700 transition spartan text-lg"
+          >
+            Guardar contraseña
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</Layout>

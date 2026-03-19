@@ -1,0 +1,300 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+
+const { user } = Astro.locals
+if (!user) return Astro.redirect('/auth/login?redirect=/perfil/playlist')
+
+const { id } = Astro.params
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+// Verificar que la playlist pertenece al usuario
+const { data: playlist } = await supabase
+  .from('playlists')
+  .select('id, nombre')
+  .eq('id', id!)
+  .eq('user_id', user.id)
+  .single()
+
+if (!playlist) return Astro.redirect('/perfil/playlist')
+
+// Canciones en la playlist
+const { data: misCanciones } = await supabase
+  .from('playlist_songs')
+  .select('id, song_id, orden, songs_catalog(id, artist, title, estacion)')
+  .eq('playlist_id', id!)
+  .order('orden')
+
+// Catálogo completo activo
+const { data: catalogo } = await supabase
+  .from('songs_catalog')
+  .select('id, artist, title, estacion')
+  .eq('activo', true)
+  .order('artist')
+
+const enPlaylist = new Set((misCanciones ?? []).map(ps => ps.song_id))
+
+const ESTACIONES = ['oye', 'beat', 'stereocien', 'sabrosita'] as const
+const estacionColors: Record<string, string> = {
+  oye: '#3b82f6',
+  beat: '#f97316',
+  stereocien: '#8b5cf6',
+  sabrosita: '#ec4899',
+}
+---
+<Layout title={playlist.nombre}>
+  <div class="min-h-screen py-12 px-4">
+    <div class="max-w-3xl mx-auto">
+
+      <!-- Header -->
+      <div class="mb-8">
+        <a href="/perfil/playlist" class="text-sm text-gray-400 hover:text-white transition">← Mis playlists</a>
+        <div class="flex items-center justify-between mt-2 gap-4 flex-wrap">
+          <h1 class="text-3xl font-bold spartan text-white" id="playlist-nombre">{playlist.nombre}</h1>
+          <div class="flex gap-2">
+            <button onclick="document.getElementById('modal-renombrar').removeAttribute('hidden')"
+              class="text-sm border-2 border-white/30 text-white/70 px-4 py-2 rounded-xl hover:border-white hover:text-white transition">
+              ✏️ Renombrar
+            </button>
+            <button onclick="eliminarPlaylist()"
+              class="text-sm border-2 border-red-500/50 text-red-400 px-4 py-2 rounded-xl hover:border-red-500 hover:text-red-500 transition">
+              🗑️ Eliminar
+            </button>
+          </div>
+        </div>
+        <p class="text-gray-400 mt-1" id="contador-canciones">
+          {(misCanciones ?? []).length} {(misCanciones ?? []).length === 1 ? 'canción' : 'canciones'}
+        </p>
+      </div>
+
+      <!-- Mis canciones -->
+      <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+        <h2 class="font-bold spartan text-gray-900 text-lg mb-4">🎶 En mi playlist</h2>
+        <div id="lista-mis-canciones">
+          {(misCanciones ?? []).length === 0 ? (
+            <p class="text-gray-400 text-center py-6">Aún no tienes canciones. Agrégalas del catálogo abajo.</p>
+          ) : (
+            <div class="divide-y divide-gray-100">
+              {(misCanciones ?? []).map(ps => {
+                const song = ps.songs_catalog as any
+                return (
+                  <div class="flex items-center justify-between py-3" data-song-row={song.id}>
+                    <div>
+                      <p class="font-medium text-gray-900">{song.artist}</p>
+                      <p class="text-sm text-gray-500">{song.title}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span style={`background:${estacionColors[song.estacion]}20;color:${estacionColors[song.estacion]};`}
+                        class="text-xs font-semibold px-2 py-0.5 rounded-full">{song.estacion}</span>
+                      <button
+                        onclick={`quitarCancion('${song.id}', this)`}
+                        class="text-red-400 hover:text-red-600 transition text-lg leading-none"
+                        title="Quitar"
+                      >✕</button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <!-- Catálogo para agregar -->
+      <div class="bg-white rounded-2xl shadow-xl p-6">
+        <h2 class="font-bold spartan text-gray-900 text-lg mb-4">➕ Agregar canciones</h2>
+
+        <!-- Filtros -->
+        <div class="flex gap-2 flex-wrap mb-4">
+          <button onclick="filtrarEstacion('todas')" data-estacion="todas"
+            class="filtro-btn active px-3 py-1.5 rounded-full text-sm font-semibold border-2 border-[#EA262A] bg-[#EA262A] text-white">
+            Todas
+          </button>
+          {ESTACIONES.map(e => (
+            <button onclick={`filtrarEstacion('${e}')`} data-estacion={e}
+              class="filtro-btn px-3 py-1.5 rounded-full text-sm font-semibold border-2 border-gray-200 text-gray-600 hover:border-gray-400 transition">
+              {e.charAt(0).toUpperCase() + e.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        <!-- Búsqueda -->
+        <input
+          type="text"
+          id="buscar"
+          placeholder="Buscar artista o canción..."
+          oninput="filtrarCatalogo()"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-[#EA262A] transition mb-4"
+        />
+
+        <!-- Lista catálogo -->
+        <div id="catalogo-lista" class="max-h-96 overflow-y-auto divide-y divide-gray-100">
+          {(catalogo ?? []).map(song => (
+            <div
+              class="catalogo-item flex items-center justify-between py-3"
+              data-song-id={song.id}
+              data-artist={song.artist.toLowerCase()}
+              data-title={song.title.toLowerCase()}
+              data-estacion={song.estacion}
+            >
+              <div>
+                <p class="font-medium text-gray-900 text-sm">{song.artist}</p>
+                <p class="text-xs text-gray-500">{song.title}</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span style={`background:${estacionColors[song.estacion]}20;color:${estacionColors[song.estacion]};`}
+                  class="text-xs font-semibold px-2 py-0.5 rounded-full">{song.estacion}</span>
+                {enPlaylist.has(song.id) ? (
+                  <button
+                    class="btn-agregar text-green-500 font-bold text-lg leading-none cursor-default"
+                    data-song-id={song.id}
+                    disabled
+                    title="Ya está en tu playlist"
+                  >✓</button>
+                ) : (
+                  <button
+                    class="btn-agregar text-[#EA262A] hover:text-red-700 transition text-xl leading-none font-bold"
+                    data-song-id={song.id}
+                    onclick={`agregarCancion('${song.id}', this)`}
+                    title="Agregar"
+                  >+</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal renombrar -->
+  <div id="modal-renombrar" hidden class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <h2 class="text-xl font-bold spartan text-gray-900 mb-6">Renombrar playlist</h2>
+      <input
+        id="input-nuevo-nombre"
+        type="text"
+        value={playlist.nombre}
+        maxlength="60"
+        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#EA262A] transition mb-4"
+      />
+      <div class="flex gap-3">
+        <button onclick="document.getElementById('modal-renombrar').setAttribute('hidden','')"
+          class="flex-1 border-2 border-gray-200 rounded-xl py-3 font-semibold text-gray-700 hover:bg-gray-50 transition">
+          Cancelar
+        </button>
+        <button onclick="renombrarPlaylist()"
+          class="flex-1 bg-[#EA262A] text-white font-bold py-3 rounded-xl hover:bg-red-700 transition spartan">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    #modal-renombrar[hidden] { display: none !important; }
+    .filtro-btn.active { border-color: #EA262A; background: #EA262A; color: white; }
+  </style>
+</Layout>
+
+<script define:vars={{ playlistId: playlist.id }}>
+let estacionActiva = 'todas'
+
+function filtrarEstacion(estacion) {
+  estacionActiva = estacion
+  document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.estacion === estacion)
+  })
+  filtrarCatalogo()
+}
+
+function filtrarCatalogo() {
+  const q = document.getElementById('buscar').value.toLowerCase()
+  document.querySelectorAll('.catalogo-item').forEach(item => {
+    const matchEstacion = estacionActiva === 'todas' || item.dataset.estacion === estacionActiva
+    const matchBusqueda = !q || item.dataset.artist.includes(q) || item.dataset.title.includes(q)
+    item.style.display = matchEstacion && matchBusqueda ? '' : 'none'
+  })
+}
+
+async function agregarCancion(songId, btn) {
+  btn.disabled = true
+  btn.textContent = '...'
+  const res = await fetch(`/api/perfil/playlists/${playlistId}/canciones`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ song_id: songId }),
+  })
+  if (res.ok) {
+    btn.textContent = '✓'
+    btn.classList.remove('text-[#EA262A]', 'hover:text-red-700')
+    btn.classList.add('text-green-500', 'cursor-default')
+    btn.onclick = null
+
+    // Recargar sección de mis canciones
+    actualizarContador(1)
+    recargarMisCanciones()
+  } else {
+    btn.disabled = false
+    btn.textContent = '+'
+  }
+}
+
+async function quitarCancion(songId, btn) {
+  const res = await fetch(`/api/perfil/playlists/${playlistId}/canciones`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ song_id: songId }),
+  })
+  if (res.ok) {
+    // Quitar fila de la lista
+    const row = document.querySelector(`[data-song-row="${songId}"]`)
+    row?.remove()
+
+    // Restaurar botón del catálogo
+    const catBtn = document.querySelector(`.btn-agregar[data-song-id="${songId}"]`)
+    if (catBtn) {
+      catBtn.textContent = '+'
+      catBtn.disabled = false
+      catBtn.classList.remove('text-green-500', 'cursor-default')
+      catBtn.classList.add('text-[#EA262A]', 'hover:text-red-700')
+      catBtn.onclick = () => agregarCancion(songId, catBtn)
+    }
+
+    actualizarContador(-1)
+  }
+}
+
+function actualizarContador(delta) {
+  const el = document.getElementById('contador-canciones')
+  const match = el.textContent.match(/\d+/)
+  const n = (parseInt(match?.[0] ?? '0') + delta)
+  el.textContent = `${n} ${n === 1 ? 'canción' : 'canciones'}`
+}
+
+async function recargarMisCanciones() {
+  // Recarga suave la sección de mis canciones via navegación
+  window.location.reload()
+}
+
+async function renombrarPlaylist() {
+  const nombre = document.getElementById('input-nuevo-nombre').value.trim()
+  if (!nombre) return
+  const res = await fetch(`/api/perfil/playlists/${playlistId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre }),
+  })
+  if (res.ok) {
+    document.getElementById('playlist-nombre').textContent = nombre
+    document.getElementById('modal-renombrar').setAttribute('hidden', '')
+  }
+}
+
+async function eliminarPlaylist() {
+  if (!confirm('¿Eliminar esta playlist? Se perderán todas las canciones.')) return
+  const res = await fetch(`/api/perfil/playlists/${playlistId}`, { method: 'DELETE' })
+  if (res.ok) window.location.href = '/perfil/playlist'
+}
+</script>

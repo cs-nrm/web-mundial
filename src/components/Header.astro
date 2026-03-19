@@ -1,18 +1,31 @@
 ---
 import { ViewTransitions } from 'astro:transitions';
-/*import Menu from './Menu.astro';
-import MenuLineal from './MenuLineal.astro';*/
 import Menu from './Menu.astro';
+import AuthButton from './AuthButton.astro';
 ---
 
 <header class="header is-pinned">
-	<ViewTransitions /> 
-	<!--Menu /-->
+  <ViewTransitions />
+  <div class="header-inner">
+    <Menu />
+    <div class="header-auth">
+      <AuthButton />
+    </div>
+  </div>
 </header>
 
-
 <style>
-  .logo-beat-mobile img{
+  .header-inner {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+  .header-auth {
+    margin-left: auto;
+    padding-right: 12px;
+    flex-shrink: 0;
+  }
+  .logo-beat-mobile img {
     filter: drop-shadow(1px 0px 0 white) drop-shadow(0px 1px 1px white);
   }
   @media screen and (min-width: 1199px) {
@@ -20,6 +33,5 @@ import Menu from './Menu.astro';
       display: none;
     }
   }
-
 </style>
 

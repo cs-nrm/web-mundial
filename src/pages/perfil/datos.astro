@@ -1,0 +1,219 @@
+---
+import Layout from '../../layouts/Layout.astro'
+
+const { user, hasGenerales } = Astro.locals
+if (!user) {
+  return Astro.redirect(`/auth/login?redirect=/perfil/datos`)
+}
+
+// Si ya completó el perfil, ir al hub
+if (hasGenerales) {
+  return Astro.redirect('/perfil')
+}
+
+const error = Astro.url.searchParams.get('error')
+---
+
+<Layout title="Completa tu perfil">
+  <div class="min-h-screen py-12 px-4 flex items-center justify-center">
+    <div class="w-full max-w-lg">
+
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-[#EA262A] rounded-full mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold spartan text-white">Completa tu perfil</h1>
+        <p class="text-gray-300 text-sm mt-2">Solo tomará un momento. Necesitamos algunos datos para participar.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-xl p-8">
+
+        {error && (
+          <div class="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+            {error === 'campos' ? 'Por favor completa todos los campos.' : error}
+          </div>
+        )}
+
+        <form method="POST" action="/api/perfil/guardar" id="form-datos">
+          <input type="hidden" name="redirect_to" value="/perfil" />
+
+          <!-- Fecha de nacimiento -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Fecha de nacimiento</label>
+            <input
+              type="date"
+              name="fecha_nac"
+              required
+              max={new Date().toISOString().split('T')[0]}
+              class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#EA262A] transition"
+            />
+          </div>
+
+          <!-- Código postal -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Código postal</label>
+            <input
+              type="text"
+              name="cp"
+              required
+              inputmode="numeric"
+              maxlength="5"
+              pattern="[0-9]{5}"
+              placeholder="Ej. 64000"
+              class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#EA262A] transition"
+            />
+          </div>
+
+          <!-- Género -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Género</label>
+            <div class="grid grid-cols-2 gap-2">
+              {[
+                { value: 'hombre', label: 'Hombre' },
+                { value: 'mujer', label: 'Mujer' },
+                { value: 'no_binario', label: 'No binario' },
+                { value: 'prefiero_no_decir', label: 'Prefiero no decir' },
+              ].map(({ value, label }) => (
+                <label class="radio-card">
+                  <input type="radio" name="genero" value={value} required class="sr-only peer" />
+                  <span class="radio-label peer-checked:active">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <!-- Estación favorita -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Estación que más escuchas</label>
+            <div class="grid grid-cols-2 gap-2">
+              {[
+                { value: 'oye', label: 'Oye' },
+                { value: 'beat', label: 'Beat' },
+                { value: 'stereocien', label: 'Stereo Cien' },
+                { value: 'sabrosita', label: 'Sabrosita' },
+              ].map(({ value, label }) => (
+                <label class="radio-card">
+                  <input type="radio" name="estacion_favorita" value={value} required class="sr-only peer" />
+                  <span class="radio-label peer-checked:active">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <!-- Enfoque Noticias -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">¿Escuchas Enfoque Noticias?</label>
+            <div class="flex gap-3">
+              <label class="radio-card flex-1">
+                <input type="radio" name="escucha_enfoque" value="si" required class="sr-only peer" />
+                <span class="radio-label peer-checked:active text-center">Sí</span>
+              </label>
+              <label class="radio-card flex-1">
+                <input type="radio" name="escucha_enfoque" value="no" required class="sr-only peer" />
+                <span class="radio-label peer-checked:active text-center">No</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Medio de escucha -->
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">¿Desde dónde escuchas?</label>
+            <div class="grid grid-cols-2 gap-2">
+              {[
+                { value: 'radio', label: 'Radio' },
+                { value: 'pagina', label: 'Página web' },
+                { value: 'app', label: 'App' },
+                { value: 'alexa_google', label: 'Alexa / Google Home' },
+                { value: 'otro', label: 'Otro' },
+              ].map(({ value, label }) => (
+                <label class="radio-card">
+                  <input type="radio" name="medio_escucha" value={value} required class="sr-only peer" id={`medio_${value}`} />
+                  <span class="radio-label peer-checked:active">{label}</span>
+                </label>
+              ))}
+            </div>
+            <div id="otro-wrap" class="hidden mt-3">
+              <input
+                type="text"
+                name="medio_otro"
+                id="medio_otro"
+                placeholder="¿Cuál?"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#EA262A] transition"
+              />
+            </div>
+          </div>
+
+          <!-- Aviso de privacidad -->
+          <div class="mb-6">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" name="acepto_aviso" required class="mt-0.5 accent-[#EA262A] w-4 h-4 flex-shrink-0" />
+              <span class="text-xs text-gray-500 leading-relaxed">
+                Acepto el <a href="/aviso-privacidad" target="_blank" class="text-[#EA262A] underline">Aviso de Privacidad</a> y autorizo el uso de mis datos conforme a la legislación aplicable.
+              </span>
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full bg-[#EA262A] text-white font-bold py-3 rounded-lg spartan text-base hover:opacity-90 transition"
+          >
+            Guardar y continuar
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</Layout>
+
+<script is:inline>
+  // Mostrar/ocultar campo "otro" para medio de escucha
+  document.querySelectorAll('input[name="medio_escucha"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      var wrap = document.getElementById('otro-wrap')
+      var input = document.getElementById('medio_otro')
+      if (this.value === 'otro') {
+        wrap.classList.remove('hidden')
+        input.required = true
+      } else {
+        wrap.classList.add('hidden')
+        input.required = false
+        input.value = ''
+      }
+    })
+  })
+</script>
+
+<style>
+  .radio-card {
+    display: block;
+    cursor: pointer;
+  }
+
+  .radio-label {
+    display: block;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+    cursor: pointer;
+  }
+
+  .radio-label:hover {
+    border-color: #EA262A;
+    color: #EA262A;
+  }
+
+  .radio-label.active,
+  .peer:checked ~ .radio-label {
+    border-color: #EA262A;
+    background-color: #fef2f2;
+    color: #EA262A;
+    font-weight: 700;
+  }
+</style>

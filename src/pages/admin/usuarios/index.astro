@@ -1,0 +1,270 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+const { role: myRole } = Astro.locals
+if (!canAccess(myRole as UserRole, MANAGE_ROLES)) {
+  return Astro.redirect('/admin')
+}
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+const search = Astro.url.searchParams.get('q') ?? ''
+
+let query = supabase
+  .from('profiles')
+  .select('id, email, full_name, role, created_at, avatar_url')
+  .order('created_at', { ascending: false })
+  .limit(100)
+
+if (search) {
+  query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`)
+}
+
+const { data: users } = await query
+---
+
+<AdminLayout title="Usuarios">
+  <div class="toolbar">
+    <form method="get" class="search-form">
+      <input name="q" type="search" value={search} placeholder="Buscar por email o nombre…" class="search-input" />
+      <button type="submit" class="btn-search">Buscar</button>
+    </form>
+    <button onclick="document.getElementById('modal-invitar').removeAttribute('hidden')" class="btn-invitar">
+      + Invitar administrador
+    </button>
+  </div>
+
+  <!-- Modal invitar -->
+  <div id="modal-invitar" hidden style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:white;border-radius:0.75rem;padding:2rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.25rem;color:#1a1a2e;">Invitar administrador</h2>
+      <p style="font-size:0.825rem;color:#6b7280;margin-bottom:1.25rem;">Se enviará un email de invitación para que cree su contraseña.</p>
+
+      <div id="invitar-error" style="display:none;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:0.4rem;padding:0.6rem 0.75rem;font-size:0.825rem;margin-bottom:1rem;"></div>
+      <div id="invitar-ok" style="display:none;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:0.4rem;padding:0.6rem 0.75rem;font-size:0.825rem;margin-bottom:1rem;"></div>
+
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:0.825rem;font-weight:600;color:#374151;margin-bottom:0.3rem;">Correo electrónico</label>
+        <input id="invitar-email" type="email" placeholder="admin@ejemplo.com"
+          style="width:100%;border:1.5px solid #ddd;border-radius:0.4rem;padding:0.55rem 0.75rem;font-size:0.9rem;outline:none;" />
+      </div>
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:0.825rem;font-weight:600;color:#374151;margin-bottom:0.3rem;">Rol</label>
+        <select id="invitar-rol"
+          style="width:100%;border:1.5px solid #ddd;border-radius:0.4rem;padding:0.55rem 0.75rem;font-size:0.9rem;outline:none;background:white;">
+          <option value="admin">Admin</option>
+          <option value="editor">Editor</option>
+          <option value="estadistica">Estadística</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;">
+        <button type="button" onclick="cerrarModalInvitar()" style="flex:1;padding:0.6rem;border:1.5px solid #ddd;border-radius:0.4rem;cursor:pointer;font-weight:600;background:white;color:#374151;">
+          Cancelar
+        </button>
+        <button type="button" id="btn-enviar-invitacion" onclick="enviarInvitacion()"
+          style="flex:1;padding:0.6rem;background:var(--rojo);color:white;border:none;border-radius:0.4rem;cursor:pointer;font-weight:700;">
+          Enviar invitación
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Registro</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {(!users || users.length === 0) ? (
+          <tr><td colspan="5" class="empty-row">Sin resultados.</td></tr>
+        ) : (
+          (users ?? []).map((u: any) => (
+            <tr>
+              <td class="user-cell">
+                {u.avatar_url && <img src={u.avatar_url} alt="" class="avatar" />}
+                <span>{u.full_name ?? '—'}</span>
+              </td>
+              <td class="email">{u.email}</td>
+              <td>
+                <select
+                  class="role-select"
+                  data-user-id={u.id}
+                  data-current-role={u.role}
+                >
+                  {(['superadmin', 'admin', 'editor', 'estadistica', 'user'] as const).map(r => (
+                    <option value={r} selected={u.role === r}>{r}</option>
+                  ))}
+                </select>
+              </td>
+              <td class="muted">{new Date(u.created_at).toLocaleDateString('es-MX')}</td>
+              <td>
+                <button class="btn-save-role action-link" data-user-id={u.id} disabled>
+                  Guardar
+                </button>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</AdminLayout>
+
+<script is:inline>
+function cerrarModalInvitar() {
+  document.getElementById('modal-invitar').setAttribute('hidden', '')
+  document.getElementById('invitar-email').value = ''
+  document.getElementById('invitar-error').style.display = 'none'
+  document.getElementById('invitar-ok').style.display = 'none'
+}
+
+async function enviarInvitacion() {
+  var email = document.getElementById('invitar-email').value.trim()
+  var rol = document.getElementById('invitar-rol').value
+  var errDiv = document.getElementById('invitar-error')
+  var okDiv = document.getElementById('invitar-ok')
+  var btn = document.getElementById('btn-enviar-invitacion')
+
+  errDiv.style.display = 'none'
+  okDiv.style.display = 'none'
+
+  if (!email) { errDiv.textContent = 'Ingresa un correo.'; errDiv.style.display = 'block'; return }
+
+  btn.disabled = true
+  btn.textContent = 'Enviando...'
+
+  var res = await fetch('/api/admin/usuarios/invitar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, role: rol }),
+  })
+  var data = await res.json()
+
+  if (res.ok) {
+    okDiv.textContent = '✅ Invitación enviada a ' + data.email
+    okDiv.style.display = 'block'
+    document.getElementById('invitar-email').value = ''
+    setTimeout(function() { window.location.reload() }, 2000)
+  } else {
+    errDiv.textContent = data.error
+    errDiv.style.display = 'block'
+  }
+
+  btn.disabled = false
+  btn.textContent = 'Enviar invitación'
+}
+</script>
+
+<script>
+  // Habilitar botón cuando cambia el select
+  document.querySelectorAll('.role-select').forEach(select => {
+    select.addEventListener('change', () => {
+      const userId = (select as HTMLSelectElement).dataset.userId
+      const btn = document.querySelector(`.btn-save-role[data-user-id="${userId}"]`) as HTMLButtonElement
+      if (btn) btn.disabled = false
+    })
+  })
+
+  // Guardar rol
+  document.querySelectorAll('.btn-save-role').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLButtonElement
+      const userId = el.dataset.userId
+      const select = document.querySelector(`.role-select[data-user-id="${userId}"]`) as HTMLSelectElement
+      const newRole = select.value
+
+      el.disabled = true
+      el.textContent = 'Guardando…'
+
+      const res = await fetch(`/api/admin/usuarios/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      })
+
+      if (res.ok) {
+        el.textContent = '✅ Guardado'
+        select.dataset.currentRole = newRole
+        setTimeout(() => {
+          el.textContent = 'Guardar'
+          el.disabled = true
+        }, 2000)
+      } else {
+        const data = await res.json()
+        el.textContent = data.error ?? 'Error'
+        el.disabled = false
+      }
+    })
+  })
+</script>
+
+<style>
+  #modal-invitar[hidden] { display: none !important; }
+
+  .toolbar { margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+  .search-form { display: flex; gap: 0.5rem; max-width: 400px; }
+
+  .search-input {
+    flex: 1; border: 1.5px solid #ddd; border-radius: 0.4rem;
+    padding: 0.5rem 0.75rem; font-size: 0.9rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--rojo); }
+
+  .btn-search {
+    background: var(--morado); color: white; border: none;
+    padding: 0.5rem 1rem; border-radius: 0.4rem; font-weight: 700;
+    font-size: 0.875rem; cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-search:hover { opacity: 0.85; }
+
+  .table-wrap { background: white; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .data-table th {
+    background: #fafafa; text-align: left; padding: 0.6rem 1rem;
+    font-size: 0.7rem; text-transform: uppercase; color: #888; border-bottom: 1px solid #eee;
+  }
+  .data-table td { padding: 0.7rem 1rem; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .user-cell { display: flex; align-items: center; gap: 0.5rem; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+  .email { color: #555; font-size: 0.85rem; }
+  .muted { color: #888; font-size: 0.825rem; }
+  .empty-row { text-align: center; color: #aaa; padding: 2rem !important; }
+
+  .role-select {
+    border: 1.5px solid #ddd; border-radius: 0.35rem;
+    padding: 0.3rem 0.5rem; font-size: 0.85rem;
+    outline: none; background: white; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .role-select:focus { border-color: var(--rojo); }
+
+  .action-link {
+    background: none; border: none; color: var(--rojo);
+    font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0;
+  }
+  .action-link:hover { opacity: 0.7; }
+  .action-link:disabled { color: #ccc; cursor: not-allowed; }
+
+  .btn-invitar {
+    background: var(--rojo); color: white; border: none;
+    padding: 0.5rem 1.1rem; border-radius: 0.4rem; font-weight: 700;
+    font-size: 0.875rem; cursor: pointer; white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .btn-invitar:hover { opacity: 0.85; }
+</style>

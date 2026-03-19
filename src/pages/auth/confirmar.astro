@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+<Layout title="Confirma tu correo">
+  <div class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md text-center">
+      <div class="text-6xl mb-6">📧</div>
+      <h1 class="text-3xl font-bold spartan text-white mb-4">Revisa tu correo</h1>
+      <p class="text-gray-300 mb-8">
+        Te enviamos un enlace de confirmación. Haz clic en él para activar tu cuenta y poder iniciar sesión.
+      </p>
+      <a href="/auth/login" class="inline-block bg-[#EA262A] text-white font-bold py-3 px-8 rounded-xl hover:bg-red-700 transition spartan">
+        Ir al inicio de sesión
+      </a>
+    </div>
+  </div>
+</Layout>

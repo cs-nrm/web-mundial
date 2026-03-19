@@ -1,0 +1,235 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro'
+import { createSupabaseServerClient } from '../../lib/supabase'
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+const [
+  { count: totalUsers },
+  { count: totalCards },
+  { count: totalCodes },
+  { count: usosHoy },
+  { data: albumStats },
+] = await Promise.all([
+  supabase.from('profiles').select('*', { count: 'exact', head: true }),
+  supabase.from('user_cards').select('*', { count: 'exact', head: true }),
+  supabase.from('codes').select('*', { count: 'exact', head: true }).eq('active', true),
+  supabase.from('user_cards').select('*', { count: 'exact', head: true })
+    .gte('redeemed_at', new Date(new Date().setHours(0,0,0,0)).toISOString()),
+  supabase.from('albums').select('id, name, slug').eq('active', true),
+])
+
+// Top 5 figuritas más canjeadas
+const { data: topCards } = await supabase
+  .from('user_cards')
+  .select('card_id, cards(name, posicion, albums(name))')
+  .limit(200)
+
+// Contar por card_id manualmente ya que no hay group by en el client
+const cardCount: Record<string, { name: string; album: string; count: number }> = {}
+for (const uc of (topCards ?? [])) {
+  const id = uc.card_id
+  if (!cardCount[id]) {
+    cardCount[id] = {
+      name: (uc.cards as any)?.name ?? '?',
+      album: (uc.cards as any)?.albums?.name ?? '?',
+      count: 0,
+    }
+  }
+  cardCount[id].count++
+}
+const topFiguritas = Object.values(cardCount)
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 5)
+---
+
+<AdminLayout title="Dashboard">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">👥</span>
+      <div>
+        <p class="stat-value">{totalUsers ?? 0}</p>
+        <p class="stat-label">Usuarios registrados</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🎴</span>
+      <div>
+        <p class="stat-value">{totalCards ?? 0}</p>
+        <p class="stat-label">Figuritas canjeadas</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🎟️</span>
+      <div>
+        <p class="stat-value">{totalCodes ?? 0}</p>
+        <p class="stat-label">Códigos activos</p>
+      </div>
+    </div>
+    <div class="stat-card accent">
+      <span class="stat-icon">🔥</span>
+      <div>
+        <p class="stat-value">{usosHoy ?? 0}</p>
+        <p class="stat-label">Canjes hoy</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="panel">
+      <h2>Álbumes activos</h2>
+      {(!albumStats || albumStats.length === 0) ? (
+        <p class="empty">No hay álbumes activos.</p>
+      ) : (
+        <ul class="album-list">
+          {albumStats.map((a: any) => (
+            <li>
+              <a href={`/admin/albums/${a.id}`}>{a.name}</a>
+              <a href={`/album/${a.slug}`} target="_blank" class="view-link">Ver →</a>
+            </li>
+          ))}
+        </ul>
+      )}
+      <a href="/admin/albums/new" class="btn-sm">+ Nuevo álbum</a>
+    </div>
+
+    <div class="panel">
+      <h2>Figuritas más canjeadas</h2>
+      {topFiguritas.length === 0 ? (
+        <p class="empty">Sin datos todavía.</p>
+      ) : (
+        <table class="mini-table">
+          <thead>
+            <tr><th>Figurita</th><th>Álbum</th><th>Canjes</th></tr>
+          </thead>
+          <tbody>
+            {topFiguritas.map(f => (
+              <tr>
+                <td>{f.name}</td>
+                <td class="muted">{f.album}</td>
+                <td class="count">{f.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </div>
+</AdminLayout>
+
+<style>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .stat-card.accent { border-left: 4px solid var(--rojo); }
+
+  .stat-icon { font-size: 2rem; }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--morado);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 0.2rem;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .panel {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .panel h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--morado);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .album-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .album-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem;
+  }
+
+  .album-list a { text-decoration: none; color: var(--morado); font-weight: 600; }
+  .album-list a:hover { text-decoration: underline; }
+
+  .view-link { font-size: 0.8rem; color: #888 !important; font-weight: 400 !important; }
+
+  .btn-sm {
+    display: inline-block;
+    background: var(--rojo);
+    color: white;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .btn-sm:hover { opacity: 0.85; }
+
+  .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .mini-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #999;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .mini-table td {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f9f9f9;
+  }
+
+  .mini-table .muted { color: #888; }
+  .mini-table .count { font-weight: 700; color: var(--rojo); text-align: right; }
+
+  .empty { color: #aaa; font-size: 0.875rem; }
+</style>

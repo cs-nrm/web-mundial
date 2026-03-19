@@ -1,0 +1,102 @@
+import type { APIRoute } from 'astro'
+import { createSupabaseServerClient } from '../../../../lib/supabase'
+import { canAccess, EDITOR_ROLES } from '../../../../lib/admin'
+import type { UserRole } from '../../../../lib/perfil'
+import * as XLSX from 'xlsx'
+
+const ESTACIONES_VALIDAS = ['oye', 'beat', 'stereocien', 'sabrosita']
+
+export const POST: APIRoute = async ({ request, cookies, locals }) => {
+  if (!canAccess(locals.role as UserRole, EDITOR_ROLES)) {
+    return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
+  }
+
+  const formData = await request.formData()
+  const file = formData.get('file') as File | null
+
+  if (!file || !file.size) {
+    return new Response(JSON.stringify({ error: 'Archivo requerido' }), { status: 400 })
+  }
+
+  const allowed = [
+    'text/csv',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+  ]
+  if (!allowed.includes(file.type) && !file.name.match(/\.(csv|xlsx|xls)$/i)) {
+    return new Response(JSON.stringify({ error: 'Solo se permiten archivos CSV o Excel' }), { status: 400 })
+  }
+
+  const buffer = await file.arrayBuffer()
+  let rows: any[]
+
+  try {
+    const workbook = XLSX.read(buffer, { type: 'buffer' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+  } catch {
+    return new Response(JSON.stringify({ error: 'No se pudo leer el archivo. Verifica el formato.' }), { status: 400 })
+  }
+
+  if (!rows.length) {
+    return new Response(JSON.stringify({ error: 'El archivo está vacío.' }), { status: 400 })
+  }
+
+  // Normalizar claves (case insensitive, variantes en español/inglés)
+  const normalize = (row: any) => {
+    const keys = Object.keys(row)
+    const get = (...names: string[]) => {
+      for (const n of names) {
+        const k = keys.find(k => k.toLowerCase().trim() === n)
+        if (k) return String(row[k]).trim()
+      }
+      return ''
+    }
+    return {
+      artist: get('artista', 'artist', 'autor'),
+      title: get('titulo', 'título', 'title', 'cancion', 'canción', 'song'),
+      estacion: get('estacion', 'estación', 'station', 'radio').toLowerCase(),
+    }
+  }
+
+  const registros = rows
+    .map(normalize)
+    .filter(r => r.artist && r.title)
+
+  if (!registros.length) {
+    return new Response(JSON.stringify({ error: 'No se encontraron filas válidas. Verifica las columnas: artista, titulo, estacion' }), { status: 400 })
+  }
+
+  // Validar estaciones
+  const invalidas = registros.filter(r => r.estacion && !ESTACIONES_VALIDAS.includes(r.estacion))
+  if (invalidas.length) {
+    return new Response(JSON.stringify({
+      error: `Estaciones inválidas encontradas: ${[...new Set(invalidas.map(r => r.estacion))].join(', ')}. Usa: ${ESTACIONES_VALIDAS.join(', ')}`
+    }), { status: 400 })
+  }
+
+  // Usar 'sabrosita' como default si no se especifica estación
+  const payload = registros.map(r => ({
+    artist: r.artist,
+    title: r.title,
+    estacion: ESTACIONES_VALIDAS.includes(r.estacion) ? r.estacion : 'sabrosita',
+  }))
+
+  const supabase = createSupabaseServerClient(request, cookies)
+
+  // Insertar ignorando duplicados (mismo artista + título)
+  const { data, error } = await supabase
+    .from('songs_catalog')
+    .upsert(payload, { onConflict: 'artist,title', ignoreDuplicates: true })
+    .select('id')
+
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 400 })
+  }
+
+  const insertadas = data?.length ?? 0
+  const duplicadas = payload.length - insertadas
+
+  return new Response(JSON.stringify({ ok: true, insertadas, duplicadas, total: payload.length }), { status: 200 })
+}

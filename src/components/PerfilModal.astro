@@ -1,0 +1,270 @@
+---
+import { ESTADOS_MX } from '../lib/perfil'
+const { user } = Astro.locals
+---
+
+<dialog id="perfil-modal" aria-labelledby="perfil-modal-title">
+  <div class="modal-inner">
+    <button class="modal-close" id="perfil-modal-close" aria-label="Cerrar">&times;</button>
+
+    <h2 id="perfil-modal-title">Completa tu perfil</h2>
+    <p class="modal-subtitle">Solo la primera vez. Necesitamos estos datos para que puedas participar.</p>
+
+    <div id="perfil-success" class="perfil-success hidden">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      <p>¡Perfil guardado! Ya puedes participar.</p>
+    </div>
+
+    <form id="perfil-form" method="POST" action="/api/perfil/guardar">
+      <input type="hidden" name="redirect_to" id="perfil-redirect-to" value="" />
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="cp">Código Postal</label>
+          <input type="text" id="cp" name="cp" maxlength="5" pattern="\d{5}" placeholder="00000" required autocomplete="postal-code" />
+        </div>
+        <div class="form-group">
+          <label for="estado">Estado</label>
+          <select id="estado" name="estado" required>
+            <option value="">Selecciona...</option>
+            {ESTADOS_MX.map(e => <option value={e}>{e}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="municipio">Municipio / Alcaldía</label>
+        <input type="text" id="municipio" name="municipio" placeholder="Tu municipio" required />
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_nac">Fecha de nacimiento</label>
+        <input type="date" id="fecha_nac" name="fecha_nac" required
+          max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+        />
+        <small>Debes ser mayor de 18 años para participar.</small>
+      </div>
+
+      <div class="form-check">
+        <input type="checkbox" id="acepto_aviso" name="acepto_aviso" required />
+        <label for="acepto_aviso">
+          Acepto el <a href="/aviso-de-privacidad" target="_blank">Aviso de Privacidad</a> y el tratamiento de mis datos personales.
+        </label>
+      </div>
+
+      <div id="perfil-error" class="perfil-error hidden"></div>
+
+      <button type="submit" class="btn-submit" id="perfil-submit">
+        <span id="perfil-submit-text">Guardar y continuar</span>
+        <span id="perfil-submit-loading" class="hidden">Guardando...</span>
+      </button>
+    </form>
+  </div>
+</dialog>
+
+<script>
+  const modal   = document.getElementById('perfil-modal') as HTMLDialogElement
+  const form    = document.getElementById('perfil-form') as HTMLFormElement
+  const errorEl = document.getElementById('perfil-error') as HTMLElement
+  const success = document.getElementById('perfil-success') as HTMLElement
+  const submitText    = document.getElementById('perfil-submit-text') as HTMLElement
+  const submitLoading = document.getElementById('perfil-submit-loading') as HTMLElement
+
+  // Cierra el modal
+  document.getElementById('perfil-modal-close')?.addEventListener('click', () => modal.close())
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.close() })
+
+  // Expone la función global para abrir el modal desde cualquier promo
+  // Uso: window.requirePerfil(callbackFn)
+  // Si el usuario ya tiene generales → ejecuta callbackFn directo
+  // Si no → abre el modal, y ejecuta callbackFn al guardar exitosamente
+  ;(window as any).requirePerfil = function(callback?: () => void) {
+    const hasGenerales = document.documentElement.dataset.hasGenerales === 'true'
+    if (hasGenerales) {
+      callback?.()
+      return
+    }
+    ;(window as any)._perfilCallback = callback
+    modal.showModal()
+  }
+
+  // Submit via fetch para no recargar la página
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    errorEl.classList.add('hidden')
+    errorEl.textContent = ''
+    submitText.classList.add('hidden')
+    submitLoading.classList.remove('hidden')
+
+    try {
+      const res = await fetch('/api/perfil/guardar', {
+        method: 'POST',
+        body: new FormData(form),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error ?? 'Error al guardar')
+      }
+
+      // Marcar como completado en el cliente
+      document.documentElement.dataset.hasGenerales = 'true'
+      form.classList.add('hidden')
+      success.classList.remove('hidden')
+
+      // Ejecutar callback pendiente (participar en la promo)
+      setTimeout(() => {
+        modal.close()
+        ;(window as any)._perfilCallback?.()
+        ;(window as any)._perfilCallback = null
+      }, 1500)
+
+    } catch (err: any) {
+      errorEl.textContent = err.message
+      errorEl.classList.remove('hidden')
+    } finally {
+      submitText.classList.remove('hidden')
+      submitLoading.classList.add('hidden')
+    }
+  })
+</script>
+
+<style>
+  dialog {
+    border: none;
+    border-radius: 16px;
+    padding: 0;
+    max-width: 480px;
+    width: calc(100vw - 32px);
+    background: #1a1a2e;
+    color: white;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+  }
+  dialog::backdrop {
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+  }
+  .modal-inner {
+    padding: 32px 28px 28px;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+  }
+  .modal-close:hover { color: white; }
+
+  h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-family: 'League Spartan', sans-serif;
+  }
+  .modal-subtitle {
+    margin: 0 0 24px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  input, select {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: white;
+    padding: 10px 12px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--rojo, #EA262A);
+  }
+  select option { background: #1a1a2e; }
+  small {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+  }
+
+  .form-check {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .form-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: var(--rojo, #EA262A);
+  }
+  .form-check label {
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+  .form-check a { color: var(--rojo, #EA262A); }
+
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background: var(--rojo, #EA262A);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-submit:hover { opacity: 0.85; }
+
+  .perfil-error {
+    background: rgba(234,38,42,0.15);
+    border: 1px solid rgba(234,38,42,0.4);
+    color: #ff8080;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .perfil-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 0;
+    text-align: center;
+    font-size: 16px;
+  }
+  .hidden { display: none !important; }
+</style>

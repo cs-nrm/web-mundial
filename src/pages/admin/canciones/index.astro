@@ -1,0 +1,236 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+import { canAccess, EDITOR_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+const { role } = Astro.locals
+if (!canAccess(role as UserRole, EDITOR_ROLES)) return Astro.redirect('/admin')
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+const estacionParam = Astro.url.searchParams.get('estacion') ?? 'todas'
+const pagina = parseInt(Astro.url.searchParams.get('p') ?? '1')
+const porPagina = 50
+
+const ESTACIONES = ['oye', 'beat', 'stereocien', 'sabrosita'] as const
+
+let query = supabase
+  .from('songs_catalog')
+  .select('*', { count: 'exact' })
+  .order('artist')
+  .range((pagina - 1) * porPagina, pagina * porPagina - 1)
+
+if (estacionParam !== 'todas') query = query.eq('estacion', estacionParam)
+
+const { data: songs, count } = await query
+const totalPaginas = Math.ceil((count ?? 0) / porPagina)
+
+const estacionColors: Record<string, string> = {
+  oye: 'bg-blue-100 text-blue-700',
+  beat: 'bg-orange-100 text-orange-700',
+  stereocien: 'bg-purple-100 text-purple-700',
+  sabrosita: 'bg-pink-100 text-pink-700',
+}
+---
+<AdminLayout title="Catálogo de Canciones">
+
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:gap;">
+    <div>
+      <p style="color:#6b7280; font-size:0.9rem;">{count ?? 0} canciones en total</p>
+    </div>
+    <button onclick="document.getElementById('modal-import').removeAttribute('hidden')" style="background:var(--rojo);color:white;border:none;padding:0.6rem 1.2rem;border-radius:0.5rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
+      ⬆️ Importar CSV / Excel
+    </button>
+  </div>
+
+  <!-- Filtros por estación -->
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+    {(['todas', ...ESTACIONES] as const).map(e => (
+      <a
+        href={`?estacion=${e}&p=1`}
+        style={`padding:0.4rem 1rem;border-radius:999px;font-size:0.85rem;font-weight:600;text-decoration:none;border:2px solid ${estacionParam === e ? 'var(--rojo)' : '#e5e7eb'};background:${estacionParam === e ? 'var(--rojo)' : 'white'};color:${estacionParam === e ? 'white' : '#374151'};`}
+      >
+        {e.charAt(0).toUpperCase() + e.slice(1)}
+      </a>
+    ))}
+  </div>
+
+  <!-- Tabla -->
+  <div style="background:white;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.08);overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+      <thead>
+        <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb;">
+          <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;color:#374151;">Artista</th>
+          <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;color:#374151;">Título</th>
+          <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;color:#374151;">Estación</th>
+          <th style="padding:0.75rem 1rem;text-align:center;font-weight:600;color:#374151;">Activo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {(songs ?? []).map((song, i) => (
+          <tr style={`border-bottom:1px solid #f3f4f6;${i % 2 === 0 ? '' : 'background:#fafafa'}`}>
+            <td style="padding:0.7rem 1rem;color:#1a1a2e;font-weight:500;">{song.artist}</td>
+            <td style="padding:0.7rem 1rem;color:#374151;">{song.title}</td>
+            <td style="padding:0.7rem 1rem;">
+              <span style={`padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600;`}
+                class={estacionColors[song.estacion] ?? 'bg-gray-100 text-gray-700'}>
+                {song.estacion}
+              </span>
+            </td>
+            <td style="padding:0.7rem 1rem;text-align:center;">
+              <label class="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={song.activo}
+                  data-id={song.id}
+                  onchange="toggleSong(this)"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+            </td>
+          </tr>
+        ))}
+        {(songs ?? []).length === 0 && (
+          <tr>
+            <td colspan="4" style="padding:2rem;text-align:center;color:#9ca3af;">
+              No hay canciones. Importa un archivo CSV o Excel para comenzar.
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  {totalPaginas > 1 && (
+    <div style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap;">
+      {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(p => (
+        <a
+          href={`?estacion=${estacionParam}&p=${p}`}
+          style={`padding:0.4rem 0.8rem;border-radius:0.4rem;font-size:0.85rem;font-weight:600;text-decoration:none;border:2px solid ${p === pagina ? 'var(--rojo)' : '#e5e7eb'};background:${p === pagina ? 'var(--rojo)' : 'white'};color:${p === pagina ? 'white' : '#374151'};`}
+        >
+          {p}
+        </a>
+      ))}
+    </div>
+  )}
+
+  <!-- Modal importar -->
+  <div id="modal-import" hidden style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:white;border-radius:1rem;padding:2rem;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:0.5rem;color:#1a1a2e;">Importar canciones</h2>
+      <p style="color:#6b7280;font-size:0.875rem;margin-bottom:1.5rem;">
+        El archivo debe tener las columnas: <strong>artista</strong>, <strong>titulo</strong>, <strong>estacion</strong><br/>
+        Estaciones válidas: oye, beat, stereocien, sabrosita
+      </p>
+
+      <form id="form-import" enctype="multipart/form-data">
+        <div id="drop-area" style="border:2px dashed #d1d5db;border-radius:0.75rem;padding:2rem;text-align:center;cursor:pointer;margin-bottom:1rem;transition:border-color 0.2s;">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">📂</div>
+          <p style="color:#6b7280;font-size:0.875rem;">Arrastra tu archivo aquí o <span style="color:var(--rojo);font-weight:600;">haz clic para seleccionar</span></p>
+          <p id="file-name" style="margin-top:0.5rem;font-size:0.8rem;color:#9ca3af;"></p>
+          <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" style="display:none;" />
+        </div>
+
+        <div id="import-result" style="display:none;padding:0.75rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.875rem;"></div>
+
+        <div style="display:flex;gap:0.75rem;">
+          <button type="button" onclick="document.getElementById('modal-import').setAttribute('hidden','')" style="flex:1;padding:0.65rem;border:2px solid #e5e7eb;border-radius:0.5rem;cursor:pointer;font-weight:600;background:white;color:#374151;">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-import" style="flex:1;padding:0.65rem;background:var(--rojo);color:white;border:none;border-radius:0.5rem;cursor:pointer;font-weight:600;">
+            Importar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</AdminLayout>
+
+<style>
+  .modal-overlay[hidden] { display: none; }
+  #modal-import[hidden] { display: none !important; }
+
+  .toggle-switch { position:relative;display:inline-block;width:42px;height:24px; }
+  .toggle-switch input { opacity:0;width:0;height:0; }
+  .toggle-slider {
+    position:absolute;cursor:pointer;inset:0;background:#d1d5db;border-radius:999px;transition:.3s;
+  }
+  .toggle-slider::before {
+    content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;
+  }
+  input:checked + .toggle-slider { background:var(--rojo); }
+  input:checked + .toggle-slider::before { transform:translateX(18px); }
+</style>
+
+<script>
+async function toggleSong(checkbox: HTMLInputElement) {
+  const id = checkbox.dataset.id
+  const activo = checkbox.checked
+  const res = await fetch(`/api/admin/songs/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ activo }),
+  })
+  if (!res.ok) {
+    checkbox.checked = !activo
+    alert('Error al actualizar')
+  }
+}
+
+// Drop area
+const dropArea = document.getElementById('drop-area')!
+const fileInput = document.getElementById('file-input') as HTMLInputElement
+const fileName = document.getElementById('file-name')!
+
+dropArea.addEventListener('click', () => fileInput.click())
+dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = 'var(--rojo)' })
+dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor = '#d1d5db' })
+dropArea.addEventListener('drop', e => {
+  e.preventDefault()
+  dropArea.style.borderColor = '#d1d5db'
+  const files = e.dataTransfer?.files
+  if (files?.[0]) {
+    fileInput.files = files
+    fileName.textContent = files[0].name
+  }
+})
+fileInput.addEventListener('change', () => {
+  fileName.textContent = fileInput.files?.[0]?.name ?? ''
+})
+
+document.getElementById('form-import')!.addEventListener('submit', async e => {
+  e.preventDefault()
+  const file = fileInput.files?.[0]
+  if (!file) { alert('Selecciona un archivo'); return }
+
+  const btn = document.getElementById('btn-import') as HTMLButtonElement
+  btn.disabled = true
+  btn.textContent = 'Importando...'
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch('/api/admin/songs/importar', { method: 'POST', body: formData })
+  const data = await res.json()
+
+  const resultDiv = document.getElementById('import-result')!
+  resultDiv.style.display = 'block'
+
+  if (res.ok) {
+    resultDiv.style.background = '#f0fdf4'
+    resultDiv.style.color = '#166534'
+    resultDiv.textContent = `✅ ${data.insertadas} canciones importadas. ${data.duplicadas} ya existían.`
+    setTimeout(() => window.location.reload(), 1500)
+  } else {
+    resultDiv.style.background = '#fef2f2'
+    resultDiv.style.color = '#991b1b'
+    resultDiv.textContent = `❌ ${data.error}`
+  }
+
+  btn.disabled = false
+  btn.textContent = 'Importar'
+})
+</script>

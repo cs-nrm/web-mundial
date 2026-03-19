@@ -1,0 +1,315 @@
+---
+import { canAccess } from '../lib/admin'
+import type { UserRole } from '../lib/perfil'
+
+export interface Props {
+  title: string
+}
+const { title } = Astro.props
+const { user, role } = Astro.locals
+const p = Astro.url.pathname
+
+const can = (roles: readonly string[]) => canAccess(role as UserRole, roles as unknown as UserRole[])
+
+const isActive = (href: string) =>
+  href === '/admin' ? p === '/admin' : p.startsWith(href)
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} — Admin</title>
+  <link rel="icon" href="/favicon.ico" />
+  <style is:global>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f4f5f7; color: #1a1a2e; }
+    :root { --rojo: #EA262A; --oxford: #3a3f4b; --gris: #ADABAB; }
+    a { color: inherit; }
+  </style>
+</head>
+<body class="admin-body">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <a href="/" target="_blank" class="brand-link">
+        <span>Fiesta del Fútbol</span>
+      </a>
+      <span class="role-badge">{role}</span>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      {can(['superadmin','admin','editor','estadistica']) && (
+        <a href="/admin" class={`nav-item ${isActive('/admin') ? 'active' : ''}`}>Dashboard</a>
+      )}
+
+      {can(['superadmin','admin']) && (
+        <>
+          <div class="nav-section">Gestión</div>
+          <a href="/admin/usuarios" class={`nav-item ${isActive('/admin/usuarios') ? 'active' : ''}`}>Usuarios</a>
+        </>
+      )}
+
+      {can(['superadmin','admin','editor']) && (
+        <>
+          <div class="nav-section">Promociones</div>
+
+          <!-- Álbum sub-grupo -->
+          <div class="nav-group">
+            <button
+              class={`nav-group-header ${isActive('/admin/albums') || isActive('/admin/codigos') ? 'group-active' : ''}`}
+              onclick="toggleGroup(this)"
+              data-group="album"
+            >
+              <span>Álbum</span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <div class="nav-sub" id="group-album">
+              {can(['superadmin','admin','editor']) && (
+                <a href="/admin/albums" class={`nav-sub-item ${isActive('/admin/albums') ? 'active' : ''}`}>Álbumes</a>
+              )}
+              {can(['superadmin','admin']) && (
+                <a href="/admin/codigos" class={`nav-sub-item ${isActive('/admin/codigos') ? 'active' : ''}`}>Códigos</a>
+              )}
+            </div>
+          </div>
+
+          <a href="/admin/canciones" class={`nav-item ${isActive('/admin/canciones') ? 'active' : ''}`}>Playlist</a>
+
+          <span class="nav-item nav-disabled">Avatar</span>
+        </>
+      )}
+
+      {can(['superadmin','admin','estadistica']) && (
+        <>
+          <div class="nav-section">Reportes</div>
+          <a href="/admin/estadisticas" class={`nav-item ${isActive('/admin/estadisticas') ? 'active' : ''}`}>Estadísticas</a>
+        </>
+      )}
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <span class="user-email">{user.email}</span>
+      <a href="/auth/logout" class="logout-btn">Cerrar sesión</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <h1 class="page-title">{title}</h1>
+    </header>
+    <div class="admin-content">
+      <slot />
+    </div>
+  </main>
+
+</body>
+</html>
+
+<script is:inline>
+document.querySelectorAll('[data-group]').forEach(function(btn) {
+  var groupId = btn.dataset.group
+  var sub = document.getElementById('group-' + groupId)
+
+  // Abrir si hay item activo o estaba abierto antes
+  var hasActive = sub.querySelector('.active') !== null
+  var saved = localStorage.getItem('nav-group-' + groupId)
+  if (hasActive || saved === '1') {
+    sub.classList.add('open')
+    btn.classList.add('open')
+  }
+
+  btn.addEventListener('click', function() {
+    var isOpen = sub.classList.contains('open')
+    sub.classList.toggle('open', !isOpen)
+    btn.classList.toggle('open', !isOpen)
+    localStorage.setItem('nav-group-' + groupId, !isOpen ? '1' : '0')
+  })
+})
+</script>
+
+<style>
+  .admin-body { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 230px;
+    background: var(--oxford);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-brand {
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .brand-link {
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    color: white;
+  }
+
+  .role-badge {
+    font-size: 0.65rem;
+    background: rgba(255,255,255,0.12);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    align-self: flex-start;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 1rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .nav-section {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    padding: 0.75rem 0.75rem 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.4rem;
+    font-size: 0.875rem;
+    text-decoration: none;
+    color: rgba(255,255,255,0.7);
+    transition: background 0.15s, color 0.15s;
+    cursor: pointer;
+  }
+
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+  .nav-item.active { background: var(--rojo); color: white; font-weight: 600; }
+
+  .nav-disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+    font-style: italic;
+  }
+  .nav-disabled::after { content: ' (próx.)'; font-size: 0.75em; }
+
+  /* Grupo colapsable */
+  .nav-group { display: flex; flex-direction: column; }
+
+  .nav-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.4rem;
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.7);
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .nav-group-header:hover { background: rgba(255,255,255,0.08); color: white; }
+  .nav-group-header.group-active { color: white; }
+
+  .chevron {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+    opacity: 0.5;
+  }
+  .nav-group-header.open .chevron { transform: rotate(180deg); }
+
+  .nav-sub {
+    display: none;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding-left: 0.75rem;
+    margin-top: 0.1rem;
+  }
+  .nav-sub.open { display: flex; }
+
+  .nav-sub-item {
+    display: block;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.4rem;
+    font-size: 0.825rem;
+    text-decoration: none;
+    color: rgba(255,255,255,0.6);
+    transition: background 0.15s, color 0.15s;
+    border-left: 2px solid rgba(255,255,255,0.1);
+  }
+  .nav-sub-item:hover { background: rgba(255,255,255,0.07); color: white; border-color: rgba(255,255,255,0.3); }
+  .nav-sub-item.active { color: white; font-weight: 600; border-color: var(--rojo); background: rgba(234,38,42,0.15); }
+
+  /* Footer */
+  .sidebar-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .user-email {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .logout-btn {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .logout-btn:hover { color: var(--rojo); }
+
+  /* Main */
+  .admin-main { flex: 1; display: flex; flex-direction: column; overflow: auto; }
+
+  .admin-topbar {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--oxford);
+  }
+
+  .admin-content { padding: 2rem; flex: 1; }
+</style>

@@ -1,0 +1,148 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { createSupabaseServerClient } from '../../lib/supabase'
+
+const { user, hasGenerales } = Astro.locals
+if (!user) {
+  return Astro.redirect(`/auth/login?redirect=/perfil`)
+}
+if (!hasGenerales) {
+  return Astro.redirect('/perfil/datos')
+}
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+// Datos del usuario
+const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Participante'
+const googleAvatar = user.user_metadata?.avatar_url ?? null
+
+// Progreso del álbum (si existe)
+let albumProgress: { slug: string; titulo: string; obtenidas: number; total: number } | null = null
+const { data: albums } = await supabase.from('albums').select('id, titulo, slug').eq('activo', true).limit(1).single()
+
+if (albums) {
+  const { count: totalCards } = await supabase
+    .from('cards')
+    .select('*', { count: 'exact', head: true })
+    .eq('album_id', albums.id)
+
+  const { count: obtenidas } = await supabase
+    .from('user_cards')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('album_id', albums.id)
+
+  albumProgress = {
+    slug: albums.slug,
+    titulo: albums.titulo,
+    obtenidas: obtenidas ?? 0,
+    total: totalCards ?? 0,
+  }
+}
+
+// Playlists del usuario
+const { count: playlistCount } = await supabase
+  .from('playlists')
+  .select('*', { count: 'exact', head: true })
+  .eq('user_id', user.id)
+---
+<Layout title="Mi perfil">
+  <div class="min-h-screen py-12 px-4">
+    <div class="max-w-2xl mx-auto">
+
+      <!-- Header del perfil -->
+      <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 flex items-center gap-6">
+        {googleAvatar ? (
+          <img src={googleAvatar} alt="Avatar" class="w-20 h-20 rounded-full object-cover border-4 border-[#EA262A]" />
+        ) : (
+          <div class="w-20 h-20 rounded-full bg-[#EA262A] flex items-center justify-center text-white text-3xl font-bold spartan">
+            {displayName[0].toUpperCase()}
+          </div>
+        )}
+        <div>
+          <h1 class="text-2xl font-bold spartan text-gray-900">{displayName}</h1>
+          <p class="text-gray-500 text-sm mt-1">{user.email}</p>
+        </div>
+      </div>
+
+      <!-- Promociones activas -->
+      <h2 class="text-xl font-bold spartan text-white mb-4">Mis promociones</h2>
+      <div class="grid gap-4">
+
+        <!-- Álbum de figuritas -->
+        {albumProgress ? (
+          <a href={`/album/${albumProgress.slug}`} class="block bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition group">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">🃏</span>
+                <div>
+                  <h3 class="font-bold spartan text-gray-900 group-hover:text-[#EA262A] transition">Álbum de Figuritas</h3>
+                  <p class="text-sm text-gray-500">{albumProgress.titulo}</p>
+                </div>
+              </div>
+              <span class="text-lg font-bold text-[#EA262A]">{albumProgress.obtenidas}/{albumProgress.total}</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5">
+              <div
+                class="bg-[#EA262A] h-2.5 rounded-full transition-all"
+                style={`width: ${albumProgress.total > 0 ? Math.round((albumProgress.obtenidas / albumProgress.total) * 100) : 0}%`}
+              ></div>
+            </div>
+            <p class="text-xs text-gray-400 mt-2 text-right">
+              {albumProgress.total > 0 ? Math.round((albumProgress.obtenidas / albumProgress.total) * 100) : 0}% completado
+            </p>
+          </a>
+        ) : (
+          <a href="/album" class="block bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition group">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🃏</span>
+              <div>
+                <h3 class="font-bold spartan text-gray-900 group-hover:text-[#EA262A] transition">Álbum de Figuritas</h3>
+                <p class="text-sm text-gray-500">¡Canjea códigos y completa tu álbum!</p>
+              </div>
+            </div>
+          </a>
+        )}
+
+        <!-- Avatar -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 opacity-60 cursor-not-allowed">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🎨</span>
+              <div>
+                <h3 class="font-bold spartan text-gray-900">Mi Avatar</h3>
+                <p class="text-sm text-gray-500">Crea tu personaje del Mundial</p>
+              </div>
+            </div>
+            <span class="text-xs bg-yellow-100 text-yellow-700 font-semibold px-3 py-1 rounded-full">Próximamente</span>
+          </div>
+        </div>
+
+        <!-- Playlist -->
+        <a href="/perfil/playlist" class="block bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition group">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🎵</span>
+              <div>
+                <h3 class="font-bold spartan text-gray-900 group-hover:text-[#EA262A] transition">Mi Playlist</h3>
+                <p class="text-sm text-gray-500">
+                  {(playlistCount ?? 0) > 0 ? `${playlistCount} playlist${playlistCount === 1 ? '' : 's'} creadas` : 'Arma tu lista del Mundial'}
+                </p>
+              </div>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-[#EA262A] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </a>
+
+      </div>
+
+      <!-- Cerrar sesión -->
+      <div class="mt-8 text-center">
+        <a href="/auth/logout" class="text-sm text-gray-400 hover:text-red-500 transition">Cerrar sesión</a>
+      </div>
+
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,542 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+import { canAccess, EDITOR_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+const { id } = Astro.params
+const { role } = Astro.locals
+const canManage = canAccess(role as UserRole, EDITOR_ROLES)
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+const { data: album } = await supabase
+  .from('albums')
+  .select('*')
+  .eq('id', id)
+  .maybeSingle()
+
+if (!album) return Astro.redirect('/admin/albums')
+
+const { data: cards } = await supabase
+  .from('cards')
+  .select('id, name, descripcion, image_url, posicion, active')
+  .eq('album_id', id)
+  .order('posicion', { ascending: true })
+
+// Cuántas veces se ha canjeado cada figurita
+const cardIds = (cards ?? []).map((c: any) => c.id)
+const { data: canjeos } = cardIds.length > 0
+  ? await supabase.from('user_cards').select('card_id').in('card_id', cardIds)
+  : { data: [] }
+
+const canjeoCount: Record<string, number> = {}
+for (const c of (canjeos ?? [])) {
+  canjeoCount[c.card_id] = (canjeoCount[c.card_id] ?? 0) + 1
+}
+---
+
+<AdminLayout title={album.name}>
+  <div class="album-detail">
+    <!-- Info del álbum -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Datos del álbum</h2>
+        {canManage && (
+          <button id="btn-edit-album" class="btn-sm">Editar</button>
+        )}
+      </div>
+
+      <div id="album-view" class="info-grid">
+        <div><span class="info-label">Nombre</span><span>{album.name}</span></div>
+        <div><span class="info-label">Slug</span><span class="mono">{album.slug}</span></div>
+        <div><span class="info-label">Descripción</span><span>{album.descripcion ?? '—'}</span></div>
+        <div><span class="info-label">Portada</span>
+          {album.cover_url
+            ? <a href={album.cover_url} target="_blank" class="link-ext">Ver imagen</a>
+            : <span>—</span>
+          }
+        </div>
+        <div><span class="info-label">Estado</span>
+          <span class={`badge ${album.active ? 'badge-green' : 'badge-gray'}`}>
+            {album.active ? 'Activo' : 'Inactivo'}
+          </span>
+        </div>
+      </div>
+
+      {canManage && (
+        <form id="album-edit-form" class="edit-form" hidden
+          data-id={album.id}>
+          <div class="form-row">
+            <label>Nombre</label>
+            <input name="name" type="text" value={album.name} required />
+          </div>
+          <div class="form-row">
+            <label>Slug</label>
+            <input name="slug" type="text" value={album.slug} required pattern="[a-z0-9\-]+" />
+          </div>
+          <div class="form-row">
+            <label>Descripción</label>
+            <textarea name="descripcion" rows="2">{album.descripcion ?? ''}</textarea>
+          </div>
+          <div class="form-row">
+            <label>URL Portada</label>
+            <input name="cover_url" type="url" value={album.cover_url ?? ''} />
+          </div>
+          <div class="form-row form-check-row">
+            <label>
+              <input name="active" type="checkbox" checked={album.active} />
+              Activo
+            </label>
+          </div>
+          <div id="album-edit-error" class="form-error" hidden></div>
+          <div class="form-actions">
+            <button type="button" id="btn-cancel-edit" class="btn-ghost">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar cambios</button>
+          </div>
+        </form>
+      )}
+    </section>
+
+    <!-- Figuritas -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Figuritas ({(cards ?? []).length} / 60)</h2>
+        {canManage && (
+          <button id="btn-add-card" class="btn-sm">+ Agregar figurita</button>
+        )}
+      </div>
+
+      {canManage && (
+        <form id="card-form" class="edit-form" hidden data-album={id}>
+          <input type="hidden" name="card_id" id="card_id_hidden" />
+          <div class="form-row">
+            <label>Posición (1–60) *</label>
+            <input name="posicion" id="posicion" type="number" min="1" max="60" required />
+          </div>
+          <div class="form-row">
+            <label>Nombre *</label>
+            <input name="name" id="card_name" type="text" required />
+          </div>
+          <div class="form-row">
+            <label>Descripción</label>
+            <textarea name="descripcion" id="card_desc" rows="2"></textarea>
+          </div>
+          <div class="form-row">
+            <label>Imagen</label>
+            <div class="upload-area" id="upload-area">
+              <img id="img-preview" class="img-preview" src="" alt="" hidden />
+              <label for="file-input" class="upload-label" id="upload-label">
+                <span class="upload-icon">📁</span>
+                <span id="upload-text">Seleccionar imagen</span>
+                <span class="upload-hint">JPG, PNG, WebP · máx 5 MB</span>
+              </label>
+              <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="file-input" />
+            </div>
+            <input name="image_url" id="card_image" type="url" placeholder="O pega una URL directamente" class="url-fallback" />
+            <div id="upload-status" class="upload-status" hidden></div>
+          </div>
+          <div id="card-form-error" class="form-error" hidden></div>
+          <div class="form-actions">
+            <button type="button" id="btn-cancel-card" class="btn-ghost">Cancelar</button>
+            <button type="submit" id="btn-save-card" class="btn-primary">Guardar figurita</button>
+          </div>
+        </form>
+      )}
+
+      {(!cards || cards.length === 0) ? (
+        <p class="empty">No hay figuritas todavía.</p>
+      ) : (
+        <div class="cards-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Imagen</th>
+                <th>Canjes</th>
+                <th>Estado</th>
+                {canManage && <th></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {cards.map((card: any) => (
+                <tr data-card-id={card.id}>
+                  <td class="pos">{card.posicion}</td>
+                  <td class="name-cell">{card.name}</td>
+                  <td>
+                    {card.image_url
+                      ? <a href={card.image_url} target="_blank" class="link-ext">Ver</a>
+                      : <span class="muted">—</span>
+                    }
+                  </td>
+                  <td class="count">{canjeoCount[card.id] ?? 0}</td>
+                  <td>
+                    <span class={`badge ${card.active ? 'badge-green' : 'badge-gray'}`}>
+                      {card.active ? 'Activa' : 'Inactiva'}
+                    </span>
+                  </td>
+                  {canManage && (
+                    <td>
+                      <button class="action-link btn-edit-card"
+                        data-id={card.id}
+                        data-posicion={card.posicion}
+                        data-name={card.name}
+                        data-desc={card.descripcion ?? ''}
+                        data-image={card.image_url ?? ''}>
+                        Editar
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+
+    <!-- Accesos rápidos -->
+    <div class="quick-links">
+      <a href={`/admin/codigos?album=${id}`} class="quick-link">
+        <span>🎟️</span> Gestionar códigos de este álbum
+      </a>
+      <a href={`/album/${album.slug}`} target="_blank" class="quick-link">
+        <span>👁️</span> Ver álbum como usuario
+      </a>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  // ---- Editar álbum ----
+  const btnEdit = document.getElementById('btn-edit-album')
+  const btnCancel = document.getElementById('btn-cancel-edit')
+  const albumView = document.getElementById('album-view')
+  const albumForm = document.getElementById('album-edit-form') as HTMLFormElement | null
+  const albumError = document.getElementById('album-edit-error') as HTMLDivElement | null
+
+  btnEdit?.addEventListener('click', () => {
+    albumView?.setAttribute('hidden', '')
+    albumForm?.removeAttribute('hidden')
+  })
+
+  btnCancel?.addEventListener('click', () => {
+    albumForm?.setAttribute('hidden', '')
+    albumView?.removeAttribute('hidden')
+  })
+
+  albumForm?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const btn = albumForm.querySelector('button[type=submit]') as HTMLButtonElement
+    btn.disabled = true
+    if (albumError) albumError.hidden = true
+
+    const albumId = albumForm.dataset.id
+    const fd = new FormData(albumForm)
+    const body = {
+      name: fd.get('name'),
+      slug: fd.get('slug'),
+      descripcion: fd.get('descripcion') || null,
+      cover_url: fd.get('cover_url') || null,
+      active: (albumForm.querySelector('[name=active]') as HTMLInputElement)?.checked,
+    }
+
+    const res = await fetch(`/api/admin/albums/${albumId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      if (albumError) { albumError.textContent = data.error; albumError.hidden = false }
+      btn.disabled = false
+      return
+    }
+
+    window.location.reload()
+  })
+
+  // ---- Figuritas ----
+  const btnAddCard = document.getElementById('btn-add-card')
+  const btnCancelCard = document.getElementById('btn-cancel-card')
+  const cardForm = document.getElementById('card-form') as HTMLFormElement | null
+  const cardError = document.getElementById('card-form-error') as HTMLDivElement | null
+
+  // ---- Upload de imagen ----
+  const fileInput = document.getElementById('file-input') as HTMLInputElement
+  const imgPreview = document.getElementById('img-preview') as HTMLImageElement
+  const uploadLabel = document.getElementById('upload-label') as HTMLLabelElement
+  const uploadText = document.getElementById('upload-text') as HTMLSpanElement
+  const uploadStatus = document.getElementById('upload-status') as HTMLDivElement
+  const cardImageInput = document.getElementById('card_image') as HTMLInputElement
+
+  fileInput?.addEventListener('change', async () => {
+    const file = fileInput.files?.[0]
+    if (!file) return
+
+    // Preview local inmediato
+    imgPreview.src = URL.createObjectURL(file)
+    imgPreview.hidden = false
+    uploadText.textContent = file.name
+    uploadStatus.hidden = false
+    uploadStatus.className = 'upload-status uploading'
+    uploadStatus.textContent = 'Subiendo...'
+
+    const fd = new FormData()
+    fd.append('file', file)
+
+    try {
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      cardImageInput.value = data.url
+      uploadStatus.className = 'upload-status success'
+      uploadStatus.textContent = '✅ Imagen subida correctamente'
+    } catch (err: any) {
+      uploadStatus.className = 'upload-status error'
+      uploadStatus.textContent = `❌ ${err.message ?? 'Error al subir'}`
+      imgPreview.hidden = true
+      uploadText.textContent = 'Seleccionar imagen'
+    }
+  })
+
+  function resetUploadArea() {
+    if (fileInput) fileInput.value = ''
+    if (imgPreview) { imgPreview.src = ''; imgPreview.hidden = true }
+    if (uploadText) uploadText.textContent = 'Seleccionar imagen'
+    if (uploadStatus) uploadStatus.hidden = true
+  }
+
+  btnAddCard?.addEventListener('click', () => {
+    cardForm?.reset()
+    resetUploadArea()
+    ;(document.getElementById('card_id_hidden') as HTMLInputElement).value = ''
+    ;(document.getElementById('btn-save-card') as HTMLButtonElement).textContent = 'Guardar figurita'
+    cardForm?.removeAttribute('hidden')
+    cardForm?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  })
+
+  btnCancelCard?.addEventListener('click', () => {
+    cardForm?.setAttribute('hidden', '')
+    resetUploadArea()
+  })
+
+  document.querySelectorAll('.btn-edit-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = btn as HTMLButtonElement
+      ;(document.getElementById('card_id_hidden') as HTMLInputElement).value = el.dataset.id ?? ''
+      ;(document.getElementById('posicion') as HTMLInputElement).value = el.dataset.posicion ?? ''
+      ;(document.getElementById('card_name') as HTMLInputElement).value = el.dataset.name ?? ''
+      ;(document.getElementById('card_desc') as HTMLTextAreaElement).value = el.dataset.desc ?? ''
+
+      // Mostrar imagen actual si existe
+      const existingImage = el.dataset.image ?? ''
+      cardImageInput.value = existingImage
+      if (existingImage) {
+        imgPreview.src = existingImage
+        imgPreview.hidden = false
+        uploadText.textContent = 'Cambiar imagen'
+      } else {
+        resetUploadArea()
+      }
+
+      ;(document.getElementById('btn-save-card') as HTMLButtonElement).textContent = 'Actualizar figurita'
+      cardForm?.removeAttribute('hidden')
+      cardForm?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+  })
+
+  cardForm?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const btn = document.getElementById('btn-save-card') as HTMLButtonElement
+    btn.disabled = true
+    if (cardError) cardError.hidden = true
+
+    const albumId = cardForm.dataset.album
+    const cardId = (document.getElementById('card_id_hidden') as HTMLInputElement).value
+    const fd = new FormData(cardForm)
+    const body = {
+      album_id: albumId,
+      posicion: Number(fd.get('posicion')),
+      name: fd.get('name'),
+      descripcion: fd.get('descripcion') || null,
+      image_url: fd.get('image_url') || null,
+    }
+
+    const isEdit = !!cardId
+    const url = isEdit ? `/api/admin/cards/${cardId}` : '/api/admin/cards'
+    const method = isEdit ? 'PATCH' : 'POST'
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      if (cardError) { cardError.textContent = data.error; cardError.hidden = false }
+      btn.disabled = false
+      return
+    }
+
+    window.location.reload()
+  })
+</script>
+
+<style>
+  .album-detail { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .panel {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .panel-header h2 { font-size: 1rem; font-weight: 700; color: var(--morado); }
+
+  .btn-sm {
+    background: var(--rojo);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-sm:hover { opacity: 0.85; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .info-grid > div { display: flex; flex-direction: column; gap: 0.2rem; }
+  .info-label { font-size: 0.75rem; text-transform: uppercase; color: #999; font-weight: 600; }
+  .mono { font-family: monospace; }
+  .link-ext { color: var(--rojo); font-size: 0.85rem; }
+
+  /* Forms inside panel */
+  .edit-form { display: flex; flex-direction: column; gap: 0.85rem; }
+
+  .form-row { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-row label { font-size: 0.8rem; font-weight: 600; color: #555; }
+  .form-row input, .form-row textarea {
+    border: 1.5px solid #ddd; border-radius: 0.4rem;
+    padding: 0.5rem 0.75rem; font-size: 0.9rem; outline: none;
+    transition: border-color 0.2s; font-family: inherit; resize: vertical;
+  }
+  .form-row input:focus, .form-row textarea:focus { border-color: var(--rojo); }
+  .form-check-row label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+
+  .form-error { background: #fee2e2; color: #991b1b; padding: 0.5rem 0.75rem; border-radius: 0.4rem; font-size: 0.85rem; }
+
+  /* Upload de imagen */
+  .upload-area {
+    border: 2px dashed #ddd; border-radius: 0.5rem;
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .upload-area:hover { border-color: var(--rojo); }
+
+  .img-preview {
+    width: 100%; max-height: 160px; object-fit: cover; display: block;
+  }
+
+  .upload-label {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0.25rem; padding: 1rem; cursor: pointer;
+    font-size: 0.85rem; color: #888;
+  }
+
+  .upload-icon { font-size: 1.5rem; }
+
+  .upload-hint { font-size: 0.72rem; color: #bbb; }
+
+  .file-input { display: none; }
+
+  .url-fallback {
+    margin-top: 0.4rem;
+    border: 1.5px solid #ddd; border-radius: 0.4rem;
+    padding: 0.45rem 0.75rem; font-size: 0.825rem; outline: none;
+    transition: border-color 0.2s; width: 100%; color: #888;
+  }
+  .url-fallback:focus { border-color: var(--rojo); }
+
+  .upload-status { font-size: 0.8rem; margin-top: 0.3rem; padding: 0.3rem 0.5rem; border-radius: 0.3rem; }
+  .upload-status.uploading { background: #fef9c3; color: #713f12; }
+  .upload-status.success   { background: #d1fae5; color: #065f46; }
+  .upload-status.error     { background: #fee2e2; color: #991b1b; }
+
+  .form-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+  .btn-primary {
+    background: var(--rojo); color: white; border: none;
+    padding: 0.5rem 1.1rem; border-radius: 0.4rem; font-weight: 700;
+    font-size: 0.9rem; cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent; color: #666; border: 1.5px solid #ddd;
+    padding: 0.5rem 1.1rem; border-radius: 0.4rem; font-weight: 600;
+    font-size: 0.9rem; cursor: pointer; transition: border-color 0.2s; text-decoration: none;
+  }
+  .btn-ghost:hover { border-color: #aaa; }
+
+  /* Cards table */
+  .cards-table-wrap { overflow-x: auto; }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .data-table th {
+    background: #fafafa; text-align: left; padding: 0.6rem 0.85rem;
+    font-size: 0.7rem; text-transform: uppercase; color: #888;
+    border-bottom: 1px solid #eee;
+  }
+  .data-table td { padding: 0.65rem 0.85rem; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .pos { font-weight: 700; color: #888; width: 40px; }
+  .name-cell { font-weight: 600; color: var(--morado); }
+  .count { font-weight: 700; color: var(--rojo); }
+  .muted { color: #bbb; }
+  .action-link { background: none; border: none; color: var(--rojo); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0; }
+  .action-link:hover { opacity: 0.7; }
+
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-gray  { background: #f3f4f6; color: #666; }
+
+  .quick-links { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+  .quick-link {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: white; border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    text-decoration: none; color: var(--morado); font-weight: 600; font-size: 0.875rem;
+    transition: box-shadow 0.2s;
+  }
+  .quick-link:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.1); }
+
+  .empty { color: #aaa; font-size: 0.875rem; padding: 1rem 0; }
+</style>

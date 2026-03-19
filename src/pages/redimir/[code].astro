@@ -1,0 +1,180 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { createSupabaseServerClient } from '../../lib/supabase'
+
+const { code } = Astro.params
+const { user } = Astro.locals
+
+// Si no está autenticado, redirigir al login guardando esta URL
+if (!user) {
+  return Astro.redirect(`/auth/login?redirect=/redimir/${code}`)
+}
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+const { data, error } = await supabase.rpc('redimir_codigo', { p_code: code?.toUpperCase() })
+
+type RedeemResult = {
+  ok: boolean
+  message: string
+  card_id?: string
+  card_name?: string
+  card_image?: string
+  posicion?: number
+  album_slug?: string
+}
+
+const result: RedeemResult = data ?? { ok: false, message: error?.message ?? 'Error desconocido' }
+---
+
+<Layout title="Canjear código — La Fiesta del Fútbol">
+  <main class="redimir-page">
+    <div class="redimir-card">
+      {result.ok ? (
+        <div class="redimir-success">
+          <div class="confetti-icon">🎉</div>
+          <h1>¡Figurita desbloqueada!</h1>
+          {result.card_image && (
+            <div class="figurita-preview">
+              <img src={result.card_image} alt={result.card_name} />
+              <span class="posicion">#{result.posicion}</span>
+            </div>
+          )}
+          <p class="card-name">{result.card_name}</p>
+          <div class="redimir-actions">
+            <a href={`/album/${result.album_slug ?? ''}`} class="btn-primary">
+              Ver mi álbum
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div class="redimir-error">
+          <div class="error-icon">😔</div>
+          <h1>No se pudo canjear</h1>
+          <p>{result.message}</p>
+          <div class="redimir-actions">
+            <a href="/album" class="btn-secondary">Ver mi álbum</a>
+            <a href="/" class="btn-ghost">Ir al inicio</a>
+          </div>
+        </div>
+      )}
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .redimir-page {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .redimir-card {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 3rem 2rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  .confetti-icon,
+  .error-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--morado);
+    margin-bottom: 1.5rem;
+  }
+
+  .figurita-preview {
+    position: relative;
+    display: inline-block;
+    margin: 1rem auto;
+  }
+
+  .figurita-preview img {
+    width: 160px;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    border: 3px solid var(--rojo);
+  }
+
+  .posicion {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    background: var(--rojo);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+  }
+
+  .card-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .redimir-error p {
+    color: #666;
+    margin-bottom: 1.5rem;
+  }
+
+  .redimir-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--rojo);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    background: var(--morado);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .btn-secondary:hover { opacity: 0.85; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--morado);
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 2px solid var(--morado);
+    transition: background 0.2s;
+  }
+
+  .btn-ghost:hover {
+    background: var(--morado);
+    color: white;
+  }
+</style>

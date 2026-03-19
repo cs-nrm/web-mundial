@@ -1,0 +1,466 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+const { role } = Astro.locals
+const canManage = canAccess(role as UserRole, MANAGE_ROLES)
+
+const filterAlbum = Astro.url.searchParams.get('album')
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+// Cargar álbumes activos para el selector
+const { data: albums } = await supabase
+  .from('albums')
+  .select('id, name, slug')
+  .eq('active', true)
+  .order('name')
+
+// Cargar figuritas del álbum seleccionado (o de todos)
+let cardsQuery = supabase
+  .from('cards')
+  .select('id, name, posicion, album_id, albums(name)')
+  .eq('active', true)
+  .order('posicion')
+
+if (filterAlbum) {
+  cardsQuery = cardsQuery.eq('album_id', filterAlbum)
+}
+const { data: cards } = await cardsQuery
+
+// Cargar códigos
+let codesQuery = supabase
+  .from('codes')
+  .select('id, code, card_id, max_usos, usos_count, expira_en, active, created_at, cards(name, posicion, albums(name))')
+  .order('created_at', { ascending: false })
+  .limit(200)
+
+if (filterAlbum) {
+  const cardIdsInAlbum = (cards ?? []).map((c: any) => c.id)
+  if (cardIdsInAlbum.length > 0) {
+    codesQuery = codesQuery.in('card_id', cardIdsInAlbum)
+  }
+}
+const { data: codes } = await codesQuery
+---
+
+<AdminLayout title="Códigos">
+  <!-- Filtro por álbum -->
+  <div class="toolbar">
+    <form method="get" class="filter-form">
+      <select name="album" onchange="this.form.submit()" class="select-filter">
+        <option value="">Todos los álbumes</option>
+        {(albums ?? []).map((a: any) => (
+          <option value={a.id} selected={filterAlbum === a.id}>{a.name}</option>
+        ))}
+      </select>
+    </form>
+    {canManage && (
+      <button id="btn-open-gen" class="btn-primary">+ Generar códigos</button>
+    )}
+  </div>
+
+  <!-- Modal generar códigos -->
+  {canManage && (
+    <div id="gen-modal" class="modal-overlay" hidden>
+      <div class="modal-box">
+        <h2>Generar códigos</h2>
+        <form id="gen-form">
+          <div class="form-row">
+            <label>Figurita *</label>
+            <select name="card_id" required class="select-filter full">
+              <option value="">— Selecciona —</option>
+              {(cards ?? []).map((c: any) => (
+                <option value={c.id}>
+                  #{c.posicion} {c.name} — {(c.albums as any)?.name ?? ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Cantidad de códigos *</label>
+            <input name="cantidad" type="number" min="1" max="500" value="1" required />
+          </div>
+          <div class="form-row">
+            <label>Usos máximos por código</label>
+            <input name="max_usos" type="number" min="1" value="1" />
+            <span class="hint">Deja en 1 para códigos de un solo uso.</span>
+          </div>
+          <div class="form-row">
+            <label>Fecha de expiración</label>
+            <input name="expira_en" type="datetime-local" />
+          </div>
+          <div id="gen-error" class="form-error" hidden></div>
+          <div class="form-actions">
+            <button type="button" id="btn-close-gen" class="btn-ghost">Cancelar</button>
+            <button type="submit" class="btn-primary">Generar</button>
+          </div>
+        </form>
+        <div id="gen-result" hidden>
+          <p class="gen-success">✅ Códigos generados. Descarga el listado:</p>
+          <textarea id="gen-codes-output" readonly rows="8" class="codes-output"></textarea>
+          <div class="form-actions">
+            <button id="btn-copy" class="btn-primary">Copiar al portapapeles</button>
+            <button id="btn-close-gen2" class="btn-ghost">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- Tabla de códigos -->
+  {(!codes || codes.length === 0) ? (
+    <div class="empty-state">
+      <p>No hay códigos generados.</p>
+    </div>
+  ) : (
+    <>
+      {canManage && (
+        <div id="bulk-bar" class="bulk-bar" hidden>
+          <span id="sel-count">0 seleccionados</span>
+          <button id="btn-delete-sel" class="btn-danger">🗑 Eliminar seleccionados</button>
+          <button id="btn-deselect" class="btn-ghost-sm">Cancelar</button>
+        </div>
+      )}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              {canManage && <th class="col-check"><input type="checkbox" id="check-all" /></th>}
+              <th>Código</th>
+              <th>Figurita</th>
+              <th>Álbum</th>
+              <th>Usos</th>
+              <th>Expira</th>
+              <th>Estado</th>
+              {canManage && <th></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {(codes ?? []).map((c: any) => {
+              const agotado = c.max_usos && c.usos_count >= c.max_usos
+              const expirado = c.expira_en && new Date(c.expira_en) < new Date()
+              return (
+                <tr>
+                  {canManage && (
+                    <td class="col-check">
+                      <input type="checkbox" class="row-check" data-id={c.id} />
+                    </td>
+                  )}
+                  <td class="mono code-cell">{c.code}</td>
+                  <td>#{(c.cards as any)?.posicion} {(c.cards as any)?.name}</td>
+                  <td class="muted">{(c.cards as any)?.albums?.name ?? '—'}</td>
+                  <td class="center">
+                    {c.usos_count ?? 0}
+                    {c.max_usos ? ` / ${c.max_usos}` : ''}
+                  </td>
+                  <td class="muted">
+                    {c.expira_en ? new Date(c.expira_en).toLocaleDateString('es-MX') : '—'}
+                  </td>
+                  <td>
+                    <span class={`badge ${!c.active || agotado || expirado ? 'badge-gray' : 'badge-green'}`}>
+                      {!c.active ? 'Inactivo' : agotado ? 'Agotado' : expirado ? 'Expirado' : 'Activo'}
+                    </span>
+                  </td>
+                  {canManage && (
+                    <td>
+                      <button class="action-link btn-toggle-code"
+                        data-id={c.id} data-active={String(c.active)}>
+                        {c.active ? 'Desactivar' : 'Activar'}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+</AdminLayout>
+
+<script>
+  // Abrir/cerrar modal
+  document.getElementById('btn-open-gen')?.addEventListener('click', () => {
+    document.getElementById('gen-modal')?.removeAttribute('hidden')
+  })
+
+  const closeModal = () => {
+    const modal = document.getElementById('gen-modal')
+    modal?.setAttribute('hidden', '')
+    const genResult = document.getElementById('gen-result')
+    genResult?.setAttribute('hidden', '')
+    const genForm = document.getElementById('gen-form')
+    genForm?.removeAttribute('hidden')
+    ;(document.getElementById('gen-form') as HTMLFormElement)?.reset()
+  }
+
+  document.getElementById('btn-close-gen')?.addEventListener('click', closeModal)
+  document.getElementById('btn-close-gen2')?.addEventListener('click', closeModal)
+
+  document.getElementById('gen-modal')?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).classList.contains('modal-overlay')) closeModal()
+  })
+
+  // Generar códigos
+  document.getElementById('gen-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const form = e.target as HTMLFormElement
+    const btn = form.querySelector('button[type=submit]') as HTMLButtonElement
+    const errorBox = document.getElementById('gen-error') as HTMLDivElement
+    btn.disabled = true
+    errorBox.hidden = true
+
+    const fd = new FormData(form)
+    const body = {
+      card_id: fd.get('card_id'),
+      cantidad: Number(fd.get('cantidad')),
+      max_usos: Number(fd.get('max_usos')) || 1,
+      expira_en: (fd.get('expira_en') as string) || null,
+    }
+
+    const res = await fetch('/api/admin/codigos/generar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      errorBox.textContent = data.error ?? 'Error al generar'
+      errorBox.hidden = false
+      btn.disabled = false
+      return
+    }
+
+    form.setAttribute('hidden', '')
+    const result = document.getElementById('gen-result') as HTMLDivElement
+    const output = document.getElementById('gen-codes-output') as HTMLTextAreaElement
+    output.value = (data.codes as string[]).join('\n')
+    result.removeAttribute('hidden')
+  })
+
+  // Copiar
+  document.getElementById('btn-copy')?.addEventListener('click', () => {
+    const output = document.getElementById('gen-codes-output') as HTMLTextAreaElement
+    navigator.clipboard.writeText(output.value)
+    const btn = document.getElementById('btn-copy') as HTMLButtonElement
+    btn.textContent = '✅ Copiado'
+    setTimeout(() => { btn.textContent = 'Copiar al portapapeles' }, 2000)
+  })
+
+  // ---- Selección múltiple y borrado ----
+  const checkAll = document.getElementById('check-all') as HTMLInputElement | null
+  const bulkBar = document.getElementById('bulk-bar') as HTMLDivElement | null
+  const selCount = document.getElementById('sel-count') as HTMLSpanElement | null
+  const btnDeleteSel = document.getElementById('btn-delete-sel') as HTMLButtonElement | null
+  const btnDeselect = document.getElementById('btn-deselect') as HTMLButtonElement | null
+
+  function getChecked(): string[] {
+    return Array.from(document.querySelectorAll<HTMLInputElement>('.row-check:checked'))
+      .map(cb => cb.dataset.id!)
+  }
+
+  function updateBulkBar() {
+    const ids = getChecked()
+    if (bulkBar) bulkBar.hidden = ids.length === 0
+    if (selCount) selCount.textContent = `${ids.length} seleccionado${ids.length !== 1 ? 's' : ''}`
+    if (checkAll) checkAll.indeterminate = ids.length > 0 &&
+      ids.length < document.querySelectorAll('.row-check').length
+  }
+
+  checkAll?.addEventListener('change', () => {
+    document.querySelectorAll<HTMLInputElement>('.row-check').forEach(cb => {
+      cb.checked = checkAll.checked
+    })
+    updateBulkBar()
+  })
+
+  document.querySelectorAll('.row-check').forEach(cb => {
+    cb.addEventListener('change', updateBulkBar)
+  })
+
+  btnDeselect?.addEventListener('click', () => {
+    document.querySelectorAll<HTMLInputElement>('.row-check').forEach(cb => cb.checked = false)
+    if (checkAll) checkAll.checked = false
+    updateBulkBar()
+  })
+
+  btnDeleteSel?.addEventListener('click', async () => {
+    const ids = getChecked()
+    if (!ids.length) return
+    if (!confirm(`¿Eliminar ${ids.length} código${ids.length !== 1 ? 's' : ''}? Esta acción no se puede deshacer.`)) return
+
+    btnDeleteSel.disabled = true
+    btnDeleteSel.textContent = 'Eliminando...'
+
+    const res = await fetch('/api/admin/codigos/borrar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
+
+    if (res.ok) {
+      window.location.reload()
+    } else {
+      const data = await res.json()
+      alert(data.error ?? 'Error al eliminar')
+      btnDeleteSel.disabled = false
+      btnDeleteSel.textContent = '🗑 Eliminar seleccionados'
+    }
+  })
+
+  // Toggle activo/inactivo
+  document.querySelectorAll('.btn-toggle-code').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLButtonElement
+      const id = el.dataset.id
+      const active = el.dataset.active === 'true'
+      el.disabled = true
+
+      const res = await fetch(`/api/admin/codigos/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !active }),
+      })
+
+      if (res.ok) {
+        window.location.reload()
+      } else {
+        el.disabled = false
+      }
+    })
+  })
+</script>
+
+<style>
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+  }
+
+  .bulk-bar {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: #fff8e1; border: 1.5px solid #f59e0b;
+    border-radius: 0.5rem; padding: 0.6rem 1rem;
+    margin-bottom: 0.75rem; font-size: 0.875rem;
+  }
+
+  .bulk-bar[hidden] { display: none; }
+
+  .btn-danger {
+    background: #dc2626; color: white; border: none;
+    padding: 0.4rem 0.9rem; border-radius: 0.4rem;
+    font-weight: 700; font-size: 0.85rem; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-ghost-sm {
+    background: transparent; color: #666; border: 1.5px solid #ddd;
+    padding: 0.35rem 0.75rem; border-radius: 0.4rem;
+    font-size: 0.85rem; cursor: pointer; transition: border-color 0.2s;
+  }
+  .btn-ghost-sm:hover { border-color: #aaa; }
+
+  .col-check { width: 36px; text-align: center; }
+
+  .filter-form { display: flex; gap: 0.5rem; }
+
+  .select-filter {
+    border: 1.5px solid #ddd; border-radius: 0.4rem;
+    padding: 0.5rem 0.75rem; font-size: 0.9rem;
+    outline: none; background: white; cursor: pointer;
+  }
+
+  .select-filter:focus { border-color: var(--rojo); }
+  .select-filter.full { width: 100%; }
+
+  .btn-primary {
+    background: var(--rojo); color: white; border: none;
+    padding: 0.55rem 1.2rem; border-radius: 0.5rem;
+    font-weight: 700; font-size: 0.9rem; cursor: pointer;
+    transition: opacity 0.2s; text-decoration: none;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+
+  .modal-overlay[hidden] { display: none; }
+
+  .modal-box {
+    background: white; border-radius: 1rem;
+    padding: 2rem; width: 100%; max-width: 480px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+
+  .modal-box h2 { font-size: 1.1rem; font-weight: 700; color: var(--morado); margin-bottom: 1.25rem; }
+
+  .form-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; }
+  .form-row label { font-size: 0.8rem; font-weight: 600; color: #555; }
+  .form-row input {
+    border: 1.5px solid #ddd; border-radius: 0.4rem;
+    padding: 0.5rem 0.75rem; font-size: 0.9rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-row input:focus { border-color: var(--rojo); }
+  .hint { font-size: 0.72rem; color: #999; }
+
+  .form-error { background: #fee2e2; color: #991b1b; padding: 0.5rem; border-radius: 0.4rem; font-size: 0.85rem; margin-bottom: 0.85rem; }
+
+  .form-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+  .btn-ghost {
+    background: transparent; color: #666; border: 1.5px solid #ddd;
+    padding: 0.5rem 1.1rem; border-radius: 0.4rem; font-weight: 600;
+    font-size: 0.9rem; cursor: pointer; transition: border-color 0.2s;
+  }
+  .btn-ghost:hover { border-color: #aaa; }
+
+  .gen-success { color: #065f46; font-weight: 600; margin-bottom: 0.75rem; }
+
+  .codes-output {
+    width: 100%; font-family: monospace; font-size: 0.85rem;
+    border: 1.5px solid #ddd; border-radius: 0.4rem;
+    padding: 0.5rem; resize: none; margin-bottom: 1rem;
+  }
+
+  /* Table */
+  .table-wrap { background: white; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .data-table th {
+    background: #fafafa; text-align: left; padding: 0.6rem 0.85rem;
+    font-size: 0.7rem; text-transform: uppercase; color: #888; border-bottom: 1px solid #eee;
+  }
+  .data-table td { padding: 0.65rem 0.85rem; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .mono { font-family: monospace; }
+  .code-cell { font-size: 0.85rem; letter-spacing: 0.05em; font-weight: 700; color: var(--morado); }
+  .center { text-align: center; }
+  .muted { color: #888; font-size: 0.825rem; }
+
+  .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-gray  { background: #f3f4f6; color: #666; }
+
+  .action-link { background: none; border: none; color: var(--rojo); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0; }
+  .action-link:hover { opacity: 0.7; }
+
+  .empty-state { text-align: center; color: #aaa; padding: 3rem 0; }
+</style>

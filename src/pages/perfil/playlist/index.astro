@@ -1,0 +1,105 @@
+---
+import Layout from '../../../layouts/Layout.astro'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+
+const { user } = Astro.locals
+if (!user) return Astro.redirect('/auth/login?redirect=/perfil/playlist')
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+const { data: playlists } = await supabase
+  .from('playlists')
+  .select('id, nombre, created_at, playlist_songs(count)')
+  .eq('user_id', user.id)
+  .order('created_at')
+---
+<Layout title="Mis Playlists">
+  <div class="min-h-screen py-12 px-4">
+    <div class="max-w-2xl mx-auto">
+
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <a href="/perfil" class="text-sm text-gray-400 hover:text-white transition">← Mi perfil</a>
+          <h1 class="text-3xl font-bold spartan text-white mt-1">Mis Playlists</h1>
+        </div>
+        <button
+          onclick="document.getElementById('modal-nueva').removeAttribute('hidden')"
+          class="bg-[#EA262A] text-white font-bold px-5 py-2.5 rounded-xl hover:bg-red-700 transition spartan"
+        >
+          + Nueva playlist
+        </button>
+      </div>
+
+      {(!playlists || playlists.length === 0) ? (
+        <div class="bg-white/10 rounded-2xl p-12 text-center">
+          <div class="text-5xl mb-4">🎵</div>
+          <p class="text-white font-semibold text-lg mb-2">Aún no tienes playlists</p>
+          <p class="text-gray-400 mb-6">Crea tu primera playlist y empieza a agregar canciones del Mundial</p>
+          <button
+            onclick="document.getElementById('modal-nueva').removeAttribute('hidden')"
+            class="bg-[#EA262A] text-white font-bold px-6 py-3 rounded-xl hover:bg-red-700 transition spartan"
+          >
+            Crear mi primera playlist
+          </button>
+        </div>
+      ) : (
+        <div class="grid gap-4">
+          {playlists.map(pl => {
+            const count = (pl.playlist_songs as any)?.[0]?.count ?? 0
+            return (
+              <a href={`/perfil/playlist/${pl.id}`} class="block bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition group">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-xl bg-[#EA262A] flex items-center justify-center text-2xl">🎵</div>
+                    <div>
+                      <h2 class="font-bold spartan text-gray-900 text-lg group-hover:text-[#EA262A] transition">{pl.nombre}</h2>
+                      <p class="text-sm text-gray-500">{count} {count === 1 ? 'canción' : 'canciones'}</p>
+                    </div>
+                  </div>
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-[#EA262A] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </a>
+            )
+          })}
+        </div>
+      )}
+
+    </div>
+  </div>
+
+  <!-- Modal nueva playlist -->
+  <div id="modal-nueva" hidden class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <h2 class="text-xl font-bold spartan text-gray-900 mb-6">Nueva playlist</h2>
+      <form method="POST" action="/api/perfil/playlists">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de tu playlist</label>
+          <input
+            name="nombre"
+            type="text"
+            required
+            maxlength="60"
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#EA262A] transition"
+            placeholder="Mi playlist del Mundial 2026"
+            autofocus
+          />
+        </div>
+        <div class="flex gap-3">
+          <button type="button" onclick="document.getElementById('modal-nueva').setAttribute('hidden','')"
+            class="flex-1 border-2 border-gray-200 rounded-xl py-3 font-semibold text-gray-700 hover:bg-gray-50 transition">
+            Cancelar
+          </button>
+          <button type="submit" class="flex-1 bg-[#EA262A] text-white font-bold py-3 rounded-xl hover:bg-red-700 transition spartan">
+            Crear
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    #modal-nueva[hidden] { display: none !important; }
+  </style>
+</Layout>

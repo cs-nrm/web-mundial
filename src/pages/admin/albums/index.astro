@@ -1,0 +1,163 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseServerClient } from '../../../lib/supabase'
+import { canAccess, EDITOR_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+const { role } = Astro.locals
+const canManage = canAccess(role as UserRole, EDITOR_ROLES)
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+const { data: albums } = await supabase
+  .from('albums')
+  .select('id, slug, name, descripcion, active, created_at')
+  .order('created_at', { ascending: false })
+
+// Contar figuritas por álbum
+const { data: cardCounts } = await supabase
+  .from('cards')
+  .select('album_id')
+  .eq('active', true)
+
+const countsMap: Record<string, number> = {}
+for (const c of (cardCounts ?? [])) {
+  countsMap[c.album_id] = (countsMap[c.album_id] ?? 0) + 1
+}
+---
+
+<AdminLayout title="Álbumes">
+  <div class="toolbar">
+    {canManage && <a href="/admin/albums/new" class="btn-primary">+ Nuevo álbum</a>}
+  </div>
+
+  {(!albums || albums.length === 0) ? (
+    <div class="empty-state">
+      <p>No hay álbumes creados.</p>
+      {canManage && <a href="/admin/albums/new" class="btn-primary">Crear el primero</a>}
+    </div>
+  ) : (
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Slug</th>
+            <th>Figuritas</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {albums.map((a: any) => (
+            <tr>
+              <td class="name-cell">{a.name}</td>
+              <td class="mono">{a.slug}</td>
+              <td class="center">{countsMap[a.id] ?? 0} / 60</td>
+              <td>
+                <span class={`badge ${a.active ? 'badge-green' : 'badge-gray'}`}>
+                  {a.active ? 'Activo' : 'Inactivo'}
+                </span>
+              </td>
+              <td class="actions">
+                <a href={`/admin/albums/${a.id}`} class="action-link">Editar</a>
+                <a href={`/admin/codigos?album=${a.id}`} class="action-link">Códigos</a>
+                <a href={`/album/${a.slug}`} target="_blank" class="action-link muted">Ver</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</AdminLayout>
+
+<style>
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-primary {
+    background: var(--rojo);
+    color: white;
+    padding: 0.55rem 1.2rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .table-wrap {
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .data-table th {
+    background: #fafafa;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #888;
+    border-bottom: 1px solid #eee;
+  }
+
+  .data-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f5f5f5;
+    vertical-align: middle;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .name-cell { font-weight: 600; color: var(--morado); }
+  .mono { font-family: monospace; font-size: 0.85rem; color: #666; }
+  .center { text-align: center; }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-gray  { background: #f3f4f6; color: #666; }
+
+  .actions { display: flex; gap: 0.75rem; }
+
+  .action-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--rojo);
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .action-link:hover { opacity: 0.7; }
+  .action-link.muted { color: #888; font-weight: 400; }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 0;
+    color: #aaa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+</style>

@@ -1,0 +1,176 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { createSupabaseServerClient } from '../../lib/supabase'
+
+const { user } = Astro.locals
+
+if (!user) {
+  return Astro.redirect('/auth/login?redirect=/album')
+}
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+
+const { data: albums } = await supabase
+  .from('albums')
+  .select('id, slug, name, descripcion, cover_url')
+  .eq('active', true)
+  .order('created_at', { ascending: true })
+
+// Para cada álbum, contar cuántas figuritas tiene el usuario
+const albumIds = (albums ?? []).map((a: any) => a.id)
+let cardCounts: Record<string, number> = {}
+let totalCards: Record<string, number> = {}
+
+if (albumIds.length > 0) {
+  const { data: userCards } = await supabase
+    .from('user_cards')
+    .select('card_id, cards!inner(album_id)')
+    .eq('user_id', user.id)
+
+  const { data: allCards } = await supabase
+    .from('cards')
+    .select('id, album_id')
+    .in('album_id', albumIds)
+    .eq('active', true)
+
+  for (const album of (albums ?? [])) {
+    totalCards[album.id] = (allCards ?? []).filter((c: any) => c.album_id === album.id).length
+    cardCounts[album.id] = (userCards ?? []).filter(
+      (uc: any) => uc.cards?.album_id === album.id
+    ).length
+  }
+}
+---
+
+<Layout title="Mis álbumes — La Fiesta del Fútbol">
+  <main class="albums-page">
+    <div class="albums-header">
+      <h1>Álbum de Figuritas</h1>
+      <p>Colecciona todas las figuritas canjeando códigos en nuestras notas.</p>
+    </div>
+
+    {(!albums || albums.length === 0) ? (
+      <div class="empty-state">
+        <p>No hay álbumes activos por el momento.</p>
+      </div>
+    ) : (
+      <div class="albums-grid">
+        {albums.map((album: any) => {
+          const collected = cardCounts[album.id] ?? 0
+          const total = totalCards[album.id] ?? 0
+          const pct = total > 0 ? Math.round((collected / total) * 100) : 0
+          return (
+            <a href={`/album/${album.slug}`} class="album-card">
+              {album.cover_url && (
+                <img src={album.cover_url} alt={album.name} class="album-cover" />
+              )}
+              <div class="album-info">
+                <h2>{album.name}</h2>
+                {album.descripcion && <p>{album.descripcion}</p>}
+                <div class="progress-bar">
+                  <div class="progress-fill" style={`width: ${pct}%`}></div>
+                </div>
+                <span class="progress-label">{collected} / {total} figuritas</span>
+              </div>
+            </a>
+          )
+        })}
+      </div>
+    )}
+  </main>
+</Layout>
+
+<style>
+  .albums-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .albums-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .albums-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--morado);
+    margin-bottom: 0.5rem;
+  }
+
+  .albums-header p {
+    color: #666;
+  }
+
+  .albums-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .album-card {
+    background: white;
+    border-radius: 1rem;
+    overflow: hidden;
+    text-decoration: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: block;
+  }
+
+  .album-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  }
+
+  .album-cover {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+  }
+
+  .album-info {
+    padding: 1.25rem;
+  }
+
+  .album-info h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--morado);
+    margin-bottom: 0.4rem;
+  }
+
+  .album-info p {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+
+  .progress-bar {
+    background: #eee;
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 0.4rem;
+  }
+
+  .progress-fill {
+    background: var(--rojo);
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s;
+  }
+
+  .progress-label {
+    font-size: 0.8rem;
+    color: #888;
+    font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: #888;
+    padding: 3rem 0;
+  }
+</style>

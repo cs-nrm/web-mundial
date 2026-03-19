@@ -1,0 +1,231 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { canAccess, EDITOR_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+const { role } = Astro.locals
+
+if (!canAccess(role as UserRole, EDITOR_ROLES)) {
+  return Astro.redirect('/admin/albums')
+}
+---
+
+<AdminLayout title="Nuevo álbum">
+  <div class="form-page">
+    <form id="album-form" class="form-card">
+      <div class="form-group">
+        <label for="name">Nombre del álbum *</label>
+        <input id="name" name="name" type="text" required placeholder="ej. Mundial 2026" />
+      </div>
+
+      <div class="form-group">
+        <label for="slug">Slug (URL) *</label>
+        <input id="slug" name="slug" type="text" required placeholder="ej. mundial-2026"
+          pattern="[a-z0-9\-]+" title="Solo letras minúsculas, números y guiones" />
+        <span class="hint">Solo letras minúsculas, números y guiones. Ej: <code>mundial-2026</code></span>
+      </div>
+
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción breve del álbum"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="estacion">Estación</label>
+        <select id="estacion" name="estacion">
+          <option value="">— Sin estación —</option>
+          <option value="oye">Oye</option>
+          <option value="beat">Beat</option>
+          <option value="stereocien">StereoCien</option>
+          <option value="sabrosita">Sabrosita</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="cover_url">URL de portada</label>
+        <input id="cover_url" name="cover_url" type="url" placeholder="https://..." />
+      </div>
+
+      <div class="form-check">
+        <input id="active" name="active" type="checkbox" checked />
+        <label for="active">Álbum activo (visible para usuarios)</label>
+      </div>
+
+      <div id="form-error" class="form-error" hidden></div>
+
+      <div class="form-actions">
+        <a href="/admin/albums" class="btn-ghost">Cancelar</a>
+        <button type="submit" class="btn-primary">Crear álbum</button>
+      </div>
+    </form>
+  </div>
+</AdminLayout>
+
+<script>
+  const form = document.getElementById('album-form') as HTMLFormElement
+  const nameInput = document.getElementById('name') as HTMLInputElement
+  const slugInput = document.getElementById('slug') as HTMLInputElement
+  const errorBox = document.getElementById('form-error') as HTMLDivElement
+
+  // Auto-generar slug desde el nombre
+  nameInput.addEventListener('input', () => {
+    if (!slugInput.dataset.manual) {
+      slugInput.value = nameInput.value
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+    }
+  })
+
+  slugInput.addEventListener('input', () => {
+    slugInput.dataset.manual = 'true'
+  })
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const btn = form.querySelector('button[type=submit]') as HTMLButtonElement
+    btn.disabled = true
+    btn.textContent = 'Creando...'
+    errorBox.hidden = true
+
+    const estacionVal = (document.getElementById('estacion') as HTMLSelectElement).value
+    const body = {
+      name: nameInput.value.trim(),
+      slug: slugInput.value.trim(),
+      descripcion: (document.getElementById('descripcion') as HTMLTextAreaElement).value.trim() || null,
+      cover_url: (document.getElementById('cover_url') as HTMLInputElement).value.trim() || null,
+      active: (document.getElementById('active') as HTMLInputElement).checked,
+      estacion: estacionVal || null,
+    }
+
+    try {
+      const res = await fetch('/api/admin/albums', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        errorBox.textContent = data.error ?? 'Error al crear el álbum'
+        errorBox.hidden = false
+        btn.disabled = false
+        btn.textContent = 'Crear álbum'
+        return
+      }
+
+      window.location.href = `/admin/albums/${data.id}`
+    } catch {
+      errorBox.textContent = 'Error de conexión'
+      errorBox.hidden = false
+      btn.disabled = false
+      btn.textContent = 'Crear álbum'
+    }
+  })
+</script>
+
+<style>
+  .form-page { max-width: 560px; }
+
+  .form-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #444;
+  }
+
+  input[type=text], input[type=url], textarea {
+    border: 1.5px solid #ddd;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus { border-color: var(--rojo); }
+
+  .hint {
+    font-size: 0.75rem;
+    color: #999;
+  }
+
+  .hint code {
+    background: #f0f0f0;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #444;
+  }
+
+  .form-check input { width: 1rem; height: 1rem; cursor: pointer; }
+
+  .form-error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 0.6rem 0.85rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+  }
+
+  .btn-primary {
+    background: var(--rojo);
+    color: white;
+    padding: 0.6rem 1.4rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: transparent;
+    color: #666;
+    padding: 0.6rem 1.4rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    border: 1.5px solid #ddd;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+
+  .btn-ghost:hover { border-color: #aaa; }
+</style>
