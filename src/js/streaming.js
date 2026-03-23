@@ -152,7 +152,6 @@ document.addEventListener('astro:page-load', ev => {
     document.querySelector('main').classList.remove('loading');
     document.querySelector('.preloader').classList.remove('showpreloader');
 
-    const secchome = document.getElementById('home');
     const secenvivo = document.getElementById('envivo');
 
 
@@ -160,59 +159,6 @@ document.addEventListener('astro:page-load', ev => {
 
 
 
-    if (secprogram || secchome || secprograma) {
-
-        var elempod = document.querySelector('.main-carousel');
-        var flktypod = new Flickity(elempod, {
-            contain: true,
-            lazyLoad: 1,
-            wrapAround: true,
-            cellAlign: 'left',
-            pageDots: false,
-            autoPlay: 5000,
-        });
-        var elempromo = document.querySelector('.main-promos');
-        var flktypromo = new Flickity(elempromo, {
-            contain: true,
-            lazyLoad: 1,
-            wrapAround: true,
-            cellAlign: 'left',
-            pageDots: false,
-            autoPlay: 5000,
-        });
-
-        var elemtopten = document.querySelector('.main-topten');
-        var flktytopten = new Flickity(elemtopten, {
-            contain: true,
-            lazyLoad: 1,
-            wrapAround: true,
-            cellAlign: 'left',
-            pageDots: false,
-            autoPlay: true
-        });
-
-        var df = document.querySelector('.df');
-        var flktydf = new Flickity(df, {
-            contain: true,
-            lazyLoad: 1,
-            wrapAround: true,
-            cellAlign: 'left',
-            pageDots: false,
-            autoPlay: true
-        });
-        console.log(flktydf);
-        var elembuenfin = document.querySelector('.carousel-buenfin');
-        var flktybuenfin = new Flickity(elembuenfin, {
-            // options
-            cellAlign: 'right',
-            prevNextButtons: true,
-            //    autoPlay: 5000,
-            pageDots: false,
-            pauseAutoPlayOnHover: true,
-            freeScroll: true,
-            wrapAround: true
-        });
-    }
 
     const imagenNota = document.getElementById("imagen-nota");
     if (imagenNota) {

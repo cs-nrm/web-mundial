@@ -57,6 +57,28 @@ for (const c of (canjeos ?? [])) {
             : <span>—</span>
           }
         </div>
+        <div><span class="info-label">Estación</span><span>{album.estacion ?? '—'}</span></div>
+        <div>
+          <span class="info-label">Color acento</span>
+          {album.color_acento
+            ? <span style={`display:inline-flex;align-items:center;gap:0.5rem`}>
+                <span style={`display:inline-block;width:1rem;height:1rem;border-radius:50%;background:${album.color_acento};border:1px solid rgba(0,0,0,0.1)`}></span>
+                <span class="mono">{album.color_acento}</span>
+              </span>
+            : <span>—</span>
+          }
+        </div>
+        <div><span class="info-label">Logo URL</span>
+          {album.logo_url
+            ? <a href={album.logo_url} target="_blank" class="link-ext">Ver logo</a>
+            : <span>—</span>
+          }
+        </div>
+        <div>
+          <span class="info-label">Total figuritas</span>
+          <span>{album.total_cards ?? '—'}</span>
+          {album.total_cards && <span style="color:#6b7280;font-size:0.8rem"> ({(cards ?? []).length} cargadas)</span>}
+        </div>
         <div><span class="info-label">Estado</span>
           <span class={`badge ${album.active ? 'badge-green' : 'badge-gray'}`}>
             {album.active ? 'Activo' : 'Inactivo'}
@@ -82,6 +104,50 @@ for (const c of (canjeos ?? [])) {
           <div class="form-row">
             <label>URL Portada</label>
             <input name="cover_url" type="url" value={album.cover_url ?? ''} />
+          </div>
+          <div class="form-row">
+            <label>Estación</label>
+            <select name="estacion">
+              <option value="">— Sin estación —</option>
+              {(['oye', 'beat', 'stereocien', 'sabrosita'] as const).map(e => (
+                <option value={e} selected={album.estacion === e}>{e}</option>
+              ))}
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Color de acento</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_acento" type="color" value={album.color_acento ?? '#ff6b35'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_acento_hex" type="text" value={album.color_acento ?? '#ff6b35'}
+                placeholder="#ff6b35" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Botones, barra de progreso y panel de nombre de figuritas.</p>
+          </div>
+          <div class="form-row">
+            <label>Color de texto sobre acento</label>
+            <div style="display:flex;gap:1rem">
+              <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.875rem">
+                <input type="radio" name="color_texto" value="#ffffff" checked={!album.color_texto || album.color_texto === '#ffffff'} />
+                Blanco
+              </label>
+              <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.875rem">
+                <input type="radio" name="color_texto" value="#000000" checked={album.color_texto === '#000000'} />
+                Negro
+              </label>
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Elige negro cuando el color de acento es claro (ej. amarillo).</p>
+          </div>
+          <div class="form-row">
+            <label>URL Logo</label>
+            <input name="logo_url" type="url" value={album.logo_url ?? ''} placeholder="https://..." />
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Logo que aparece en el encabezado del álbum.</p>
+          </div>
+          <div class="form-row">
+            <label>Total de figuritas</label>
+            <input name="total_cards" type="number" min="1" max="500" value={album.total_cards ?? ''} placeholder="Ej. 60" />
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">El porcentaje de avance se calcula sobre este total, no sobre las figuritas cargadas.</p>
           </div>
           <div class="form-row form-check-row">
             <label>
@@ -226,6 +292,16 @@ for (const c of (canjeos ?? [])) {
     albumView?.removeAttribute('hidden')
   })
 
+  // Sincronizar color picker ↔ campo hex
+  if (albumForm) {
+    const colorPicker = albumForm.querySelector('[name=color_acento]') as HTMLInputElement
+    const colorHex = albumForm.querySelector('[name=color_acento_hex]') as HTMLInputElement
+    colorPicker?.addEventListener('input', () => { if (colorHex) colorHex.value = colorPicker.value })
+    colorHex?.addEventListener('input', () => {
+      if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorPicker.value = colorHex.value
+    })
+  }
+
   albumForm?.addEventListener('submit', async (e) => {
     e.preventDefault()
     const btn = albumForm.querySelector('button[type=submit]') as HTMLButtonElement
@@ -234,11 +310,21 @@ for (const c of (canjeos ?? [])) {
 
     const albumId = albumForm.dataset.id
     const fd = new FormData(albumForm)
+    // Sincronizar color picker ↔ hex input
+    const colorPicker = albumForm.querySelector('[name=color_acento]') as HTMLInputElement
+    const colorHex = albumForm.querySelector('[name=color_acento_hex]') as HTMLInputElement
+    const finalColor = colorHex?.value.trim() || colorPicker?.value || null
+
     const body = {
       name: fd.get('name'),
       slug: fd.get('slug'),
       descripcion: fd.get('descripcion') || null,
       cover_url: fd.get('cover_url') || null,
+      estacion: fd.get('estacion') || null,
+      color_acento: finalColor,
+      color_texto: fd.get('color_texto') || '#ffffff',
+      logo_url: fd.get('logo_url') || null,
+      total_cards: fd.get('total_cards') ? parseInt(fd.get('total_cards') as string) : null,
       active: (albumForm.querySelector('[name=active]') as HTMLInputElement)?.checked,
     }
 

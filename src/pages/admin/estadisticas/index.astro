@@ -44,7 +44,7 @@ if (tab === 'album') {
   const usuariosActivos = new Set(uc.map(r => r.user_id)).size
 
   // Canjes por día (últimos 30 días)
-  const desde = new Date(); desde.setDate(desde.getDate() - 13); desde.setHours(0,0,0,0)
+  const desde = new Date(); desde.setDate(desde.getDate() - 29); desde.setHours(0,0,0,0)
   const diaMap: Record<string, number> = {}
   for (let i = 0; i < 30; i++) {
     const d = new Date(desde); d.setDate(d.getDate() + i)
@@ -112,7 +112,7 @@ if (tab === 'playlist') {
     .from('playlists').select('*', { count: 'exact', head: true })
 
   // Playlists creadas por día (últimos 30 días)
-  const desde = new Date(); desde.setDate(desde.getDate() - 13); desde.setHours(0,0,0,0)
+  const desde = new Date(); desde.setDate(desde.getDate() - 29); desde.setHours(0,0,0,0)
   const diaMap: Record<string, number> = {}
   for (let i = 0; i < 30; i++) {
     const d = new Date(desde); d.setDate(d.getDate() + i)

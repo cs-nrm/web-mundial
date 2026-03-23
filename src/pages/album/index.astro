@@ -16,7 +16,12 @@ const { data: albums } = await supabase
   .eq('active', true)
   .order('created_at', { ascending: true })
 
-// Para cada álbum, contar cuántas figuritas tiene el usuario
+// Si hay un solo álbum activo, redirigir directamente
+if (albums && albums.length === 1) {
+  return Astro.redirect(`/album/${albums[0].slug}`)
+}
+
+// Para cada álbum, contar figuritas del usuario
 const albumIds = (albums ?? []).map((a: any) => a.id)
 let cardCounts: Record<string, number> = {}
 let totalCards: Record<string, number> = {}
@@ -44,63 +49,84 @@ if (albumIds.length > 0) {
 
 <Layout title="Mis álbumes — La Fiesta del Fútbol">
   <main class="albums-page">
-    <div class="albums-header">
-      <h1>Álbum de Figuritas</h1>
-      <p>Colecciona todas las figuritas canjeando códigos en nuestras notas.</p>
+
+    <div class="hero">
+      <div class="hero-inner">
+        <p class="hero-sub">Colección</p>
+        <h1 class="hero-title spartan">Mis Álbumes</h1>
+      </div>
     </div>
 
-    {(!albums || albums.length === 0) ? (
-      <div class="empty-state">
-        <p>No hay álbumes activos por el momento.</p>
-      </div>
-    ) : (
-      <div class="albums-grid">
-        {albums.map((album: any) => {
-          const collected = cardCounts[album.id] ?? 0
-          const total = totalCards[album.id] ?? 0
-          const pct = total > 0 ? Math.round((collected / total) * 100) : 0
-          return (
-            <a href={`/album/${album.slug}`} class="album-card">
-              {album.cover_url && (
-                <img src={album.cover_url} alt={album.name} class="album-cover" />
-              )}
-              <div class="album-info">
-                <h2>{album.name}</h2>
-                {album.descripcion && <p>{album.descripcion}</p>}
-                <div class="progress-bar">
-                  <div class="progress-fill" style={`width: ${pct}%`}></div>
+    <div class="content">
+      {(!albums || albums.length === 0) ? (
+        <div class="empty-state">
+          <p>No hay álbumes activos por el momento.</p>
+        </div>
+      ) : (
+        <div class="albums-grid">
+          {albums.map((album: any) => {
+            const collected = cardCounts[album.id] ?? 0
+            const total = totalCards[album.id] ?? 0
+            const pct = total > 0 ? Math.round((collected / total) * 100) : 0
+            return (
+              <a href={`/album/${album.slug}`} class="album-card">
+                {album.cover_url && (
+                  <img src={album.cover_url} alt={album.name} class="album-cover" />
+                )}
+                <div class="album-info">
+                  <h2 class="spartan">{album.name}</h2>
+                  {album.descripcion && <p>{album.descripcion}</p>}
+                  <div class="progress-bar">
+                    <div class="progress-fill" style={`width: ${pct}%`}></div>
+                  </div>
+                  <span class="progress-label">{collected} / {total} figuritas ({pct}%)</span>
                 </div>
-                <span class="progress-label">{collected} / {total} figuritas</span>
-              </div>
-            </a>
-          )
-        })}
-      </div>
-    )}
+              </a>
+            )
+          })}
+        </div>
+      )}
+    </div>
+
   </main>
 </Layout>
 
 <style>
   .albums-page {
-    max-width: 960px;
+    min-height: 100vh;
+    background: #13151c;
+  }
+
+  .hero {
+    padding: 3rem 1.5rem 2.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .hero-inner {
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 2rem 1rem;
   }
-
-  .albums-header {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
-
-  .albums-header h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--morado);
+  .hero-sub {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
     margin-bottom: 0.5rem;
+    font-family: 'Open Sans', sans-serif;
+  }
+  .hero-title {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 900;
+    color: white;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
   }
 
-  .albums-header p {
-    color: #666;
+  .content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
   }
 
   .albums-grid {
@@ -110,18 +136,17 @@ if (albumIds.length > 0) {
   }
 
   .album-card {
-    background: white;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 1rem;
     overflow: hidden;
     text-decoration: none;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     transition: transform 0.2s, box-shadow 0.2s;
     display: block;
   }
-
   .album-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
   }
 
   .album-cover {
@@ -137,40 +162,47 @@ if (albumIds.length > 0) {
   .album-info h2 {
     font-size: 1.15rem;
     font-weight: 800;
-    color: var(--morado);
+    color: white;
     margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
   .album-info p {
     font-size: 0.875rem;
-    color: #666;
+    color: rgba(255,255,255,0.4);
     margin-bottom: 1rem;
+    font-family: 'Open Sans', sans-serif;
   }
 
   .progress-bar {
-    background: #eee;
+    background: rgba(255,255,255,0.1);
     border-radius: 999px;
-    height: 8px;
+    height: 4px;
     overflow: hidden;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
   }
 
   .progress-fill {
-    background: var(--rojo);
+    background: #EA262A;
     height: 100%;
     border-radius: 999px;
     transition: width 0.4s;
   }
 
   .progress-label {
-    font-size: 0.8rem;
-    color: #888;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
     font-weight: 600;
+    font-family: 'Open Sans', sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   .empty-state {
     text-align: center;
-    color: #888;
-    padding: 3rem 0;
+    color: rgba(255,255,255,0.3);
+    padding: 4rem 0;
+    font-family: 'Open Sans', sans-serif;
   }
 </style>

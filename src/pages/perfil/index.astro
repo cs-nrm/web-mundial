@@ -12,137 +12,355 @@ if (!hasGenerales) {
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
 
-// Datos del usuario
 const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Participante'
-const googleAvatar = user.user_metadata?.avatar_url ?? null
 
-// Progreso del álbum (si existe)
-let albumProgress: { slug: string; titulo: string; obtenidas: number; total: number } | null = null
-const { data: albums } = await supabase.from('albums').select('id, titulo, slug').eq('activo', true).limit(1).single()
+// Avatar
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('avatar_url')
+  .eq('id', user.id)
+  .maybeSingle()
+const avatarUrl: string | null = profile?.avatar_url ?? null
 
-if (albums) {
-  const { count: totalCards } = await supabase
-    .from('cards')
-    .select('*', { count: 'exact', head: true })
-    .eq('album_id', albums.id)
+// Todos los álbumes activos con su color y logo
+const { data: albums } = await supabase
+  .from('albums')
+  .select('id, name, slug, color_acento, logo_url, total_cards')
+  .eq('active', true)
+  .order('created_at', { ascending: true })
 
-  const { count: obtenidas } = await supabase
-    .from('user_cards')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('album_id', albums.id)
+// Progreso del usuario en cada álbum
+type AlbumProgress = {
+  id: string; slug: string; name: string;
+  color: string; logoUrl: string | null;
+  obtenidas: number; total: number; pct: number
+}
+const albumsProgress: AlbumProgress[] = []
 
-  albumProgress = {
-    slug: albums.slug,
-    titulo: albums.titulo,
-    obtenidas: obtenidas ?? 0,
-    total: totalCards ?? 0,
+if (albums && albums.length > 0) {
+  const albumIds = albums.map((a: any) => a.id)
+
+  const [{ data: allCards }, { data: userCards }] = await Promise.all([
+    supabase.from('cards').select('id, album_id').in('album_id', albumIds).eq('active', true),
+    supabase.from('user_cards').select('card_id, cards!inner(album_id)').eq('user_id', user.id),
+  ])
+
+  for (const album of albums as any[]) {
+    const obtenidas = (userCards ?? []).filter((uc: any) => (uc.cards as any)?.album_id === album.id).length
+    const cardsLoaded = (allCards ?? []).filter((c: any) => c.album_id === album.id).length
+    const total = album.total_cards ?? cardsLoaded
+    const pct = total > 0 ? Math.round((obtenidas / total) * 100) : 0
+    albumsProgress.push({
+      id: album.id,
+      slug: album.slug,
+      name: album.name,
+      color: album.color_acento ?? '#ff6b35',
+      logoUrl: album.logo_url ?? null,
+      obtenidas,
+      total,
+      pct,
+    })
   }
 }
 
-// Playlists del usuario
+// Playlists
 const { count: playlistCount } = await supabase
-  .from('playlists')
-  .select('*', { count: 'exact', head: true })
-  .eq('user_id', user.id)
+  .from('playlists').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
 ---
+
 <Layout title="Mi perfil">
-  <div class="min-h-screen py-12 px-4">
-    <div class="max-w-2xl mx-auto">
+  <div class="perfil-page">
 
-      <!-- Header del perfil -->
-      <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 flex items-center gap-6">
-        {googleAvatar ? (
-          <img src={googleAvatar} alt="Avatar" class="w-20 h-20 rounded-full object-cover border-4 border-[#EA262A]" />
-        ) : (
-          <div class="w-20 h-20 rounded-full bg-[#EA262A] flex items-center justify-center text-white text-3xl font-bold spartan">
-            {displayName[0].toUpperCase()}
-          </div>
-        )}
-        <div>
-          <h1 class="text-2xl font-bold spartan text-gray-900">{displayName}</h1>
-          <p class="text-gray-500 text-sm mt-1">{user.email}</p>
-        </div>
-      </div>
+    <!-- Header -->
+    <div class="perfil-header">
+      <div class="perfil-header-inner">
 
-      <!-- Promociones activas -->
-      <h2 class="text-xl font-bold spartan text-white mb-4">Mis promociones</h2>
-      <div class="grid gap-4">
-
-        <!-- Álbum de figuritas -->
-        {albumProgress ? (
-          <a href={`/album/${albumProgress.slug}`} class="block bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition group">
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-3">
-                <span class="text-3xl">🃏</span>
-                <div>
-                  <h3 class="font-bold spartan text-gray-900 group-hover:text-[#EA262A] transition">Álbum de Figuritas</h3>
-                  <p class="text-sm text-gray-500">{albumProgress.titulo}</p>
-                </div>
-              </div>
-              <span class="text-lg font-bold text-[#EA262A]">{albumProgress.obtenidas}/{albumProgress.total}</span>
+        <a href="/perfil/avatar" class="perfil-avatar" title={avatarUrl ? 'Editar avatar' : 'Crear avatar'}>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={displayName} class="perfil-avatar-img" />
+          ) : (
+            <div class="perfil-avatar-empty">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:2rem;height:2rem;color:rgba(255,255,255,0.3)">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span class="perfil-avatar-cta">Crea tu avatar</span>
             </div>
-            <div class="w-full bg-gray-100 rounded-full h-2.5">
-              <div
-                class="bg-[#EA262A] h-2.5 rounded-full transition-all"
-                style={`width: ${albumProgress.total > 0 ? Math.round((albumProgress.obtenidas / albumProgress.total) * 100) : 0}%`}
-              ></div>
-            </div>
-            <p class="text-xs text-gray-400 mt-2 text-right">
-              {albumProgress.total > 0 ? Math.round((albumProgress.obtenidas / albumProgress.total) * 100) : 0}% completado
-            </p>
-          </a>
-        ) : (
-          <a href="/album" class="block bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition group">
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">🃏</span>
-              <div>
-                <h3 class="font-bold spartan text-gray-900 group-hover:text-[#EA262A] transition">Álbum de Figuritas</h3>
-                <p class="text-sm text-gray-500">¡Canjea códigos y completa tu álbum!</p>
-              </div>
-            </div>
-          </a>
-        )}
-
-        <!-- Avatar -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 opacity-60 cursor-not-allowed">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">🎨</span>
-              <div>
-                <h3 class="font-bold spartan text-gray-900">Mi Avatar</h3>
-                <p class="text-sm text-gray-500">Crea tu personaje del Mundial</p>
-              </div>
-            </div>
-            <span class="text-xs bg-yellow-100 text-yellow-700 font-semibold px-3 py-1 rounded-full">Próximamente</span>
-          </div>
-        </div>
-
-        <!-- Playlist -->
-        <a href="/perfil/playlist" class="block bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition group">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">🎵</span>
-              <div>
-                <h3 class="font-bold spartan text-gray-900 group-hover:text-[#EA262A] transition">Mi Playlist</h3>
-                <p class="text-sm text-gray-500">
-                  {(playlistCount ?? 0) > 0 ? `${playlistCount} playlist${playlistCount === 1 ? '' : 's'} creadas` : 'Arma tu lista del Mundial'}
-                </p>
-              </div>
-            </div>
-            <svg class="w-5 h-5 text-gray-400 group-hover:text-[#EA262A] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+          )}
         </a>
 
-      </div>
+        <div class="perfil-divider"></div>
 
-      <!-- Cerrar sesión -->
-      <div class="mt-8 text-center">
-        <a href="/auth/logout" class="text-sm text-gray-400 hover:text-red-500 transition">Cerrar sesión</a>
+        <div class="perfil-meta">
+          <h1 class="perfil-name spartan">{displayName}</h1>
+          <p class="perfil-email">{user.email}</p>
+        </div>
+
+        <a href="/auth/logout" class="perfil-logout">Cerrar sesión</a>
+
       </div>
+    </div>
+
+    <!-- Contenido -->
+    <div class="perfil-content">
+
+      <!-- Álbumes -->
+      {albumsProgress.length > 0 && (
+        <section class="perfil-section">
+          <h2 class="section-title spartan">Mis Álbumes</h2>
+          <div class="albums-list">
+            {albumsProgress.map(ap => (
+              <a href={`/album/${ap.slug}`} class="album-row" style={`--ac: ${ap.color}`}>
+                <div class="album-row-left">
+                  {ap.logoUrl ? (
+                    <img src={ap.logoUrl} alt={ap.name} class="album-row-logo" />
+                  ) : (
+                    <span class="album-row-name spartan">{ap.name}</span>
+                  )}
+                </div>
+                <div class="album-row-right">
+                  <div class="album-row-bar">
+                    <div class="album-row-fill" style={`width:${ap.pct}%`}></div>
+                  </div>
+                  <span class="album-row-pct">{ap.pct}%</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <!-- Promociones -->
+      <section class="perfil-section">
+        <h2 class="section-title spartan">Mis Promociones</h2>
+        <div class="promo-grid">
+
+          <a href="/perfil/avatar" class="promo-card">
+            <span class={`promo-badge ${avatarUrl ? 'badge-active' : 'badge-pending'}`}>
+              {avatarUrl ? 'Activo' : 'Pendiente'}
+            </span>
+            <h3 class="promo-name spartan">Avatar</h3>
+            <p class="promo-desc">{avatarUrl ? 'Editar personaje' : 'Crear personaje'}</p>
+            <span class="promo-link">Ver →</span>
+          </a>
+
+          <a href="/perfil/playlist" class="promo-card">
+            <span class={`promo-badge ${(playlistCount ?? 0) > 0 ? 'badge-active' : 'badge-pending'}`}>
+              {(playlistCount ?? 0) > 0 ? 'Activo' : 'Pendiente'}
+            </span>
+            <h3 class="promo-name spartan">Crear Playlist</h3>
+            <p class="promo-desc">
+              {(playlistCount ?? 0) > 0 ? `${playlistCount} playlist${playlistCount === 1 ? '' : 's'}` : 'Arma tu soundtrack'}
+            </p>
+            <span class="promo-link">Ver →</span>
+          </a>
+
+        </div>
+      </section>
 
     </div>
   </div>
 </Layout>
+
+<style>
+  .perfil-page {
+    min-height: 100vh;
+    background: #0f1118;
+  }
+
+  /* Header */
+  .perfil-header {
+    padding: 2.5rem 1.5rem 2.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .perfil-header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* Avatar */
+  .perfil-avatar {
+    flex-shrink: 0;
+    display: block;
+    width: 150px;
+    height: 100px;
+    border-radius: 0.875rem;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.1);
+    text-decoration: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+  }
+  .perfil-avatar:hover {
+    border-color: rgba(255,255,255,0.35);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.08);
+  }
+  .perfil-avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .perfil-avatar-empty {
+    width: 100%; height: 100%;
+    background: rgba(255,255,255,0.04);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0.4rem;
+  }
+  .perfil-avatar-cta {
+    font-size: 0.55rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(255,255,255,0.25);
+    font-family: 'Open Sans', sans-serif;
+  }
+
+  /* Divisor */
+  .perfil-divider {
+    width: 1px; height: 70px;
+    background: rgba(255,255,255,0.1);
+    margin: 0 2rem; flex-shrink: 0;
+  }
+
+  /* Meta */
+  .perfil-meta { flex: 1; }
+  .perfil-name {
+    font-size: clamp(1.2rem, 3.5vw, 1.75rem);
+    font-weight: 800; color: white;
+    line-height: 1; margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+  }
+  .perfil-email {
+    font-size: 0.8rem; color: rgba(255,255,255,0.35);
+    font-family: 'Open Sans', sans-serif;
+  }
+
+  /* Logout */
+  .perfil-logout {
+    font-size: 0.75rem; color: rgba(255,255,255,0.2);
+    text-decoration: none; font-family: 'Open Sans', sans-serif;
+    transition: color 0.2s; flex-shrink: 0; margin-left: 1.5rem;
+    align-self: flex-start; padding-top: 0.25rem;
+  }
+  .perfil-logout:hover { color: rgba(255,255,255,0.5); }
+
+  /* Contenido */
+  .perfil-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  /* Secciones */
+  .perfil-section {}
+  .section-title {
+    font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.3); margin-bottom: 1rem;
+    font-family: 'Open Sans', sans-serif;
+  }
+
+  /* Lista de álbumes */
+  .albums-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .album-row {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 0.875rem;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .album-row:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .album-row-left {
+    flex-shrink: 0;
+    width: 100px;
+  }
+  .album-row-logo {
+    height: 1.75rem; width: auto;
+    display: block; object-fit: contain;
+    background: white; border-radius: 4px;
+    padding: 0.15rem 0.4rem;
+  }
+  .album-row-name {
+    font-size: 1.1rem; font-weight: 800;
+    color: white; text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+  .album-row-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .album-row-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .album-row-fill {
+    height: 100%;
+    background: var(--ac);
+    border-radius: 999px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 8px var(--ac);
+  }
+  .album-row-pct {
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--ac); white-space: nowrap;
+    font-family: 'Open Sans', sans-serif;
+    min-width: 2.5rem; text-align: right;
+  }
+
+  /* Promo cards */
+  .promo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem;
+  }
+  @media (min-width: 480px) {
+    .promo-grid { grid-template-columns: repeat(2, minmax(0, 280px)); }
+  }
+  .promo-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.4rem;
+    text-decoration: none;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .promo-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.14);
+    transform: translateY(-2px);
+  }
+  .promo-badge {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 999px;
+    font-family: 'Open Sans', sans-serif; align-self: flex-start;
+    margin-bottom: 0.25rem;
+  }
+  .badge-active  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .badge-pending { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.3); }
+  .promo-name { font-size: 1rem; font-weight: 700; color: white; }
+  .promo-desc {
+    font-size: 0.8rem; color: rgba(255,255,255,0.35);
+    font-family: 'Open Sans', sans-serif;
+  }
+  .promo-link {
+    font-size: 0.75rem; font-weight: 600;
+    color: rgba(255,255,255,0.25); align-self: flex-end;
+    font-family: 'Open Sans', sans-serif; margin-top: auto;
+  }
+  .promo-card:hover .promo-link { color: rgba(255,255,255,0.6); }
+</style>

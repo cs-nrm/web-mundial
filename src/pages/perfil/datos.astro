@@ -5,13 +5,20 @@ const { user, hasGenerales } = Astro.locals
 if (!user) {
   return Astro.redirect(`/auth/login?redirect=/perfil/datos`)
 }
-
-// Si ya completó el perfil, ir al hub
 if (hasGenerales) {
   return Astro.redirect('/perfil')
 }
 
 const error = Astro.url.searchParams.get('error')
+
+const dias = Array.from({ length: 31 }, (_, i) => i + 1)
+const meses = [
+  { v: '01', l: 'Enero' }, { v: '02', l: 'Febrero' }, { v: '03', l: 'Marzo' },
+  { v: '04', l: 'Abril' }, { v: '05', l: 'Mayo' }, { v: '06', l: 'Junio' },
+  { v: '07', l: 'Julio' }, { v: '08', l: 'Agosto' }, { v: '09', l: 'Septiembre' },
+  { v: '10', l: 'Octubre' }, { v: '11', l: 'Noviembre' }, { v: '12', l: 'Diciembre' },
+]
+const anios = Array.from({ length: 59 }, (_, i) => 2008 - i) // 2008..1950
 ---
 
 <Layout title="Completa tu perfil">
@@ -38,22 +45,43 @@ const error = Astro.url.searchParams.get('error')
 
         <form method="POST" action="/api/perfil/guardar" id="form-datos">
           <input type="hidden" name="redirect_to" value="/perfil" />
+          <input type="hidden" name="fecha_nac" id="fecha_nac_hidden" />
 
           <!-- Fecha de nacimiento -->
           <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Fecha de nacimiento</label>
-            <input
-              type="date"
-              name="fecha_nac"
-              required
-              max={new Date().toISOString().split('T')[0]}
-              class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#EA262A] transition"
-            />
+            <label class="block text-sm font-semibold text-gray-900 mb-2">Fecha de nacimiento</label>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <select id="sel_dia" class="sel-fecha" required>
+                  <option value="">Día</option>
+                  {dias.map(d => (
+                    <option value={String(d).padStart(2, '0')}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select id="sel_mes" class="sel-fecha" required>
+                  <option value="">Mes</option>
+                  {meses.map(m => (
+                    <option value={m.v}>{m.l}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select id="sel_anio" class="sel-fecha" required>
+                  <option value="">Año</option>
+                  {anios.map(a => (
+                    <option value={String(a)}>{a}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <p id="fecha-error" class="hidden mt-1.5 text-xs text-red-600">Selecciona día, mes y año.</p>
           </div>
 
           <!-- Código postal -->
           <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Código postal</label>
+            <label class="block text-sm font-semibold text-gray-900 mb-1.5">Código postal</label>
             <input
               type="text"
               name="cp"
@@ -62,18 +90,17 @@ const error = Astro.url.searchParams.get('error')
               maxlength="5"
               pattern="[0-9]{5}"
               placeholder="Ej. 64000"
-              class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#EA262A] transition"
+              class="input-text"
             />
           </div>
 
           <!-- Género -->
           <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Género</label>
-            <div class="grid grid-cols-2 gap-2">
+            <label class="block text-sm font-semibold text-gray-900 mb-2">Género</label>
+            <div class="grid grid-cols-3 gap-2">
               {[
                 { value: 'hombre', label: 'Hombre' },
                 { value: 'mujer', label: 'Mujer' },
-                { value: 'no_binario', label: 'No binario' },
                 { value: 'prefiero_no_decir', label: 'Prefiero no decir' },
               ].map(({ value, label }) => (
                 <label class="radio-card">
@@ -86,7 +113,7 @@ const error = Astro.url.searchParams.get('error')
 
           <!-- Estación favorita -->
           <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Estación que más escuchas</label>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">Estación que más escuchas</label>
             <div class="grid grid-cols-2 gap-2">
               {[
                 { value: 'oye', label: 'Oye' },
@@ -104,7 +131,7 @@ const error = Astro.url.searchParams.get('error')
 
           <!-- Enfoque Noticias -->
           <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">¿Escuchas Enfoque Noticias?</label>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">¿Escuchas Enfoque Noticias?</label>
             <div class="flex gap-3">
               <label class="radio-card flex-1">
                 <input type="radio" name="escucha_enfoque" value="si" required class="sr-only peer" />
@@ -119,7 +146,7 @@ const error = Astro.url.searchParams.get('error')
 
           <!-- Medio de escucha -->
           <div class="mb-6">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">¿Desde dónde escuchas?</label>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">¿Desde dónde escuchas?</label>
             <div class="grid grid-cols-2 gap-2">
               {[
                 { value: 'radio', label: 'Radio' },
@@ -140,7 +167,7 @@ const error = Astro.url.searchParams.get('error')
                 name="medio_otro"
                 id="medio_otro"
                 placeholder="¿Cuál?"
-                class="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#EA262A] transition"
+                class="input-text"
               />
             </div>
           </div>
@@ -149,7 +176,7 @@ const error = Astro.url.searchParams.get('error')
           <div class="mb-6">
             <label class="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" name="acepto_aviso" required class="mt-0.5 accent-[#EA262A] w-4 h-4 flex-shrink-0" />
-              <span class="text-xs text-gray-500 leading-relaxed">
+              <span class="text-xs text-gray-600 leading-relaxed">
                 Acepto el <a href="/aviso-privacidad" target="_blank" class="text-[#EA262A] underline">Aviso de Privacidad</a> y autorizo el uso de mis datos conforme a la legislación aplicable.
               </span>
             </label>
@@ -169,10 +196,27 @@ const error = Astro.url.searchParams.get('error')
 </Layout>
 
 <script is:inline>
-  // Mostrar/ocultar campo "otro" para medio de escucha
+  // Combinar día/mes/año en fecha_nac antes de enviar
+  document.getElementById('form-datos').addEventListener('submit', function(e) {
+    var dia  = document.getElementById('sel_dia').value
+    var mes  = document.getElementById('sel_mes').value
+    var anio = document.getElementById('sel_anio').value
+    var errFecha = document.getElementById('fecha-error')
+
+    if (!dia || !mes || !anio) {
+      e.preventDefault()
+      errFecha.classList.remove('hidden')
+      document.getElementById('sel_dia').scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    errFecha.classList.add('hidden')
+    document.getElementById('fecha_nac_hidden').value = anio + '-' + mes + '-' + dia
+  })
+
+  // Mostrar/ocultar campo "otro"
   document.querySelectorAll('input[name="medio_escucha"]').forEach(function(radio) {
     radio.addEventListener('change', function() {
-      var wrap = document.getElementById('otro-wrap')
+      var wrap  = document.getElementById('otro-wrap')
       var input = document.getElementById('medio_otro')
       if (this.value === 'otro') {
         wrap.classList.remove('hidden')
@@ -187,6 +231,34 @@ const error = Astro.url.searchParams.get('error')
 </script>
 
 <style>
+  .input-text {
+    width: 100%;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    color: #111827;
+    outline: none;
+    transition: border-color 0.15s;
+    background: white;
+  }
+  .input-text:focus { border-color: #EA262A; }
+  .input-text::placeholder { color: #9ca3af; }
+
+  .sel-fecha {
+    width: 100%;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.875rem;
+    color: #111827;
+    outline: none;
+    background: white;
+    transition: border-color 0.15s;
+    cursor: pointer;
+  }
+  .sel-fecha:focus { border-color: #EA262A; }
+
   .radio-card {
     display: block;
     cursor: pointer;
@@ -199,7 +271,7 @@ const error = Astro.url.searchParams.get('error')
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #374151;
+    color: #111827;
     transition: border-color 0.15s, background-color 0.15s, color 0.15s;
     cursor: pointer;
   }
@@ -209,7 +281,6 @@ const error = Astro.url.searchParams.get('error')
     color: #EA262A;
   }
 
-  .radio-label.active,
   .peer:checked ~ .radio-label {
     border-color: #EA262A;
     background-color: #fef2f2;
