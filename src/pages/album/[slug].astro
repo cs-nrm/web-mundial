@@ -14,7 +14,7 @@ const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
 const [{ data: album }, { data: profile }] = await Promise.all([
   supabase
     .from('albums')
-    .select('id, slug, name, descripcion, cover_url, color_acento, color_texto, logo_url, total_cards')
+    .select('id, slug, name, descripcion, cover_url, color_acento, color_acento2, color_texto, logo_url, total_cards')
     .eq('slug', slug)
     .eq('active', true)
     .maybeSingle(),
@@ -55,13 +55,14 @@ const collected = collectedSet.size
 const pct = total > 0 ? Math.round((collected / total) * 100) : 0
 
 const accentColor = album.color_acento ?? '#ff6b35'
+const accent2Color = album.color_acento2 ?? accentColor
 const textColor = album.color_texto ?? '#ffffff'
 const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Participante'
 const avatarUrl: string | null = profile?.avatar_url ?? null
 ---
 
 <Layout title={`${album.name} — Mi Álbum`}>
-  <main class="album-page" style={`--accent: ${accentColor}; --accent-glow: ${accentColor}80; --accent-dim: ${accentColor}26; --text-on-accent: ${textColor};`}>
+  <main class="album-page" style={`--accent: ${accentColor}; --accent2: ${accent2Color}; --accent-glow: ${accentColor}80; --accent-dim: ${accentColor}26; --text-on-accent: ${textColor};`}>
 
     <!-- Hero -->
     <div class="hero">
@@ -177,21 +178,22 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
       </div>
 
     </div>
-  </main>
 
-  <!-- Modal figurita -->
-  <div id="card-modal" class="card-modal" hidden>
-    <div class="card-modal-backdrop"></div>
-    <div class="card-modal-box">
-      <button class="card-modal-close" id="card-modal-close" aria-label="Cerrar">✕</button>
-      <img id="modal-img" class="card-modal-img" src="" alt="" />
-      <div class="card-modal-footer">
-        <span id="modal-num" class="card-modal-num spartan"></span>
-        <span class="card-modal-sep">|</span>
-        <span id="modal-name" class="card-modal-name spartan"></span>
+    <!-- Modal figurita -->
+    <div id="card-modal" class="card-modal" hidden>
+      <div class="card-modal-backdrop"></div>
+      <div class="card-modal-box">
+        <button class="card-modal-close" id="card-modal-close" aria-label="Cerrar">✕</button>
+        <img id="modal-img" class="card-modal-img" src="" alt="" />
+        <div class="card-modal-footer">
+          <span id="modal-num" class="card-modal-num spartan"></span>
+          <span class="card-modal-sep">|</span>
+          <span id="modal-name" class="card-modal-name spartan"></span>
+        </div>
       </div>
     </div>
-  </div>
+
+  </main>
 
 </Layout>
 
@@ -504,7 +506,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     box-shadow: 0 0 0 3px var(--accent-dim);
   }
   .btn-canjear {
-    background: linear-gradient(135deg, #e8531a, var(--accent));
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
     color: white;
     border: none;
     padding: 0.75rem 1.75rem;
@@ -605,7 +607,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   /* Footer: número | nombre */
   .card-footer {
     padding: 0.55rem 0.75rem 0.65rem;
-    background: linear-gradient(135deg, #e8531a, var(--accent));
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -726,7 +728,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
   .card-modal-footer {
     padding: 0.75rem 1rem 0.85rem;
-    background: linear-gradient(135deg, #e8531a, var(--accent));
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
     display: flex;
     flex-direction: row;
     align-items: center;

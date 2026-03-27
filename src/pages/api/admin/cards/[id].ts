@@ -3,6 +3,24 @@ import { createSupabaseServerClient } from '../../../../lib/supabase'
 import { canAccess, EDITOR_ROLES } from '../../../../lib/admin'
 import type { UserRole } from '../../../../lib/perfil'
 
+export const DELETE: APIRoute = async ({ request, cookies, locals, params }) => {
+  if (!canAccess(locals.role as UserRole, EDITOR_ROLES)) {
+    return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
+  }
+
+  const supabase = createSupabaseServerClient(request, cookies)
+  const { error } = await supabase
+    .from('cards')
+    .delete()
+    .eq('id', params.id!)
+
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 400 })
+  }
+
+  return new Response(JSON.stringify({ ok: true }), { status: 200 })
+}
+
 export const PATCH: APIRoute = async ({ request, cookies, locals, params }) => {
   if (!canAccess(locals.role as UserRole, EDITOR_ROLES)) {
     return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })

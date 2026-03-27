@@ -82,11 +82,12 @@ const { data: codes } = await codesQuery
           <div class="form-row">
             <label>Cantidad de códigos *</label>
             <input name="cantidad" type="number" min="1" max="500" value="1" required />
+            <span class="hint">Para un código del día compartido, genera 1 con muchos usos.</span>
           </div>
           <div class="form-row">
             <label>Usos máximos por código</label>
-            <input name="max_usos" type="number" min="1" value="1" />
-            <span class="hint">Deja en 1 para códigos de un solo uso.</span>
+            <input name="max_usos" type="number" min="1" value="500" />
+            <span class="hint">Usuarios distintos que pueden canjearlo. Cada usuario solo obtiene la estampa una vez.</span>
           </div>
           <div class="form-row">
             <label>Fecha de expiración</label>
@@ -165,10 +166,14 @@ const { data: codes } = await codesQuery
                     </span>
                   </td>
                   {canManage && (
-                    <td>
+                    <td class="actions-cell">
                       <button class="action-link btn-toggle-code"
                         data-id={c.id} data-active={String(c.active)}>
                         {c.active ? 'Desactivar' : 'Activar'}
+                      </button>
+                      <button class="action-link action-delete btn-del-code"
+                        data-id={c.id} data-code={c.code}>
+                        Eliminar
                       </button>
                     </td>
                   )}
@@ -312,6 +317,27 @@ const { data: codes } = await codesQuery
       btnDeleteSel.disabled = false
       btnDeleteSel.textContent = '🗑 Eliminar seleccionados'
     }
+  })
+
+  // Eliminar código individual
+  document.querySelectorAll('.btn-del-code').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLButtonElement
+      if (!confirm(`¿Eliminar el código "${el.dataset.code}"?`)) return
+      el.disabled = true
+      const res = await fetch('/api/admin/codigos/borrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [el.dataset.id] }),
+      })
+      if (res.ok) {
+        el.closest('tr')?.remove()
+      } else {
+        const data = await res.json()
+        alert(data.error ?? 'Error al eliminar')
+        el.disabled = false
+      }
+    })
   })
 
   // Toggle activo/inactivo
@@ -459,8 +485,11 @@ const { data: codes } = await codesQuery
   .badge-green { background: #d1fae5; color: #065f46; }
   .badge-gray  { background: #f3f4f6; color: #666; }
 
-  .action-link { background: none; border: none; color: var(--rojo); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0; }
+  .action-link { background: none; border: none; color: var(--rojo); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0; font-family: inherit; }
   .action-link:hover { opacity: 0.7; }
+  .action-link:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-delete { color: #dc2626; }
+  .actions-cell { display: flex; gap: 0.75rem; align-items: center; }
 
   .empty-state { text-align: center; color: #aaa; padding: 3rem 0; }
 </style>

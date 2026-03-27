@@ -63,6 +63,12 @@ for (const c of (cardCounts ?? [])) {
                 <a href={`/admin/albums/${a.id}`} class="action-link">Editar</a>
                 <a href={`/admin/codigos?album=${a.id}`} class="action-link">Códigos</a>
                 <a href={`/album/${a.slug}`} target="_blank" class="action-link muted">Ver</a>
+                {canManage && (
+                  <button class="action-link action-delete btn-del-album"
+                    data-id={a.id} data-name={a.name}>
+                    Eliminar
+                  </button>
+                )}
               </td>
             </tr>
           ))}
@@ -71,6 +77,24 @@ for (const c of (cardCounts ?? [])) {
     </div>
   )}
 </AdminLayout>
+
+<script>
+  document.querySelectorAll('.btn-del-album').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLButtonElement
+      if (!confirm(`¿Eliminar el álbum "${el.dataset.name}"? Se eliminarán también todas sus figuritas y códigos. Esta acción no se puede deshacer.`)) return
+      el.disabled = true
+      const res = await fetch(`/api/admin/albums/${el.dataset.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        el.closest('tr')?.remove()
+      } else {
+        const data = await res.json()
+        alert(data.error ?? 'Error al eliminar')
+        el.disabled = false
+      }
+    })
+  })
+</script>
 
 <style>
   .toolbar {
@@ -150,6 +174,8 @@ for (const c of (cardCounts ?? [])) {
 
   .action-link:hover { opacity: 0.7; }
   .action-link.muted { color: #888; font-weight: 400; }
+  .action-delete { background: none; border: none; color: #dc2626; cursor: pointer; padding: 0; font-family: inherit; }
+  .action-delete:hover { opacity: 0.7; }
 
   .empty-state {
     text-align: center;
