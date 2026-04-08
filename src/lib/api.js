@@ -126,9 +126,17 @@ export async function getArticlesEnfoque(catIdOrSlug) {
         if (posts.length > 0) {
             return posts;
         }
+
+
+       // If no posts returned, try a headless browser fetch (this can solve Cloudflare JS challenges).
+        console.warn('getArticlesEnfoque: no posts returned, trying headless browser fetch');
+        return await fetchEnfoqueWithHeadlessBrowser(url);
+
     } catch (err) {
         console.warn('getArticlesEnfoque: primary fetch failed:', err.message);
     }
 
+
     return getArticles(catIdOrSlug);
+
 }

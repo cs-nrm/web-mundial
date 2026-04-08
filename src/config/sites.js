@@ -1,12 +1,11 @@
 export const wpSiteEnfoqueNoticias =
-    'https://enfoquenoticias.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,excerpt,_links,_embedded&categories=27867';
+    'http://34.61.203.222/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=27867';
 
 export const wpSites = [
-    'https://beatdigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,excerpt,_links,_embedded&categories=824',
-    'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,excerpt,_links,_embedded&categories=12352',
-    'https://stereociendigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,excerpt,_links,_embedded&categories=3986',
-    'https://sabrositadigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,excerpt,_links,_embedded&categories=1650',
-    wpSiteEnfoqueNoticias
+    'https://beatdigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=824',
+    'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=12352',
+    'https://stereociendigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=3986',
+    'https://sabrositadigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=1650'
 ];
 
 // Mapping of Category Slugs to internal Site Sections

@@ -3,8 +3,14 @@ import PreSiteHeader from '../components/PreSiteHeader.astro';
 import BarFutbol from './BarFutbol.astro';
 import LeaderBoard from './LeaderBoard.astro';
 import Menu from './Menu.astro';
+import AuthButton from './AuthButton.astro';
 ---
 <!--PreSiteHeader /-->
 <BarFutbol />
-<Menu/>
-<div class="w-[728px] h-[90px] hidden md:block m-auto mt-2"> <a class="w-[728px] h-[90px] m-auto" target="_blank" href="https://www.openbank.mx/"><img src="https://storage.googleapis.com/nrm-web/mundial/6673778896037405434.jpg" alt="Publicidad" /></a>     </div>
+<div class="flex flex-row align-items-center justify-between bg-[#e42380] sticky top-[79px] z-50">
+    <Menu />
+    <div class="header-auth flex items-center pr-4">
+      <AuthButton />
+    </div>
+</div>    
+    <LeaderBoard />

@@ -242,7 +242,7 @@ hr {
 }
 
 /*PUBLICIDAD*/
-#ad-slot1 iframe, #ad-slot2 iframe, #ad-slot3 iframe, #ad-slot31 iframe, #ad-slot32 iframe, #ad-slot4 iframe, #ad-slot42 iframe, #ad-slot421 iframe, #ad-slot5 iframe, #ad-slot6 iframe{margin: 0 auto;}
+#ad-slot1 iframe, #ad-slot2 iframe, #ad-slot3 iframe, #ad-slot31 iframe, #ad-slot32 iframe, #ad-slot321 iframe, #ad-slot4 iframe, #ad-slot41 iframe, #ad-slot42 iframe, #ad-slot421 iframe, #ad-slot5 iframe, #ad-slot6 iframe, #ad-slot61 iframe{margin: 0 auto;}
 /*preloader*/
 .loading{    opacity: 0.3;    transition: opacity 2s; }
 .showpreloader {    display:blocK!important;    transition: opacity 2s; }

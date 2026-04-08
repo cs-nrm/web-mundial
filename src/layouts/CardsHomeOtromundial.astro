@@ -1,0 +1,204 @@
+---
+import { categoryMapping, wpSites } from "../config/sites.js";
+import { getArticles } from "../lib/api.js";
+
+console.log('CardsHomeOtromundial: Starting, sites:', wpSites);
+
+const posts = await getArticles(undefined, { sites: wpSites });
+console.log('CardsHomeOtromundial: posts fetched:', posts.length);
+console.log('All posts data:', posts);
+const { imageBase = 'https://storage.googleapis.com/nrm-web/mundial/balon', listIndex } = Astro.props;
+
+let url_seccion = "fiesta-futbolera"; // Default fallback
+
+// Verify we have posts before trying to access them
+if (!posts || posts.length < 4) {
+    console.warn(`CardsHomeNews: Esperaba 4 posts, pero solo hay ${posts?.length || 0}`);
+}
+
+// Try to find the category slug from embedded terms to determine the section color/link
+if (
+    posts[0] &&
+    posts[0]._embedded &&
+    posts[0]._embedded["wp:term"] &&
+    posts[0]._embedded["wp:term"][0]
+) {
+    const categories = posts[0]._embedded["wp:term"][0];
+    for (const cat of categories) {
+        if (categoryMapping[cat.slug]) {
+            url_seccion = categoryMapping[cat.slug];
+            break;
+        }
+    }
+}
+
+const PLACEHOLDER_IMG =
+    "https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg";
+
+// Create an array of featured images for each post
+const featuredImages = posts.map(p => 
+    p._embedded?.["wp:featuredmedia"]?.[0]?.media_details?.sizes
+        ?.medium_large?.source_url ||
+    p._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+    PLACEHOLDER_IMG
+);
+
+// Función para obtener la imagen del autor
+function getAuthorImage(author) {
+    switch (author) {
+        case "Redacción":
+            return "https://storage.googleapis.com/nrm-web/mundial/logo-enfoque.png";
+        case "4":
+            return "https://storage.googleapis.com/nrm-web/mundial/logo-stereo.png";
+        case "17":
+            return "https://storage.googleapis.com/nrm-web/mundial/logo-beat.png";
+        case "92":
+            return "https://storage.googleapis.com/nrm-web/mundial/logo-oye.png";
+        case "9":
+            return "https://storage.googleapis.com/nrm-web/mundial/logo-sabrosita.png";
+        // Agrega más casos según los autores que tengas
+        default:
+            return "https://storage.googleapis.com/nrm-web/mundial/logo-enfoque.png";
+    }
+}
+
+// Create an array of author images for each post
+const authorImages = posts.map(p => getAuthorImage(
+    p.author ||
+    p._embedded?.author?.[0]?.name ||
+    p.yoast_head_json?.author ||
+    "Redacción"
+));
+
+// Debug: Log author data for each post
+console.log('Author data in CardsHomeOtromundial:', posts.map(p => ({
+    author: p.author,
+    embeddedAuthor: p._embedded?.author?.[0]?.name,
+    yoastAuthor: p.yoast_head_json?.author,
+    finalAuthor: p.author || p._embedded?.author?.[0]?.name || p.yoast_head_json?.author || "Redacción"
+})));
+
+// Debug: Log author data for each post
+console.log('Author data in CardsHomeOtromundial:', posts.map(p => ({
+    author: p.author,
+    embeddedAuthor: p._embedded?.author?.[0]?.name,
+    yoastAuthor: p.yoast_head_json?.author,
+    finalAuthor: p.author || p._embedded?.author?.[0]?.name || p.yoast_head_json?.author || "Redacción"
+})));
+
+    // Compute a sequential image index from 1..10 for the `.image` element.
+// If `post.id` exists we map it deterministically: post.id=1 -> 1.jpg, id=11 -> 1.jpg, etc.
+// Fallback to 1.jpg when no post.id is available.
+    // Selección de imagen en orden 1..10 según el índice de la lista (listIndex)
+    const SEQ_COUNT = 10;
+    let seqIndex = 1;
+
+var sequentialImage = ``;
+    if (typeof listIndex === 'number' && listIndex >= 0) {
+        seqIndex = (listIndex % SEQ_COUNT) + 1;
+        sequentialImage = `${imageBase}${seqIndex}.jpg`;
+    }
+sequentialImage = `${imageBase}${seqIndex}.jpg`;
+
+console.log(posts);
+---
+
+    <div class="container m-auto">
+      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">El Otro Mundial</h1>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="relative">
+                <a href={`/otro-mundial/${posts[0].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                    <h2 class="text-lg lg:text-xl !leading-6 pb-0" set:html={posts[0].title.rendered}></h2>
+                    <div class="flex items-center text-[10px] bg-white rounded-xl text-black p-1">
+                      <span>Creado por:</span>
+                      <!--img class="mx-2 w-[45px] h-auto" src={authorImages[0]} alt={posts[0]._embedded?.author?.[0]?.name || posts[0].yoast_head_json?.author || "Redacción"} /-->
+                      <p class="mx-2 w-[45px] h-auto" set:html={posts[0].yoast_head_json?.author} /></p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="relative">
+                <a href={`/otro-mundial/${posts[1].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                    <h2 class="text-lg lg:text-xl !leading-6" set:html={posts[1].title.rendered}></h2>
+                    <div class="flex items-center text-[10px] bg-white rounded-xl text-black p-1">
+                      <span>Creado por:</span>
+                      <img class="mx-2 w-[45px] h-auto" src={authorImages[1]} alt={posts[1]._embedded?.author?.[0]?.name || posts[1].yoast_head_json?.author || "Redacción"} />
+                      <p class="mx-2 w-[45px] h-auto" set:html={posts[0].yoast_head_json?.author} /></p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="relative">
+                <a href={`/otro-mundial/${posts[2].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                    <h2 class="text-lg lg:text-xl !leading-6" set:html={posts[2].title.rendered}></h2>
+                    <div class="flex items-center text-[10px] bg-white rounded-xl text-black p-1">
+                      <span>Creado por:</span>
+                      <img class="mx-2 w-[45px] h-auto" src={authorImages[2]} alt={posts[2]._embedded?.author?.[0]?.name || posts[2].yoast_head_json?.author || "Redacción"} />
+                      <p class="mx-2 w-[45px] h-auto" set:html={posts[0].yoast_head_json?.author} /></p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="relative">
+                <a href={`/otro-mundial/${posts[3].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                    <h2 class="text-lg lg:text-xl !leading-6" set:html={posts[3].title.rendered}></h2>
+                    <div class="flex items-center text-[10px] bg-white rounded-xl text-black p-1">
+                      <span>Creado por:</span>
+                      <img class="mx-2 w-[45px] h-auto" src={authorImages[3]} alt={posts[3]._embedded?.author?.[0]?.name || posts[3].yoast_head_json?.author || "Redacción"} />
+                      <p class="mx-2 w-[45px] h-auto" set:html={posts[0].yoast_head_json?.author} /></p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+
+        </div>
+    </div>
+
+<div class="m-auto text-center">
+    <a href="/otro-mundial" class="text-white hover:text-black">
+        <button class="ver-mas group relative h-8 m-2 overflow-hidden bg-[#e2241a] uppercase text-xs font-bold tracking-[1px] rounded-xl">
+            <span class="p-4">MÁS NOTICIAS AQUÍ</span>
+        </button>
+    </a>
+</div>
+
+<style>
+.cards-filtro-3{display: none;}
+
+@media (min-width: 769px) and (max-width: 1024px){
+  .cards-filtro-3{display: block;}
+}
+
+.news-content p{
+  font-size: 1rem;
+  padding: 15px 0;
+  line-height: 1;
+  font-weight: bold;
+}
+/*
+.texto-nota{
+  box-shadow: none;
+  mask-image: linear-gradient(to bottom, hsla(var(--color-black), 1) 0, hsla(var(--color-black), 1) 10%, hsla(var(--color-black), 0) 100%);
+}
+
+.text-uno{
+	display: -webkit-box;
+	-webkit-margin-before: 0;
+  margin-block-start: 0;
+  -webkit-margin-after: 12px;
+  margin-block-end: 12px;
+  line-height: 1.2;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}*/
+</style>
+

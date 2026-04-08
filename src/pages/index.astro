@@ -8,6 +8,9 @@ import BoxBanner from "../components/BoxBanner.astro";
 import WidgetCalendario from "../layouts/WidgetCalendario.astro";
 import WidgetSedesEstadios from "../layouts/WidgetSedesEstadios.astro";
 import CardsHomeEnfoque from "../layouts/CardsHomeEnfoque.astro";
+import CardsHomeOtroMundial from "../layouts/CardsHomeOtromundial.astro";
+import CardsHomeMundialfacil from "../layouts/CardsHomeMundialfacil.astro";
+
 
 const posts = await getArticlesEnfoque();
 console.log('📄 index.astro posts:', posts.length, 'posts loaded');
@@ -19,7 +22,9 @@ if (posts.length > 0) {
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <main id="home" class="">
     <section><CardsHomeEnfoque posts={posts} /></section>
-    <section>
+    <section><CardsHomeOtroMundial /></section>
+    <section><CardsHomeMundialfacil /></section>
+    <!--section>
       <WidgetSorteo />
       <WidgetCalendario/>
       <WidgetSedesEstadios/>
@@ -60,13 +65,6 @@ if (posts.length > 0) {
             style="position:absolute;top:0;left:0;width:100%;height:100%;"
           ></iframe>
         </div>
-        <!--div class="w-full lg:w-[25%] h-[500px] lg:h-auto">
-          <iframe
-            src="https://vimeo.com/live/interaction_tools/live_event/5550286?theme=light"
-            width="100%"
-            height="100%"
-            frameborder="0"></iframe>
-        </div-->
       </div>
     </section>
     <section class="container mx-auto px-4 py-8">
@@ -76,6 +74,6 @@ if (posts.length > 0) {
         <a target="_blank" href="https://carreiro.mx/"><img src="https://storage.googleapis.com/nrm-web/mundial/carreiro.png"/></a>
         <a target="_blank" href="https://www.ecoce.mx/"><img src="https://storage.googleapis.com/nrm-web/mundial/ecoce.png"/></a>
       </div>
-    </section>
+    </section-->
   </main>
 </Layout>

@@ -1,7 +1,9 @@
 ---
-import { categoryMapping } from "../config/sites.js";
+import { categoryMapping, wpSites } from "../config/sites.js";
+import { getArticles } from "../lib/api.js";
 
-const { posts = [], imageBase = 'https://storage.googleapis.com/nrm-web/mundial/balon', listIndex } = Astro.props;
+const posts = await getArticles(undefined, { sites: wpSites });
+const { imageBase = 'https://storage.googleapis.com/nrm-web/mundial/balon', listIndex } = Astro.props;
 
 let url_seccion = "fiesta-futbolera"; // Default fallback
 
@@ -38,8 +40,7 @@ const featuredImages = posts.map(p =>
 );
 
 const author =
-    posts[0]?._embedded?.author?.[0]?.name ||
-    posts[0]?.yoast_head_json?.author ||
+    posts[0]?.author ||
     "Redacción";
 // Switch para asignar imagen por autor
 let authorImage = "";
@@ -47,16 +48,16 @@ switch (author) {
     case "Redacción":
         authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-enfoque.png";
         break;
-    case "Cecilia Masariego":
+    case "4":
         authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-stereo.png";
         break;
-    case "Fers Ortiz":
+    case "17":
         authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-beat.png";
         break;
-    case "Rubí González":
+    case "92":
         authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-oye.png";
     break;
-    case "Kenia Espinosa":
+    case "9":
         authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-sabrosita.png";
     break;
     // Agrega más casos según los autores que tengas
@@ -81,38 +82,24 @@ sequentialImage = `${imageBase}${seqIndex}.jpg`;
 ---
 
     <div class="container m-auto">
-      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Acerca de</h1>
+      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Un Mundial más Fácil</h1>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="lg:col-span-2">
-            <a href={`/acerca-de/${posts[0].slug}/`}>
-            <div class="relative h-full">
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
-                <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[0].title.rendered}></h2>
-                <div class="flex items-center">
-                    <span>Creado por:</span>
-                    <img class="mx-2 w-[45px] h-auto" src={authorImage} alt={author} />
-                </div>
-              </div>
-            </div>
-            </a>
-          </div>
           <div class="flex flex-col gap-4 lg:col-span-2">
             <div class="flex flex-row gap-4 h-1/2">
               <div class="relative">
-                <a href={`/acerca-de/${posts[1].slug}/`}>
-                  <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <a href={`/acerca-de/${posts[0].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[1].title.rendered}></h2>
+                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[0].title.rendered}></h2>
                   </div>
                 </a>
               </div>
               <!-- Secundaria 2 -->
               <div class="relative">
-                <a href={`/acerca-de/${posts[2].slug}/`}>
-                  <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <a href={`/acerca-de/${posts[1].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[2].title.rendered}></h2>
+                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[1].title.rendered}></h2>
                   </div>
                 </a>
               </div>
@@ -127,13 +114,45 @@ sequentialImage = `${imageBase}${seqIndex}.jpg`;
               </div>
               </a>
             </div>
+
+          </div>
+          <div class="flex flex-col gap-4 lg:col-span-2">
+            <div class="lg:col-span-2 h-1/2">
+              <a href={`/acerca-de/${posts[2].slug}/`}>
+              <div class="relative h-full">
+                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
+                  <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[2].title.rendered}></h2>
+                </div>
+              </div>
+              </a>
+            </div>
+            <div class="flex flex-row gap-4 h-1/2">
+              <div class="relative">
+                <a href={`/acerca-de/${posts[4].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[4].title.rendered}></h2>
+                  </div>
+                </a>
+              </div>
+              <!-- Secundaria 2 -->
+              <div class="relative">
+                <a href={`/acerca-de/${posts[5].slug}/`}>
+                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[5].title.rendered}></h2>
+                  </div>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
     </div>
 
 <div class="m-auto text-center">
     <a href="/acerca-de" class="text-white hover:text-black">
-        <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-[#e2241a] uppercase text-xs font-bold tracking-[1px] rounded-xl">
+        <button class="ver-mas group relative h-8 m-2 overflow-hidden bg-[#e2241a] uppercase text-xs font-bold tracking-[1px] rounded-xl">
             <span class="p-4">MÁS NOTICIAS AQUÍ</span>
         </button>
     </a>
