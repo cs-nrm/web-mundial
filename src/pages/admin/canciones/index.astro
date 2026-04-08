@@ -126,6 +126,16 @@ const estacionColors: Record<string, string> = {
       </p>
 
       <form id="form-import" enctype="multipart/form-data">
+        <div style="margin-bottom:1rem;">
+          <label style="display:block;font-size:0.875rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Estación</label>
+          <select name="estacion" required style="width:100%;border:1.5px solid #d1d5db;border-radius:0.5rem;padding:0.6rem 0.8rem;font-size:0.9rem;color:#374151;background:white;">
+            <option value="">Selecciona una estación…</option>
+            <option value="oye">Oye</option>
+            <option value="beat">Beat</option>
+            <option value="stereocien">Stereocien</option>
+            <option value="sabrosita">Sabrosita</option>
+          </select>
+        </div>
         <div id="drop-area" style="border:2px dashed #d1d5db;border-radius:0.75rem;padding:2rem;text-align:center;cursor:pointer;margin-bottom:1rem;transition:border-color 0.2s;">
           <div style="font-size:2rem;margin-bottom:0.5rem;">📂</div>
           <p style="color:#6b7280;font-size:0.875rem;">Arrastra tu archivo aquí o <span style="color:var(--rojo);font-weight:600;">haz clic para seleccionar</span></p>
@@ -210,8 +220,10 @@ document.getElementById('form-import')!.addEventListener('submit', async e => {
   btn.disabled = true
   btn.textContent = 'Importando...'
 
+  const estacion = (document.querySelector('#form-import select[name="estacion"]') as HTMLSelectElement)?.value
   const formData = new FormData()
   formData.append('file', file)
+  if (estacion) formData.append('estacion', estacion)
 
   const res = await fetch('/api/admin/songs/importar', { method: 'POST', body: formData })
   const data = await res.json()

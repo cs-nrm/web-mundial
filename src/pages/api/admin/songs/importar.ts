@@ -13,9 +13,13 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
   const formData = await request.formData()
   const file = formData.get('file') as File | null
+  const estacion = (formData.get('estacion') as string | null)?.trim().toLowerCase()
 
   if (!file || !file.size) {
     return new Response(JSON.stringify({ error: 'Archivo requerido' }), { status: 400 })
+  }
+  if (!estacion || !ESTACIONES_VALIDAS.includes(estacion)) {
+    return new Response(JSON.stringify({ error: 'Selecciona una estación válida' }), { status: 400 })
   }
 
   const allowed = [
@@ -56,7 +60,6 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     return {
       artist: get('artista', 'artist', 'autor'),
       title: get('titulo', 'título', 'title', 'cancion', 'canción', 'song'),
-      estacion: get('estacion', 'estación', 'station', 'radio').toLowerCase(),
     }
   }
 
@@ -65,22 +68,13 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     .filter(r => r.artist && r.title)
 
   if (!registros.length) {
-    return new Response(JSON.stringify({ error: 'No se encontraron filas válidas. Verifica las columnas: artista, titulo, estacion' }), { status: 400 })
+    return new Response(JSON.stringify({ error: 'No se encontraron filas válidas. Verifica que el archivo tenga columnas: artista, titulo' }), { status: 400 })
   }
 
-  // Validar estaciones
-  const invalidas = registros.filter(r => r.estacion && !ESTACIONES_VALIDAS.includes(r.estacion))
-  if (invalidas.length) {
-    return new Response(JSON.stringify({
-      error: `Estaciones inválidas encontradas: ${[...new Set(invalidas.map(r => r.estacion))].join(', ')}. Usa: ${ESTACIONES_VALIDAS.join(', ')}`
-    }), { status: 400 })
-  }
-
-  // Usar 'sabrosita' como default si no se especifica estación
   const payload = registros.map(r => ({
     artist: r.artist,
     title: r.title,
-    estacion: ESTACIONES_VALIDAS.includes(r.estacion) ? r.estacion : 'sabrosita',
+    estacion,
   }))
 
   const supabase = createSupabaseServerClient(request, cookies)

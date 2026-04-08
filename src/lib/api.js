@@ -1,7 +1,6 @@
 const API_URL = import.meta.env.PUBLIC_API_URL;
 
 import { wpSites, wpSiteEnfoqueNoticias } from '../config/sites.js';
-import { fetchEnfoqueWithHeadlessBrowser } from './enfoqueProxy.js';
 
 export async function fetchAPI(query = '') {
     // This function is kept for backward compatibility or single-site calls if needed.
@@ -122,29 +121,14 @@ export async function getArticlesEnfoque(catIdOrSlug) {
     // 2) If blocked (403), attempt a browser-like fetch with headers
     // 3) As a last resort, fall back to the multi-site feed to avoid showing an empty UI
 
-    const url = `${wpSiteEnfoqueNoticias}&per_page=20`;
-
     try {
         const posts = await getArticles(catIdOrSlug, { sites: [wpSiteEnfoqueNoticias] });
         if (posts.length > 0) {
             return posts;
         }
-
-        // If no posts returned, try a headless browser fetch (this can solve Cloudflare JS challenges).
-        console.warn('getArticlesEnfoque: no posts returned, trying headless browser fetch');
-        return await fetchEnfoqueWithHeadlessBrowser(url);
     } catch (err) {
-        console.warn('getArticlesEnfoque: primary fetch failed, trying headless browser fetch:', err.message);
+        console.warn('getArticlesEnfoque: primary fetch failed:', err.message);
     }
 
-    // Try the headless browser fetch path.
-    try {
-        return await fetchEnfoqueWithHeadlessBrowser(url);
-    } catch (err) {
-        console.warn('getArticlesEnfoque: headless browser fetch failed:', err.message);
-    }
-
-    // Fallback: return all sites to keep UI populated.
-    console.warn('getArticlesEnfoque: falling back to multi-site feed (wpSites)');
     return getArticles(catIdOrSlug);
 }
