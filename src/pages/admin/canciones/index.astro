@@ -35,13 +35,22 @@ const estacionColors: Record<string, string> = {
 ---
 <AdminLayout title="Catálogo de Canciones">
 
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:gap;">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
     <div>
-      <p style="color:#6b7280; font-size:0.9rem;">{count ?? 0} canciones en total</p>
+      <p style="color:#6b7280; font-size:0.9rem;">{count ?? 0} canciones {estacionParam !== 'todas' ? `de ${estacionParam}` : 'en total'}</p>
     </div>
-    <button onclick="document.getElementById('modal-import').removeAttribute('hidden')" style="background:var(--rojo);color:white;border:none;padding:0.6rem 1.2rem;border-radius:0.5rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
-      ⬆️ Importar CSV / Excel
-    </button>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      {estacionParam !== 'todas' && (
+        <button
+          onclick={`eliminarEstacion('${estacionParam}', ${count ?? 0})`}
+          style="background:white;color:#ef4444;border:2px solid #fca5a5;padding:0.6rem 1.2rem;border-radius:0.5rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
+          🗑 Eliminar todo ({count ?? 0})
+        </button>
+      )}
+      <button onclick="document.getElementById('modal-import').removeAttribute('hidden')" style="background:var(--rojo);color:white;border:none;padding:0.6rem 1.2rem;border-radius:0.5rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
+        ⬆️ Importar CSV / Excel
+      </button>
+    </div>
   </div>
 
   <!-- Filtros por estación -->
@@ -176,6 +185,25 @@ const estacionColors: Record<string, string> = {
 </style>
 
 <script>
+(window as any).eliminarEstacion = async function eliminarEstacion(estacion: string, total: number) {
+  const confirmado = confirm(`¿Eliminar las ${total} canciones de "${estacion}"?\n\nEsta acción no se puede deshacer.`)
+  if (!confirmado) return
+
+  const res = await fetch('/api/admin/songs/borrar-estacion', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ estacion }),
+  })
+  const data = await res.json()
+
+  if (res.ok) {
+    alert(`Se eliminaron ${data.eliminadas} canciones de "${estacion}".`)
+    window.location.href = '/admin/canciones?estacion=todas&p=1'
+  } else {
+    alert(`Error: ${data.error}`)
+  }
+}
+
 async function toggleSong(checkbox: HTMLInputElement) {
   const id = checkbox.dataset.id
   const activo = checkbox.checked

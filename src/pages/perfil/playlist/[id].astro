@@ -43,36 +43,53 @@ const estacionColors: Record<string, string> = {
 }
 ---
 <Layout title={playlist.nombre}>
-  <div class="min-h-screen py-12 px-4">
-    <div class="max-w-3xl mx-auto">
 
-      <!-- Header -->
-      <div class="mb-8">
-        <a href="/perfil/playlist" class="text-sm text-gray-400 hover:text-white transition">← Mis playlists</a>
-        <div class="flex items-center justify-between mt-2 gap-4 flex-wrap">
-          <h1 class="text-3xl font-bold spartan text-white" id="playlist-nombre">{playlist.nombre}</h1>
-          <div class="flex gap-2">
-            <button onclick="document.getElementById('modal-renombrar').removeAttribute('hidden')"
-              class="text-sm border-2 border-white/30 text-white/70 px-4 py-2 rounded-xl hover:border-white hover:text-white transition">
-              Renombrar
-            </button>
-            <button onclick="eliminarPlaylist()"
-              class="text-sm border-2 border-red-500/50 text-red-400 px-4 py-2 rounded-xl hover:border-red-500 hover:text-red-500 transition">
-              Eliminar
-            </button>
-          </div>
+  <!-- Hero header — fondo negro con acento lima -->
+  <div class="bg-[#0a0a0a] px-4 pt-10 pb-16">
+    <div class="max-w-3xl mx-auto">
+      <a href="/perfil/playlist" class="inter text-sm text-gray-400 hover:text-[#c5e513] transition flex items-center gap-1 w-fit mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Mis playlists
+      </a>
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p class="inter text-[#c5e513] text-xs font-600 uppercase tracking-widest mb-1">Playlist</p>
+          <h1 class="syne text-4xl font-extrabold text-white leading-tight" id="playlist-nombre">{playlist.nombre}</h1>
+          <p class="inter text-gray-400 mt-2 text-sm" id="contador-canciones">
+            {(misCanciones ?? []).length} {(misCanciones ?? []).length === 1 ? 'canción' : 'canciones'}
+          </p>
         </div>
-        <p class="text-gray-400 mt-1" id="contador-canciones">
-          {(misCanciones ?? []).length} {(misCanciones ?? []).length === 1 ? 'canción' : 'canciones'}
-        </p>
+        <div class="flex gap-2 flex-wrap items-center pt-1">
+          {(misCanciones ?? []).length > 0 && (
+            <button onclick="window.abrirPlayer(window.__playlistSongs)"
+              class="inter flex items-center gap-2 bg-[#c5e513] text-[#0a0a0a] font-semibold text-sm px-5 py-2.5 rounded-xl hover:brightness-90 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M8 5v14l11-7z"/></svg>
+              Reproducir
+            </button>
+          )}
+          <button onclick="document.getElementById('modal-renombrar').removeAttribute('hidden')"
+            class="inter text-sm border-2 border-white/20 text-white/60 px-4 py-2.5 rounded-xl hover:border-white/60 hover:text-white transition">
+            Renombrar
+          </button>
+          <button onclick="eliminarPlaylist()"
+            class="inter text-sm border-2 border-red-500/30 text-red-400/80 px-4 py-2.5 rounded-xl hover:border-red-400 hover:text-red-400 transition">
+            Eliminar
+          </button>
+        </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Contenido — fondo blanco levantado sobre el hero -->
+  <div class="bg-gray-50 min-h-screen px-4 -mt-6 pt-8 pb-16">
+    <div class="max-w-3xl mx-auto space-y-5">
 
       <!-- Mis canciones -->
-      <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-        <h2 class="font-bold spartan text-gray-900 text-lg mb-4">En mi playlist</h2>
+      <div class="bg-white rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)">
+        <h2 class="syne font-bold text-[#0a0a0a] text-lg mb-4">En mi playlist</h2>
         <div id="lista-mis-canciones">
           {(misCanciones ?? []).length === 0 ? (
-            <p class="text-gray-400 text-center py-6">Aún no tienes canciones. Agrégalas del catálogo abajo.</p>
+            <p class="inter text-gray-400 text-center text-sm py-8">Aún no tienes canciones. Agrégalas del catálogo abajo.</p>
           ) : (
             <div class="divide-y divide-gray-100">
               {(misCanciones ?? []).map(ps => {
@@ -80,17 +97,19 @@ const estacionColors: Record<string, string> = {
                 return (
                   <div class="flex items-center justify-between py-3" data-song-row={song.id}>
                     <div>
-                      <p class="font-medium text-gray-900">{song.artist}</p>
-                      <p class="text-sm text-gray-500">{song.title}</p>
+                      <p class="inter font-medium text-[#111827] text-sm">{song.artist}</p>
+                      <p class="inter text-xs text-gray-400 mt-0.5">{song.title}</p>
                     </div>
                     <div class="flex items-center gap-3">
-                      <span style={`background:${estacionColors[song.estacion]}20;color:${estacionColors[song.estacion]};`}
-                        class="text-xs font-semibold px-2 py-0.5 rounded-full">{song.estacion}</span>
+                      <span style={`background:${estacionColors[song.estacion]}18;color:${estacionColors[song.estacion]};`}
+                        class="inter text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md">{song.estacion}</span>
                       <button
                         onclick={`quitarCancion('${song.id}', this)`}
-                        class="text-red-400 hover:text-red-600 transition text-lg leading-none"
+                        class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-400 transition rounded-full hover:bg-red-50"
                         title="Quitar"
-                      >✕</button>
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                      </button>
                     </div>
                   </div>
                 )
@@ -100,19 +119,19 @@ const estacionColors: Record<string, string> = {
         </div>
       </div>
 
-      <!-- Catálogo para agregar -->
-      <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="font-bold spartan text-gray-900 text-lg mb-4">Agregar canciones</h2>
+      <!-- Catálogo -->
+      <div class="bg-white rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)">
+        <h2 class="syne font-bold text-[#0a0a0a] text-lg mb-4">Agregar canciones</h2>
 
-        <!-- Filtros -->
+        <!-- Filtros estación -->
         <div class="flex gap-2 flex-wrap mb-4">
           <button onclick="filtrarEstacion('todas')" data-estacion="todas"
-            class="filtro-btn active px-3 py-1.5 rounded-full text-sm font-semibold border-2 border-[#EA262A] bg-[#EA262A] text-white">
+            class="filtro-btn active inter px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-[#c5e513] bg-[#c5e513] text-[#0a0a0a] transition">
             Todas
           </button>
           {ESTACIONES.map(e => (
             <button onclick={`filtrarEstacion('${e}')`} data-estacion={e}
-              class="filtro-btn px-3 py-1.5 rounded-full text-sm font-semibold border-2 border-gray-200 text-gray-600 hover:border-gray-400 transition">
+              class="filtro-btn inter px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-800 transition">
               {e.charAt(0).toUpperCase() + e.slice(1)}
             </button>
           ))}
@@ -124,7 +143,7 @@ const estacionColors: Record<string, string> = {
           id="buscar"
           placeholder="Buscar artista o canción..."
           oninput="filtrarCatalogo()"
-          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-[#EA262A] transition mb-4"
+          class="inter w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-[#c5e513] transition mb-4 bg-gray-50"
         />
 
         <!-- Lista catálogo -->
@@ -140,17 +159,19 @@ const estacionColors: Record<string, string> = {
               data-title-orig={song.title}
             >
               <div>
-                <p class="font-medium text-gray-900 text-sm">{song.artist}</p>
-                <p class="text-xs text-gray-500">{song.title}</p>
+                <p class="inter font-medium text-[#111827] text-sm">{song.artist}</p>
+                <p class="inter text-xs text-gray-400 mt-0.5">{song.title}</p>
               </div>
-              <div class="flex items-center gap-3 pr-2">
-                <span style={`background:${estacionColors[song.estacion]}20;color:${estacionColors[song.estacion]};`}
-                  class="text-xs font-semibold px-2 py-0.5 rounded-full">{song.estacion}</span>
+              <div class="flex items-center gap-3 pr-1">
+                <span style={`background:${estacionColors[song.estacion]}18;color:${estacionColors[song.estacion]};`}
+                  class="inter text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md">{song.estacion}</span>
                 {enPlaylist.has(song.id) ? (
-                  <span class="btn-agregar w-8 h-8 flex items-center justify-center text-green-500 font-bold text-lg" data-song-id={song.id}>✓</span>
+                  <span class="btn-agregar w-8 h-8 flex items-center justify-center text-[#c5e513] font-bold text-base" data-song-id={song.id}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                  </span>
                 ) : (
                   <button
-                    class="btn-agregar w-8 h-8 flex items-center justify-center rounded-full bg-[#EA262A] text-white hover:bg-red-700 transition text-lg font-bold flex-shrink-0"
+                    class="btn-agregar w-8 h-8 flex items-center justify-center rounded-full bg-[#c5e513] text-[#0a0a0a] hover:brightness-90 transition font-bold text-xl flex-shrink-0"
                     data-song-id={song.id}
                     onclick={`window.agregarCancion('${song.id}', this)`}
                     title="Agregar"
@@ -166,23 +187,24 @@ const estacionColors: Record<string, string> = {
   </div>
 
   <!-- Modal renombrar -->
-  <div id="modal-renombrar" hidden class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-      <h2 class="text-xl font-bold spartan text-gray-900 mb-6">Renombrar playlist</h2>
+  <div id="modal-renombrar" hidden class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-8 w-full max-w-md" style="box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+      <h2 class="syne text-xl font-bold text-[#0a0a0a] mb-1">Renombrar playlist</h2>
+      <p class="inter text-sm text-gray-400 mb-6">Máximo 60 caracteres</p>
       <input
         id="input-nuevo-nombre"
         type="text"
         value={playlist.nombre}
         maxlength="60"
-        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-[#EA262A] transition mb-4"
+        class="inter w-full border-2 border-gray-100 rounded-xl px-4 py-3 text-gray-900 text-sm focus:outline-none focus:border-[#c5e513] transition mb-4 bg-gray-50"
       />
       <div class="flex gap-3">
         <button onclick="document.getElementById('modal-renombrar').setAttribute('hidden','')"
-          class="flex-1 border-2 border-gray-200 rounded-xl py-3 font-semibold text-gray-700 hover:bg-gray-50 transition">
+          class="inter flex-1 border-2 border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
           Cancelar
         </button>
         <button onclick="renombrarPlaylist()"
-          class="flex-1 bg-[#EA262A] text-white font-bold py-3 rounded-xl hover:bg-red-700 transition spartan">
+          class="inter flex-1 bg-[#c5e513] text-[#0a0a0a] font-semibold text-sm py-3 rounded-xl hover:brightness-90 transition">
           Guardar
         </button>
       </div>
@@ -191,11 +213,11 @@ const estacionColors: Record<string, string> = {
 
   <style>
     #modal-renombrar[hidden] { display: none !important; }
-    .filtro-btn.active { border-color: #EA262A; background: #EA262A; color: white; }
+    .filtro-btn.active { border-color: #c5e513 !important; background: #c5e513 !important; color: #0a0a0a !important; }
   </style>
 </Layout>
 
-<script define:vars={{ playlistId: playlist.id }}>
+<script is:inline define:vars={{ playlistId: playlist.id, songsList: (misCanciones ?? []).map(ps => { const s = ps.songs_catalog as any; return { artist: s.artist, title: s.title } }) }}>
 let estacionActiva = 'todas'
 
 window.filtrarEstacion = function filtrarEstacion(estacion) {
@@ -226,9 +248,9 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
   if (res.ok) {
     // Convertir botón a checkmark
     const span = document.createElement('span')
-    span.className = 'btn-agregar w-8 h-8 flex items-center justify-center text-green-500 font-bold text-lg'
+    span.className = 'btn-agregar w-8 h-8 flex items-center justify-center text-[#c5e513]'
     span.dataset.songId = songId
-    span.textContent = '✓'
+    span.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`
     btn.replaceWith(span)
 
     // Obtener datos del item del catálogo
@@ -254,12 +276,14 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
     fila.dataset.songRow = songId
     fila.innerHTML = `
       <div>
-        <p class="font-medium text-gray-900">${artist}</p>
-        <p class="text-sm text-gray-500">${title}</p>
+        <p class="inter font-medium text-[#111827] text-sm">${artist}</p>
+        <p class="inter text-xs text-gray-400 mt-0.5">${title}</p>
       </div>
       <div class="flex items-center gap-3">
-        <span style="background:${color}20;color:${color};" class="text-xs font-semibold px-2 py-0.5 rounded-full">${estacion}</span>
-        <button onclick="window.quitarCancion('${songId}', this)" class="text-red-400 hover:text-red-600 transition text-lg leading-none" title="Quitar">✕</button>
+        <span style="background:${color}18;color:${color};" class="inter text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md">${estacion}</span>
+        <button onclick="window.quitarCancion('${songId}', this)" class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-400 transition rounded-full hover:bg-red-50" title="Quitar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
       </div>`
     contenedor.prepend(fila)
 
@@ -270,7 +294,7 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
   }
 }
 
-window.quitarCancion = async function quitarCancion(songId, btn) {
+window.quitarCancion = async function quitarCancion(songId, _btn) {
   const res = await fetch(`/api/perfil/playlists/${playlistId}/canciones`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
@@ -284,11 +308,10 @@ window.quitarCancion = async function quitarCancion(songId, btn) {
     // Restaurar botón del catálogo
     const catBtn = document.querySelector(`.btn-agregar[data-song-id="${songId}"]`)
     if (catBtn) {
-      catBtn.textContent = '+'
+      catBtn.innerHTML = '+'
       catBtn.disabled = false
-      catBtn.classList.remove('text-green-500', 'cursor-default')
-      catBtn.classList.add('text-[#EA262A]', 'hover:text-red-700')
-      catBtn.onclick = () => agregarCancion(songId, catBtn)
+      catBtn.className = 'btn-agregar w-8 h-8 flex items-center justify-center rounded-full bg-[#c5e513] text-[#0a0a0a] hover:brightness-90 transition font-bold text-xl flex-shrink-0'
+      catBtn.onclick = () => window.agregarCancion(songId, catBtn)
     }
 
     actualizarContador(-1)
@@ -322,4 +345,7 @@ async function eliminarPlaylist() {
   const res = await fetch(`/api/perfil/playlists/${playlistId}`, { method: 'DELETE' })
   if (res.ok) window.location.href = '/perfil/playlist'
 }
+
+// Exponer la lista de canciones para el player global
+window.__playlistSongs = songsList
 </script>

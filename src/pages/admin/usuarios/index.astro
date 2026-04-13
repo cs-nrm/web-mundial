@@ -1,29 +1,48 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro'
-import { createSupabaseServerClient } from '../../../lib/supabase'
 import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
 
 const { role: myRole } = Astro.locals
 if (!canAccess(myRole as UserRole, MANAGE_ROLES)) {
   return Astro.redirect('/admin')
 }
 
-const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+const search = Astro.url.searchParams.get('q')?.toLowerCase() ?? ''
+const pagina = parseInt(Astro.url.searchParams.get('p') ?? '1')
+const porPagina = 50
 
-const search = Astro.url.searchParams.get('q') ?? ''
+const adminClient = createSupabaseAdminClient()
 
-let query = supabase
-  .from('profiles')
-  .select('id, email, full_name, role, created_at, avatar_url')
-  .order('created_at', { ascending: false })
-  .limit(100)
+// Traer todos los usuarios de auth (fuente de verdad)
+const { data: authData } = await adminClient.auth.admin.listUsers({ page: pagina, perPage: porPagina })
+const authUsers = authData?.users ?? []
+
+// Traer perfiles para cruzar roles y nombres
+const ids = authUsers.map(u => u.id)
+const { data: profiles } = ids.length
+  ? await adminClient.from('profiles').select('id, full_name, role, avatar_url').in('id', ids)
+  : { data: [] }
+
+const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
+
+// Combinar y filtrar
+let users = authUsers.map(u => ({
+  id: u.id,
+  email: u.email ?? '',
+  full_name: profileMap[u.id]?.full_name ?? '',
+  role: profileMap[u.id]?.role ?? 'user',
+  avatar_url: profileMap[u.id]?.avatar_url ?? '',
+  created_at: u.created_at,
+}))
 
 if (search) {
-  query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`)
+  users = users.filter(u =>
+    u.email.toLowerCase().includes(search) ||
+    u.full_name.toLowerCase().includes(search)
+  )
 }
-
-const { data: users } = await query
 ---
 
 <AdminLayout title="Usuarios">

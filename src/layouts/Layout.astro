@@ -79,5 +79,172 @@ const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImag
 
     <Footer />
     <PerfilModal />
+
+    <!-- Player persistente entre navegaciones -->
+    <div id="player-panel" transition:persist class="fixed bottom-4 right-4 z-50 w-80 rounded-2xl overflow-hidden shadow-2xl bg-gray-900 text-white" style="display:none">
+      <div class="flex items-center justify-between px-4 py-2 border-b border-white/10">
+        <span class="text-xs text-gray-400" id="player-counter"></span>
+        <button onclick="window.cerrarPlayer()" class="text-gray-400 hover:text-white text-xl leading-none">×</button>
+      </div>
+      <div class="relative bg-black" style="padding-bottom:56.25%">
+        <div id="yt-frame" class="absolute inset-0 w-full h-full"></div>
+      </div>
+      <div class="px-4 py-3 text-center">
+        <p class="font-bold text-white text-sm leading-tight truncate" id="player-artist"></p>
+        <p class="text-gray-400 text-xs mt-0.5 truncate" id="player-title"></p>
+      </div>
+      <div class="flex justify-center items-center gap-6 pb-4">
+        <button onclick="window.prevSong()" class="text-gray-400 hover:text-white transition text-2xl">⏮</button>
+        <button onclick="window.togglePlay()" class="w-10 h-10 rounded-full bg-[#EA262A] flex items-center justify-center hover:bg-red-700 transition">
+          <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 hidden"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button onclick="window.nextSong()" class="text-gray-400 hover:text-white transition text-2xl">⏭</button>
+        <button onclick="window.toggleShuffle()" id="btn-shuffle" title="Shuffle" class="text-gray-400 hover:text-white transition">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <style>
+      #yt-frame iframe { width: 100%; height: 100%; border: 0; }
+      #btn-shuffle.active { color: #EA262A; }
+    </style>
+
+    <script is:inline>
+    if (!window.__playerInit) {
+      window.__playerInit = true
+
+      let ytPlayer = null
+      let playerReady = false
+      let currentSongIndex = 0
+      let pendingVideoId = null
+      let shuffleOn = false
+      let shuffledQueue = []
+      let songsList = []
+
+      // Cargar YouTube IFrame API
+      const ytScript = document.createElement('script')
+      ytScript.src = 'https://www.youtube.com/iframe_api'
+      document.head.appendChild(ytScript)
+
+      window.onYouTubeIframeAPIReady = function () {
+        // API lista — el player se crea cuando se abre por primera vez
+      }
+
+      function crearPlayer(videoId) {
+        pendingVideoId = videoId
+        ytPlayer = new YT.Player('yt-frame', {
+          videoId,
+          playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+          events: {
+            onReady: () => {
+              playerReady = true
+              if (pendingVideoId) {
+                ytPlayer.loadVideoById(pendingVideoId)
+                pendingVideoId = null
+              }
+            },
+            onStateChange: (e) => {
+              if (e.data === YT.PlayerState.ENDED) window.nextSong()
+              if (e.data === YT.PlayerState.PLAYING) setPlayIcon(true)
+              if (e.data === YT.PlayerState.PAUSED) setPlayIcon(false)
+            },
+          },
+        })
+      }
+
+      function setPlayIcon(playing) {
+        document.getElementById('icon-play').classList.toggle('hidden', playing)
+        document.getElementById('icon-pause').classList.toggle('hidden', !playing)
+      }
+
+      async function buscarYCargar(index) {
+        const song = songsList[index]
+        if (!song) return
+        document.getElementById('player-artist').textContent = song.artist
+        document.getElementById('player-title').textContent = song.title
+        document.getElementById('player-counter').textContent = `${index + 1} / ${songsList.length}`
+
+        const q = encodeURIComponent(`${song.artist} ${song.title}`)
+        try {
+          const res = await fetch(`/api/youtube/search?q=${q}`)
+          const { videoId } = await res.json()
+          if (!videoId) return
+          if (!ytPlayer) {
+            crearPlayer(videoId)
+          } else if (playerReady) {
+            ytPlayer.loadVideoById(videoId)
+          } else {
+            pendingVideoId = videoId
+          }
+        } catch {}
+      }
+
+      window.abrirPlayer = function abrirPlayer(songs) {
+        if (songs) songsList = songs
+        document.getElementById('player-panel').style.display = 'block'
+        currentSongIndex = 0
+        buscarYCargar(0)
+      }
+
+      window.cerrarPlayer = function cerrarPlayer() {
+        document.getElementById('player-panel').style.display = 'none'
+        if (playerReady) ytPlayer.stopVideo()
+        setPlayIcon(false)
+      }
+
+      window.nextSong = function nextSong() {
+        if (shuffleOn) {
+          const pos = shuffledQueue.indexOf(currentSongIndex)
+          if (pos < shuffledQueue.length - 1) {
+            currentSongIndex = shuffledQueue[pos + 1]
+            buscarYCargar(currentSongIndex)
+          }
+        } else if (currentSongIndex < songsList.length - 1) {
+          currentSongIndex++
+          buscarYCargar(currentSongIndex)
+        }
+      }
+
+      window.prevSong = function prevSong() {
+        if (shuffleOn) {
+          const pos = shuffledQueue.indexOf(currentSongIndex)
+          if (pos > 0) {
+            currentSongIndex = shuffledQueue[pos - 1]
+            buscarYCargar(currentSongIndex)
+          }
+        } else if (currentSongIndex > 0) {
+          currentSongIndex--
+          buscarYCargar(currentSongIndex)
+        }
+      }
+
+      window.togglePlay = function togglePlay() {
+        if (!playerReady) return
+        const state = ytPlayer.getPlayerState()
+        if (state === YT.PlayerState.PLAYING) {
+          ytPlayer.pauseVideo()
+        } else {
+          ytPlayer.playVideo()
+        }
+      }
+
+      window.toggleShuffle = function toggleShuffle() {
+        shuffleOn = !shuffleOn
+        document.getElementById('btn-shuffle').classList.toggle('active', shuffleOn)
+        if (shuffleOn) {
+          const indices = songsList.map((_, i) => i).filter(i => i !== currentSongIndex)
+          for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]]
+          }
+          shuffledQueue = [currentSongIndex, ...indices]
+        }
+      }
+    }
+    </script>
   </body>
 </html>
