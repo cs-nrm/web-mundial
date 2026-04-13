@@ -11,7 +11,7 @@ const avatar = user?.user_metadata?.avatar_url ?? ''
         ? <img src={avatar} alt={nombre} class="auth-avatar" referrerpolicy="no-referrer" />
         : <span class="auth-avatar auth-initials">{nombre[0]?.toUpperCase()}</span>
       }
-      <span class="auth-name">{nombre}</span>
+      <span class="auth-name hidden lg:block">{nombre}</span>
       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
         <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -26,7 +26,7 @@ const avatar = user?.user_metadata?.avatar_url ?? ''
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
     </svg>
-    Iniciar sesión
+    <span class="hidden lg:block">Iniciar sesión</span>
   </a>
 )}
 

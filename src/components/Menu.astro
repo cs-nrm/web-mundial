@@ -6,7 +6,7 @@
 <nav id="menu">
   <div class="menu-item highlight">
     <div class="menu-text">
-      <a href="#">Noticias</a>
+      <div>Noticias</div>
     </div>
     <div class="sub-menu double">
       <div class="icon-box gb a">
@@ -59,9 +59,9 @@
   </div>
   <div class="menu-item highlight">
     <div class="menu-text">
-      <a href="#">Estadísticas y Resultados</a>
+      <div>Estadísticas y Resultados</div>
     </div>
-    <div class="sub-menu double">
+    <div class="sub-menu double !left-[-4em] lg:!left-[1em]">
       <div class="icon-box gb a">
         <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /><path d="M15 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /><path d="M6 15v-1a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v1" /><path d="M12 9l0 3" /></svg></div>
         <div class="text">
@@ -119,9 +119,9 @@
   </div>
   <div class="menu-item highlight">
     <div class="menu-text">
-      <a href="#">Tu Mundial</a>
+      <div>Tu Mundial</div>
     </div>
-    <div class="sub-menu double !left-[-12em]">
+    <div class="sub-menu double !left[1em] lg:!left-[-12em]">
       <div class="icon-box gb a">
         <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3l8 -8" /><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9" /></svg></div>
         <div class="text">
@@ -194,7 +194,8 @@ nav {
     transform-style: preserve-3d;
     justify-content: space-evenly;
     position: relative;
-    z-index: 2;
+    z-index: 1;
+    /*z-index: 2;*/
     margin: 0px auto;
     perspective: 2000px;
     flex-wrap: wrap;
@@ -232,7 +233,7 @@ nav .menu-item2 {
     min-height: 2.5em;
 }
 
-nav .menu-text, nav .menu-text a {
+nav .menu-text, nav .menu-text div, nav .menu-text a {
     font-size: 0.9em;
     color: white;
     text-decoration: none;
@@ -242,7 +243,7 @@ nav .menu-text, nav .menu-text a {
     line-height: 1;
 }
 
-nav .menu-text a:hover {
+nav .menu-text div:hover, nav .menu-text a:hover {
     color: rgba(255,255,255,0.5);
 }
 
@@ -317,7 +318,7 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
 .menu-item .sub-menu {
     position: absolute;
     top: 2.3em;
-    left: 0;
+    left: 1em;
     right: 0;
     color: rgba(0,0,0,0.5);
     border-radius: 10px;
@@ -341,6 +342,7 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
     grid-template-columns: 54% 50%;
     background-color: #1D4B8C;
     font-size: 0.9em;
+    z-index: 999;
 }
 .menu-item .sub-menu.triple {
     min-width: 41.25em;
@@ -563,4 +565,25 @@ nav .menu-item.highlight:hover ~ #sub-menu-container #sub-menu-holder #sub-menu-
     color: rgba(255,255,255,0.5);
 }
 
+@media (max-width: 1024px) {
+  :root {
+      --menu-width: 35.5em; /* Width of menu */
+  }
+  .menu-item .sub-menu.double{
+    display: block;
+    min-width: min-content;
+    min-width: 18.25em;
+    height: auto;
+  }
+  nav .menu-item:nth-of-type(1):hover ~ #sub-menu-container #sub-menu-holder {
+    width: 18em;
+  }
+  nav .menu-item:nth-of-type(2):hover ~ #sub-menu-container #sub-menu-holder  {
+    left: calc(3.75em + 1px);
+  }
+  nav .menu-item:nth-of-type(3):hover ~ #sub-menu-container #sub-menu-holder {
+    left: calc(1.75em + 1px);
+  }
+
+}
 </style>

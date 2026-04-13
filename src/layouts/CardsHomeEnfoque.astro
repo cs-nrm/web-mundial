@@ -1,83 +1,20 @@
 ---
-import { categoryMapping } from "../config/sites.js";
+import { getArticles } from "../lib/api.js";
+import { wpSiteEnfoqueNoticias } from "../config/sites.js";
 
-const { posts = [], imageBase = 'https://storage.googleapis.com/nrm-web/mundial/balon', listIndex } = Astro.props;
+const posts = await getArticles(undefined, { sites: wpSiteEnfoqueNoticias });
 
-let url_seccion = "fiesta-futbolera"; // Default fallback
-
-// Verify we have posts before trying to access them
 if (!posts || posts.length < 4) {
-    console.warn(`CardsHomeNews: Esperaba 4 posts, pero solo hay ${posts?.length || 0}`);
+    console.warn(`CardsHomeOtromundial: se esperaban 4 posts, hay ${posts?.length || 0}`);
 }
 
-// Try to find the category slug from embedded terms to determine the section color/link
-if (
-    posts[0] &&
-    posts[0]._embedded &&
-    posts[0]._embedded["wp:term"] &&
-    posts[0]._embedded["wp:term"][0]
-) {
-    const categories = posts[0]._embedded["wp:term"][0];
-    for (const cat of categories) {
-        if (categoryMapping[cat.slug]) {
-            url_seccion = categoryMapping[cat.slug];
-            break;
-        }
-    }
-}
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
 
-const PLACEHOLDER_IMG =
-    "https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg";
-
-// Create an array of featured images for each post
-const featuredImages = posts.map(p => 
-    p._embedded?.["wp:featuredmedia"]?.[0]?.media_details?.sizes
-        ?.medium_large?.source_url ||
-    p._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+const featuredImages = posts.map(p =>
+    p._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
+    p._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
     PLACEHOLDER_IMG
 );
-
-const author =
-    posts[0]?._embedded?.author?.[0]?.name ||
-    posts[0]?.yoast_head_json?.author ||
-    "Redacción";
-// Switch para asignar imagen por autor
-let authorImage = "";
-switch (author) {
-    case "Redacción":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-enfoque.png";
-        break;
-    case "Cecilia Masariego":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-stereo.png";
-        break;
-    case "Fers Ortiz":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-beat.png";
-        break;
-    case "Rubí González":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-oye.png";
-    break;
-    case "Kenia Espinosa":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-sabrosita.png";
-    break;
-    // Agrega más casos según los autores que tengas
-    default:
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-enfoque.png";
-        break;
-}
-
-    // Compute a sequential image index from 1..10 for the `.image` element.
-// If `post.id` exists we map it deterministically: post.id=1 -> 1.jpg, id=11 -> 1.jpg, etc.
-// Fallback to 1.jpg when no post.id is available.
-    // Selección de imagen en orden 1..10 según el índice de la lista (listIndex)
-    const SEQ_COUNT = 10;
-    let seqIndex = 1;
-
-var sequentialImage = ``;
-    if (typeof listIndex === 'number' && listIndex >= 0) {
-        seqIndex = (listIndex % SEQ_COUNT) + 1;
-        sequentialImage = `${imageBase}${seqIndex}.jpg`;
-    }
-sequentialImage = `${imageBase}${seqIndex}.jpg`;
 ---
 
     <div class="container m-auto">
@@ -89,21 +26,29 @@ sequentialImage = `${imageBase}${seqIndex}.jpg`;
               <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
                 <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[0].title.rendered}></h2>
-                <div class="flex items-center">
-                    <span>Creado por:</span>
-                    <img class="mx-2 w-[45px] h-auto" src={authorImage} alt={author} />
-                </div>
+                {posts[0]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class="w-[45px] h-auto" src={posts[0]._logo} alt={posts[0]._estacion} />
+                  </div>
+                )}
               </div>
             </div>
             </a>
           </div>
           <div class="flex flex-col gap-4 lg:col-span-2">
-            <div class="flex flex-row gap-4 h-1/2">
+            <div class="flex flex-col lg:flex-row gap-4 lg:h-1/2">
               <div class="relative">
                 <a href={`/acerca-de/${posts[1].slug}/`}>
                   <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
                     <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[1].title.rendered}></h2>
+                    {posts[1]._logo && (
+                      <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                        <span class="text-[10px]">Creado por:</span>
+                        <img class="w-[45px] h-auto" src={posts[1]._logo} alt={posts[1]._estacion} />
+                      </div>
+                    )}
                   </div>
                 </a>
               </div>
@@ -113,6 +58,12 @@ sequentialImage = `${imageBase}${seqIndex}.jpg`;
                   <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
                     <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[2].title.rendered}></h2>
+                    {posts[2]._logo && (
+                      <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                        <span class="text-[10px]">Creado por:</span>
+                        <img class="w-[45px] h-auto" src={posts[2]._logo} alt={posts[2]._estacion} />
+                      </div>
+                    )}
                   </div>
                 </a>
               </div>
@@ -123,6 +74,12 @@ sequentialImage = `${imageBase}${seqIndex}.jpg`;
                 <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
                   <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[3].title.rendered}></h2>
+                  {posts[3]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class="w-[45px] h-auto" src={posts[3]._logo} alt={posts[3]._estacion} />
+                    </div>
+                  )}
                 </div>
               </div>
               </a>

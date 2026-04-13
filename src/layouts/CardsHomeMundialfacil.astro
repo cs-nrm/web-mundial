@@ -1,158 +1,196 @@
 ---
-import { categoryMapping, wpSites } from "../config/sites.js";
 import { getArticles } from "../lib/api.js";
+import { wpSites } from "../config/sites.js";
 
 const posts = await getArticles(undefined, { sites: wpSites });
-const { imageBase = 'https://storage.googleapis.com/nrm-web/mundial/balon', listIndex } = Astro.props;
 
-let url_seccion = "fiesta-futbolera"; // Default fallback
-
-// Verify we have posts before trying to access them
 if (!posts || posts.length < 4) {
-    console.warn(`CardsHomeNews: Esperaba 4 posts, pero solo hay ${posts?.length || 0}`);
+    console.warn(`CardsHomeOtromundial: se esperaban 4 posts, hay ${posts?.length || 0}`);
 }
 
-// Try to find the category slug from embedded terms to determine the section color/link
-if (
-    posts[0] &&
-    posts[0]._embedded &&
-    posts[0]._embedded["wp:term"] &&
-    posts[0]._embedded["wp:term"][0]
-) {
-    const categories = posts[0]._embedded["wp:term"][0];
-    for (const cat of categories) {
-        if (categoryMapping[cat.slug]) {
-            url_seccion = categoryMapping[cat.slug];
-            break;
-        }
-    }
-}
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
 
-const PLACEHOLDER_IMG =
-    "https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg";
-
-// Create an array of featured images for each post
-const featuredImages = posts.map(p => 
-    p._embedded?.["wp:featuredmedia"]?.[0]?.media_details?.sizes
-        ?.medium_large?.source_url ||
-    p._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+const featuredImages = posts.map(p =>
+    p._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
+    p._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
     PLACEHOLDER_IMG
 );
-
-const author =
-    posts[0]?.author ||
-    "Redacción";
-// Switch para asignar imagen por autor
-let authorImage = "";
-switch (author) {
-    case "Redacción":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-enfoque.png";
-        break;
-    case "4":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-stereo.png";
-        break;
-    case "17":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-beat.png";
-        break;
-    case "92":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-oye.png";
-    break;
-    case "9":
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-sabrosita.png";
-    break;
-    // Agrega más casos según los autores que tengas
-    default:
-        authorImage = "https://storage.googleapis.com/nrm-web/mundial/logo-enfoque.png";
-        break;
-}
-
-    // Compute a sequential image index from 1..10 for the `.image` element.
-// If `post.id` exists we map it deterministically: post.id=1 -> 1.jpg, id=11 -> 1.jpg, etc.
-// Fallback to 1.jpg when no post.id is available.
-    // Selección de imagen en orden 1..10 según el índice de la lista (listIndex)
-    const SEQ_COUNT = 10;
-    let seqIndex = 1;
-
-var sequentialImage = ``;
-    if (typeof listIndex === 'number' && listIndex >= 0) {
-        seqIndex = (listIndex % SEQ_COUNT) + 1;
-        sequentialImage = `${imageBase}${seqIndex}.jpg`;
-    }
-sequentialImage = `${imageBase}${seqIndex}.jpg`;
 ---
 
     <div class="container m-auto">
       <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Un Mundial más Fácil</h1>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="flex flex-col gap-4 lg:col-span-2">
-            <div class="flex flex-row gap-4 h-1/2">
-              <div class="relative">
-                <a href={`/acerca-de/${posts[0].slug}/`}>
-                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[0].title.rendered}></h2>
-                  </div>
-                </a>
+          <div class="relative">
+            <a href={`/acerca-de/${posts[0].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                <span>Categoría</span>
               </div>
-              <!-- Secundaria 2 -->
-              <div class="relative">
-                <a href={`/acerca-de/${posts[1].slug}/`}>
-                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[1].title.rendered}></h2>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[0].title.rendered}></h2>
+                {posts[0]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[0]._estacion}`} src={posts[0]._logo} alt={posts[0]._estacion} />
                   </div>
-                </a>
+                )}
               </div>
-            </div>
-            <div class="lg:col-span-2 h-1/2">
-              <a href={`/acerca-de/${posts[3].slug}/`}>
+            </a>
+          </div>
+          <div class="lg:col-span-2">
+            <a href={`/acerca-de/${posts[1].slug}/`}>
               <div class="relative h-full">
-                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
-                  <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[3].title.rendered}></h2>
+                  <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[1].title.rendered}></h2>
+                  {posts[1]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${posts[1]._estacion}`} src={posts[1]._logo} alt={posts[1]._estacion} />
+                    </div>
+                  )}
                 </div>
               </div>
-              </a>
-            </div>
+            </a>
+          </div>
+          <div class="relative">
+            <a href={`/acerca-de/${posts[2].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[2].title.rendered}></h2>
+                {posts[2]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[2]._estacion}`} src={posts[2]._logo} alt={posts[2]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
 
+          <div class="relative">
+            <a href={`/acerca-de/${posts[3].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[3].title.rendered}></h2>
+                {posts[3]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[3]._estacion}`} src={posts[3]._logo} alt={posts[3]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
           </div>
-          <div class="flex flex-col gap-4 lg:col-span-2">
-            <div class="lg:col-span-2 h-1/2">
-              <a href={`/acerca-de/${posts[2].slug}/`}>
+          <div class="relative">
+            <a href={`/acerca-de/${posts[4].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[4].title.rendered}></h2>
+                {posts[4]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[4]._estacion}`} src={posts[4]._logo} alt={posts[4]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+          <div class="lg:col-span-2">
+            <a href={`/acerca-de/${posts[5].slug}/`}>
               <div class="relative h-full">
-                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
-                  <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[2].title.rendered}></h2>
+                  <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[5].title.rendered}></h2>
+                  {posts[5]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${posts[5]._estacion}`} src={posts[5]._logo} alt={posts[5]._estacion} />
+                    </div>
+                  )}
                 </div>
               </div>
-              </a>
-            </div>
-            <div class="flex flex-row gap-4 h-1/2">
-              <div class="relative">
-                <a href={`/acerca-de/${posts[4].slug}/`}>
-                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[4].title.rendered}></h2>
-                  </div>
-                </a>
-              </div>
-              <!-- Secundaria 2 -->
-              <div class="relative">
-                <a href={`/acerca-de/${posts[5].slug}/`}>
-                  <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-                  <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[5].title.rendered}></h2>
-                  </div>
-                </a>
-              </div>
-            </div>
+            </a>
           </div>
+
+          <div class="lg:col-span-2">
+            <a href={`/acerca-de/${posts[6].slug}/`}>
+              <div class="relative h-full">
+                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[6]} alt={posts[6]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
+                <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
+                  <h2 class="text-xl lg:text-2xl font-medium" set:html={posts[6].title.rendered}></h2>
+                  {posts[6]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${posts[6]._estacion}`} src={posts[6]._logo} alt={posts[6]._estacion} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="relative">
+            <a href={`/acerca-de/${posts[7].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[7]} alt={posts[7]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[7].title.rendered}></h2>
+                {posts[7]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[7]._estacion}`} src={posts[7]._logo} alt={posts[7]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+          <div class="relative">
+            <a href={`/acerca-de/${posts[8].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[8]} alt={posts[8]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>Categoría</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-xl lg:text-2xl font-medium !leading-7" set:html={posts[8].title.rendered}></h2>
+                {posts[8]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[8]._estacion}`} src={posts[8]._logo} alt={posts[8]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+
+
+
+
         </div>
     </div>
 
 <div class="m-auto text-center">
     <a href="/acerca-de" class="text-white hover:text-black">
-        <button class="ver-mas group relative h-8 m-2 overflow-hidden bg-[#e2241a] uppercase text-xs font-bold tracking-[1px] rounded-xl">
+        <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-[#e2241a] uppercase text-xs font-bold tracking-[1px] rounded-xl">
             <span class="p-4">MÁS NOTICIAS AQUÍ</span>
         </button>
     </a>
