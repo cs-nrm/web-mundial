@@ -2,6 +2,7 @@ import { defineMiddleware } from 'astro:middleware'
 import { createSupabaseServerClient } from './lib/supabase'
 import { getUserContext } from './lib/perfil'
 import { canAccess, ADMIN_ROLES } from './lib/admin'
+import { verifyEmergencyToken } from './lib/emergency-auth'
 import type { UserRole } from './lib/perfil'
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -21,6 +22,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
   } else {
     context.locals.hasGenerales = false
     context.locals.role = 'user'
+  }
+
+  // Fallback de emergencia: cookie firmada cuando Google/Supabase no están disponibles
+  if (!context.locals.user) {
+    const emergencyToken = context.cookies.get('emergency_admin')?.value ?? ''
+    if (verifyEmergencyToken(emergencyToken)) {
+      context.locals.user = { id: 'emergency', email: 'emergency@admin.local' } as any
+      context.locals.role = 'superadmin'
+      context.locals.hasGenerales = true
+    }
   }
 
   // Proteger rutas /admin/*
