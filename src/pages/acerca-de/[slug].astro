@@ -4,46 +4,39 @@ import DoubleBox from "../../components/DoubleBox.astro";
 import BoxBanner from "../../components/BoxBanner.astro";
 import LeaderBoard from "../../components/LeaderBoard.astro";
 import MoreNews from "../../components/MoreNews.astro";
-import { wpSites } from "../../config/sites.js";
+import { wpSites, wpSiteEnfoqueConfig } from "../../config/sites.js";
 
 const { slug } = Astro.params;
 
-// Function to find a post by slug across all configured sites
+// Busca el post por slug en el sitio Enfoque primero (donde viven los posts de "Acerca de"),
+// y como fallback busca en el resto de los sitios de radio.
 async function findPostBySlug(slug) {
-    // We need to query all sites because we don't know which one owns the slug
-    // Note: This is expensive if done sequentially. We'll do it in parallel.
+    const allSites = [wpSiteEnfoqueConfig.url, ...wpSites];
 
-    const requests = wpSites.map(async (siteUrl) => {
+    const requests = allSites.map(async (siteUrl) => {
         try {
-            // Construct the query to find the post by slug
-            // siteUrl already has query params, so we append &slug=...
-            // We also need to make sure we are querying 'posts' endpoint.
-            // The configured URLs in sites.js are full URLs like .../posts?categories=...
-            // To query by slug, we can append &slug=the-slug.
-            // However, the configured URLs filter by category.
-            // If the post is in that category, it will be found.
-            // If we want to find the post regardless of category (just to be safe),
-            // we might want to strip the category param, but let's stick to the configured scope first.
+            // Asegurar que `content` esté incluido en _fields (el config solo trae excerpt)
+            const parsed = new URL(siteUrl);
+            const fields = parsed.searchParams.get('_fields') || '';
+            if (fields && !fields.includes('content')) {
+                parsed.searchParams.set('_fields', fields + ',content');
+            }
+            parsed.searchParams.set('slug', slug);
 
-            const url = `${siteUrl}&slug=${slug}`;
-            const res = await fetch(url);
+            const res = await fetch(parsed.toString());
             if (!res.ok) return null;
             const data = await res.json();
             if (data && data.length > 0) {
-                return data[0]; // Found it!
+                return data[0];
             }
             return null;
         } catch (err) {
-            console.error(
-                `Error searching for slug ${slug} on ${siteUrl}`,
-                err,
-            );
+            console.error(`Error searching for slug ${slug} on ${siteUrl}`, err);
             return null;
         }
     });
 
     const results = await Promise.all(requests);
-    // Return the first non-null result
     return results.find((post) => post !== null);
 }
 
