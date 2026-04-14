@@ -1,0 +1,232 @@
+---
+import { getArticles } from "../lib/api.js";
+import { wpSites } from "../config/sites.js";
+
+const posts = await getArticles(undefined, { sites: wpSites });
+
+if (!posts || posts.length < 4) {
+    console.warn(`CardsHomeNoticias: se esperaban 4 posts, hay ${posts?.length || 0}`);
+}
+
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
+
+const featuredImages = posts.map(p =>
+    p._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
+    p._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+    PLACEHOLDER_IMG
+);
+
+const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._embedded?.['wp:term']?.[0]?.[0]?.name ?? ''
+---
+
+    <div class="container m-auto">
+      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Noticias</h1>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="relative">
+            <a href={`/noticias/${posts[0].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                <span>{getCategoria(posts[0])}</span>
+              </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[0].title.rendered}></h2>
+                {posts[0]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[0]._estacion}`} src={posts[0]._logo} alt={posts[0]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+          <div class="lg:col-span-2">
+            <a href={`/noticias/${posts[1].slug}/`}>
+              <div class="relative h-full">
+                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[1])}</span>
+                </div>
+                <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
+                  <h2 class="text-base font-medium" set:html={posts[1].title.rendered}></h2>
+                  {posts[1]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${posts[1]._estacion}`} src={posts[1]._logo} alt={posts[1]._estacion} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="relative">
+            <a href={`/noticias/${posts[2].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[2])}</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[2].title.rendered}></h2>
+                {posts[2]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[2]._estacion}`} src={posts[2]._logo} alt={posts[2]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+
+          <div class="relative">
+            <a href={`/noticias/${posts[3].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[3])}</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[3].title.rendered}></h2>
+                {posts[3]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[3]._estacion}`} src={posts[3]._logo} alt={posts[3]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+          <div class="relative">
+            <a href={`/noticias/${posts[4].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[4])}</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[4].title.rendered}></h2>
+                {posts[4]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[4]._estacion}`} src={posts[4]._logo} alt={posts[4]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+          <div class="lg:col-span-2">
+            <a href={`/noticias/${posts[5].slug}/`}>
+              <div class="relative h-full">
+                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[5])}</span>
+                </div>
+                <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
+                  <h2 class="text-base font-medium" set:html={posts[5].title.rendered}></h2>
+                  {posts[5]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${posts[5]._estacion}`} src={posts[5]._logo} alt={posts[5]._estacion} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <div class="lg:col-span-2">
+            <a href={`/noticias/${posts[6].slug}/`}>
+              <div class="relative h-full">
+                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[6]} alt={posts[6]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[6])}</span>
+                </div>
+                <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
+                  <h2 class="text-base font-medium" set:html={posts[6].title.rendered}></h2>
+                  {posts[6]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${posts[6]._estacion}`} src={posts[6]._logo} alt={posts[6]._estacion} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </a>
+          </div>
+          <div class="relative">
+            <a href={`/noticias/${posts[7].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[7]} alt={posts[7]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[7])}</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[7].title.rendered}></h2>
+                {posts[7]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[7]._estacion}`} src={posts[7]._logo} alt={posts[7]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+          <div class="relative">
+            <a href={`/noticias/${posts[8].slug}/`}>
+              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[8]} alt={posts[8]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                  <span>{getCategoria(posts[8])}</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[8].title.rendered}></h2>
+                {posts[8]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[8]._estacion}`} src={posts[8]._logo} alt={posts[8]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+
+
+
+
+        </div>
+    </div>
+
+<div class="m-auto text-center">
+    <a href="/noticias" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
+        <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-black uppercase text-xs font-bold tracking-[1px] rounded-xl">
+            <span class="p-4">MÁS NOTICIAS AQUÍ</span>
+        </button>
+    </a>
+</div>
+
+<style>
+.cards-filtro-3{display: none;}
+
+@media (min-width: 769px) and (max-width: 1024px){
+  .cards-filtro-3{display: block;}
+}
+
+.news-content p{
+  font-size: 1rem;
+  padding: 15px 0;
+  line-height: 1;
+  font-weight: bold;
+}
+/*
+.texto-nota{
+  box-shadow: none;
+  mask-image: linear-gradient(to bottom, hsla(var(--color-black), 1) 0, hsla(var(--color-black), 1) 10%, hsla(var(--color-black), 0) 100%);
+}
+
+.text-uno{
+	display: -webkit-box;
+	-webkit-margin-before: 0;
+  margin-block-start: 0;
+  -webkit-margin-after: 12px;
+  margin-block-end: 12px;
+  line-height: 1.2;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}*/
+</style>
+
