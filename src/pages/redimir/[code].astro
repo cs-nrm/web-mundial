@@ -32,7 +32,7 @@ const result: RedeemResult = data ?? { ok: false, message: error?.message ?? 'Er
       {result.ok ? (
         <div class="redimir-success">
           <div class="confetti-icon">🎉</div>
-          <h1>¡Figurita desbloqueada!</h1>
+          <h1>¡Card desbloqueada!</h1>
           {result.card_image && (
             <div class="figurita-preview">
               <img src={result.card_image} alt={result.card_name} />

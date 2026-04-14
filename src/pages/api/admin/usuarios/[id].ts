@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro'
-import { createSupabaseServerClient } from '../../../../lib/supabase'
+import { createSupabaseAdminClient } from '../../../../lib/supabase'
 import { canAccess, MANAGE_ROLES, SUPERADMIN_ROLES } from '../../../../lib/admin'
 import type { UserRole } from '../../../../lib/perfil'
 
 const VALID_ROLES: UserRole[] = ['superadmin', 'admin', 'editor', 'estadistica', 'user']
 
-export const PATCH: APIRoute = async ({ request, cookies, locals, params }) => {
+export const PATCH: APIRoute = async ({ request, locals, params }) => {
   if (!canAccess(locals.role as UserRole, MANAGE_ROLES)) {
     return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
   }
@@ -26,7 +26,7 @@ export const PATCH: APIRoute = async ({ request, cookies, locals, params }) => {
     return new Response(JSON.stringify({ error: 'Solo superadmin puede asignar este rol' }), { status: 403 })
   }
 
-  const supabase = createSupabaseServerClient(request, cookies)
+  const supabase = createSupabaseAdminClient()
   const { error } = await supabase
     .from('profiles')
     .update({ role })

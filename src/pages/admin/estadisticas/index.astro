@@ -210,12 +210,12 @@ function estUrl(e: string) {
 
       <div class="two-col">
         <div class="panel">
-          <h2>Top 10 figuritas más canjeadas</h2>
+          <h2>Top 10 cards más canjeadas</h2>
           {(albumData.topCards ?? []).length === 0 ? (
             <p class="empty">Sin datos.</p>
           ) : (
             <table class="mini-table">
-              <thead><tr><th>#</th><th>Figurita</th><th>Álbum</th><th>Canjes</th></tr></thead>
+              <thead><tr><th>#</th><th>Card</th><th>Álbum</th><th>Canjes</th></tr></thead>
               <tbody>
                 {(albumData.topCards ?? []).map((r: any, i: number) => (
                   <tr>
@@ -236,7 +236,7 @@ function estUrl(e: string) {
             <p class="empty">Sin datos.</p>
           ) : (
             <table class="mini-table">
-              <thead><tr><th>#</th><th>Usuario</th><th>Figuritas</th></tr></thead>
+              <thead><tr><th>#</th><th>Usuario</th><th>Cards</th></tr></thead>
               <tbody>
                 {(albumData.topUsers ?? []).map((u: any, i: number) => (
                   <tr>

@@ -21,7 +21,7 @@ if (albums && albums.length === 1) {
   return Astro.redirect(`/album/${albums[0].slug}`)
 }
 
-// Para cada álbum, contar figuritas del usuario
+// Para cada álbum, contar cards del usuario
 const albumIds = (albums ?? []).map((a: any) => a.id)
 let cardCounts: Record<string, number> = {}
 let totalCards: Record<string, number> = {}
@@ -79,7 +79,7 @@ if (albumIds.length > 0) {
                   <div class="progress-bar">
                     <div class="progress-fill" style={`width: ${pct}%`}></div>
                   </div>
-                  <span class="progress-label">{collected} / {total} figuritas ({pct}%)</span>
+                  <span class="progress-label">{collected} / {total} cards ({pct}%)</span>
                 </div>
               </a>
             )

@@ -44,11 +44,11 @@ const estacionColors: Record<string, string> = {
         <button
           onclick={`eliminarEstacion('${estacionParam}', ${count ?? 0})`}
           style="background:white;color:#ef4444;border:2px solid #fca5a5;padding:0.6rem 1.2rem;border-radius:0.5rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
-          🗑 Eliminar todo ({count ?? 0})
+          Eliminar todo ({count ?? 0})
         </button>
       )}
       <button onclick="document.getElementById('modal-import').removeAttribute('hidden')" style="background:var(--rojo);color:white;border:none;padding:0.6rem 1.2rem;border-radius:0.5rem;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
-        ⬆️ Importar CSV / Excel
+        Importar CSV / Excel
       </button>
     </div>
   </div>
@@ -146,7 +146,7 @@ const estacionColors: Record<string, string> = {
           </select>
         </div>
         <div id="drop-area" style="border:2px dashed #d1d5db;border-radius:0.75rem;padding:2rem;text-align:center;cursor:pointer;margin-bottom:1rem;transition:border-color 0.2s;">
-          <div style="font-size:2rem;margin-bottom:0.5rem;">📂</div>
+          <div style="margin-bottom:0.5rem;color:#9ca3af;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:2rem;height:2rem;"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg></div>
           <p style="color:#6b7280;font-size:0.875rem;">Arrastra tu archivo aquí o <span style="color:var(--rojo);font-weight:600;">haz clic para seleccionar</span></p>
           <p id="file-name" style="margin-top:0.5rem;font-size:0.8rem;color:#9ca3af;"></p>
           <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" style="display:none;" />

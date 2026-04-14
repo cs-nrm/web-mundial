@@ -69,7 +69,7 @@ const { data: codes } = await codesQuery
         <h2>Generar códigos</h2>
         <form id="gen-form">
           <div class="form-row">
-            <label>Figurita *</label>
+            <label>Card *</label>
             <select name="card_id" required class="select-filter full">
               <option value="">— Selecciona —</option>
               {(cards ?? []).map((c: any) => (
@@ -131,7 +131,7 @@ const { data: codes } = await codesQuery
             <tr>
               {canManage && <th class="col-check"><input type="checkbox" id="check-all" /></th>}
               <th>Código</th>
-              <th>Figurita</th>
+              <th>Card</th>
               <th>Álbum</th>
               <th>Usos</th>
               <th>Expira</th>
