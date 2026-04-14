@@ -4,8 +4,7 @@
   License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
  */
 
-
-@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap');
 
 
  :root {
@@ -31,7 +30,13 @@
 
   --morado: #320E41;
   --gris: #ADABAB;
-  --rojo: #EA262A;
+
+
+  --rojo: #000;
+  /*--verde: #c5e513;*/
+    --verde: #75ee2f;
+  --verde-border: rgba(117, 238, 47, 0.25);
+  --text-hover: #24af29;
 }
 
 .gris{
@@ -57,7 +62,7 @@
 
 
 body {	
-  font-family: 'Inconsolata';
+  font-family: 'Syne';
   letter-spacing: 0.05em;
 	margin: 0;
 	padding: 0;
@@ -105,7 +110,7 @@ h6 {
 	margin: 0 0 0.5rem 0;
 	color: rgb(var(--gray-beat));
 	line-height: 1.2;
-  font-family: 'Inconsolata';
+  font-family: 'Syne';
 }
 h1 {
 	font-size: 3.052em;
@@ -267,7 +272,8 @@ hr {
   color: #fff;
   padding: 1px 10px;
   border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.15);
+  /*border: 1px solid rgba(255,255,255,0.15);*/
+  border: 1px solid var(--verde-border);
   backdrop-filter: blur(4px);
 }
 .logo-beat{

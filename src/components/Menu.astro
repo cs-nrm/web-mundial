@@ -183,7 +183,7 @@
 
 <style>
   :root {
-    --menu-width: 43.5em; /* Width of menu */
+    --menu-width: 46.5em; /* Width of menu */
     --items: 4; /* Number of items you have */
     --item-width: calc(var(--menu-width) / var(--items));
 }
@@ -203,7 +203,7 @@ nav {
 }
 
 nav .menu-item {
-    color: white;
+    color: var(--verde);
     /*font-weight: 600;*/
     transform-style: preserve-3d;
     flex-grow: 1;
@@ -218,7 +218,7 @@ nav .menu-item {
     min-height: 2.5em;
 }
 nav .menu-item2 {
-    color: white;
+    color: var(--verde);
     /*font-weight: 600;*/
     transform-style: preserve-3d;
     flex-grow: 1;
@@ -235,16 +235,17 @@ nav .menu-item2 {
 
 nav .menu-text, nav .menu-text div, nav .menu-text a {
     font-size: 0.9em;
-    color: white;
+    color: var(--verde);
     text-decoration: none;
     text-shadow: 0 1px 5px rgba(0,0,0,0.1);
     transition: color 0.1s ease-out;
     text-align: center;
     line-height: 1;
+    text-transform: uppercase;
 }
 
 nav .menu-text div:hover, nav .menu-text a:hover {
-    color: rgba(255,255,255,0.5);
+    color: var(--text-hover);
 }
 
 #sub-menu-holder {
@@ -340,8 +341,10 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
     height: 12.75em;
     display: grid;
     grid-template-columns: 54% 50%;
-    background-color: #1D4B8C;
-    font-size: 0.9em;
+    /*background-color: #1D4B8C;*/
+    background-color: var(--verde);
+    border: 1px solid #000;
+    font-size: 0.85em;
     z-index: 999;
 }
 .menu-item .sub-menu.triple {
@@ -365,7 +368,7 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
     bottom: -5em;
     top: 1.5em;
     left: calc(50% - 10px);
-    border-color: transparent transparent #1D4B8C transparent;
+    border-color: transparent transparent var(--verde) transparent;
     border-width: 10px;
     border-style: solid;
 }
@@ -396,8 +399,7 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
 
 /* Menu specific */
 .menu-item .title {
-    font-weight: 500;
-    color: white;
+    color: #000;
     margin: 0 0 0.25em 0;
     display: flex;
     gap: 1rem;
@@ -423,6 +425,11 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
 }
 .menu-item .icon-box {
     cursor: pointer;
+} 
+.menu-item .icon-box svg{
+    color: #000;
+    stroke: #000;
+    stroke-width: 1;
 }
 .menu-item .icon-box {
     float: left;
@@ -463,8 +470,9 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
 .menu-item .sub-text{
     font-size: 60%;
 }
-.menu-item .icon-box:hover .icon, .menu-item .icon-box:hover .title, .menu-item .icon-box:hover .sub-text {
-    color: rgb(89 110 123);
+.menu-item .icon-box:hover .icon, .menu-item .icon-box:hover .title, .menu-item .icon-box:hover .sub-text, .menu-item .icon-box:hover svg {
+    color: var(--text-hover);
+    stroke: var(--text-hover);
 }
 
 #sub-menu-bottom {
@@ -527,7 +535,7 @@ nav .menu-item:nth-of-type(3).highlight:hover ~ #sub-menu-container #sub-menu-ho
 }
 
 .sub-menu .box a:hover {
-    color: rgb(44 70 86);
+    color: var(--text-hover);
 }
 
 .box {
@@ -562,7 +570,7 @@ nav .menu-item.highlight:hover ~ #sub-menu-container #sub-menu-holder #sub-menu-
     letter-spacing: 1px;
 }
 #info-box a:hover {
-    color: rgba(255,255,255,0.5);
+    color: var(--text-hover);
 }
 
 @media (max-width: 1024px) {
