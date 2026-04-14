@@ -10,6 +10,7 @@ import WidgetSedesEstadios from "../layouts/WidgetSedesEstadios.astro";
 import CardsHomeEnfoque from "../layouts/CardsHomeEnfoque.astro";
 import CardsHomeOtroMundial from "../layouts/CardsHomeOtromundial.astro";
 import CardsHomeMundialfacil from "../layouts/CardsHomeMundialfacil.astro";
+import CardsHomeNoticias from "../layouts/CardsHomeNoticias.astro";
 
 
 const posts = await getArticlesEnfoque();
@@ -22,8 +23,9 @@ if (posts.length > 0) {
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <main id="home" class="">
     <section><CardsHomeEnfoque posts={posts} /></section>
-    <section><CardsHomeOtroMundial /></section>
-    <section><CardsHomeMundialfacil /></section>
+    <!--section><CardsHomeOtroMundial /></section>
+    <section><CardsHomeMundialfacil /></section-->
+    <section><CardsHomeNoticias/></section>
     <!--section>
       <WidgetSorteo />
       <WidgetCalendario/>

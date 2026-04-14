@@ -5,7 +5,7 @@ import { wpSiteEnfoqueNoticias } from "../config/sites.js";
 const posts = await getArticles(undefined, { sites: wpSiteEnfoqueNoticias });
 
 if (!posts || posts.length < 4) {
-    console.warn(`CardsHomeOtromundial: se esperaban 4 posts, hay ${posts?.length || 0}`);
+    console.warn(`CardsHomeEnfoque: se esperaban 4 posts, hay ${posts?.length || 0}`);
 }
 
 const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';

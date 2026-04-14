@@ -21,6 +21,11 @@ export const wpSitesConfig = [
     estacion: 'sabrosita',
     logo: `${LOGOS_BASE}/sabrosita/LOGO_SABROSITA_NEW.png`,
   },
+  {
+    url: 'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=12352',
+    estacion: 'oye',
+    logo: `${LOGOS_BASE}/oye/recursos/main-logo-header.svg`,
+  },
 ]
 
 export const wpSiteEnfoqueConfig = {
