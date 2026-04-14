@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro'
 import { createSupabaseServerClient } from '../../lib/supabase'
 
-export const GET: APIRoute = async ({ url, cookies, redirect, request, site }) => {
+export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
   const redirectAfter = url.searchParams.get('redirect') ?? '/'
   cookies.set('auth_redirect', redirectAfter, {
     path: '/',
@@ -12,14 +12,14 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request, site }) =
 
   const supabase = createSupabaseServerClient(request, cookies)
 
-  // Usar el `site` configurado en astro.config.mjs para evitar que en producción
-  // se use localhost (el proceso Node corre detrás de un proxy).
-  const callbackBase = site ? site.origin : url.origin
+  // import.meta.env.SITE se hornea en el build desde astro.config.mjs
+  // y nunca contiene localhost, a diferencia de url.origin que depende del proxy.
+  const siteUrl = import.meta.env.SITE?.replace(/\/$/, '') ?? url.origin
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${callbackBase}/auth/callback`,
+      redirectTo: `${siteUrl}/auth/callback`,
     },
   })
 
