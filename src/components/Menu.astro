@@ -18,40 +18,12 @@
     <div class="menu-text">
       <div>Estadísticas y Resultados</div>
     </div>
-    <div class="sub-menu double !left-[-9em] lg:!left-[-9em]">
+    <div class="sub-menu double !left-[-3em] lg:!left-[0em]">
       <div class="icon-box gb a">
         <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /><path d="M15 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /><path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" /><path d="M6 15v-1a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v1" /><path d="M12 9l0 3" /></svg></div>
         <div class="text">
           <div class="title">Grupos</div>
           <!--div class="sub-text">From Professionals</div-->
-        </div>
-      </div>
-      <div class="icon-box gb b">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M3 9h3v6h-3z" /><path d="M18 9h3v6h-3z" /><path d="M3 5m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M12 5l0 14" /></svg></div>
-        <div class="text">
-          <div class="title">Partidos del día</div>
-          <!--div class="sub-text">In Classroom</div-->
-        </div>
-      </div>
-      <div class="icon-box gb c">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" /><path d="M9 7l6 0" /><path d="M9 11l6 0" /><path d="M9 15l4 0" /></svg></div>
-        <div class="text">
-          <div class="title">Estadísticas Generales</div>
-          <!--div class="sub-text">By Video</div-->
-        </div>
-      </div>
-      <div class="icon-box gb d">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M12 7v5" /><path d="M12 12l2 -3" /></svg></div>
-        <div class="text">
-          <div class="title">Minuto a Minuto</div>
-          <!--div class="sub-text">The Castle</div-->
-        </div>
-      </div>
-      <div class="icon-box gb e">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z" /><path d="M7 20l10 0" /><path d="M9 16l0 4" /><path d="M15 16l0 4" /><path d="M8 12l3 -3l2 2l3 -3" /></svg></div>
-        <div class="text">
-          <div class="title">Resumen de Análisis</div>
-          <!--div class="sub-text">A Creator</div-->
         </div>
       </div>
       <div class="icon-box gb f">
@@ -239,10 +211,10 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
 }
 
 .menu-item .sub-menu.double {
-    min-width: 35.25em;
-    height: 12.75em;
-    display: grid;
-    grid-template-columns: 54% 50%;
+    min-width: 15.25em;
+    height: 8.75em;
+    /*display: grid;
+    grid-template-columns: 54% 50%;*/
     /*background-color: #1D4B8C;*/
     background-color: var(--verde);
     border: 1px solid #000;
@@ -305,6 +277,7 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
     margin: 0 0 0.25em 0;
     display: flex;
     gap: 1rem;
+    top:2px;
 }
 
 .menu-item .icon-box * {
@@ -340,6 +313,8 @@ nav .menu-item:nth-of-type(4):hover ~ #sub-menu-container #sub-menu-holder {
     height: 2em;
     row-gap: 0;
     line-height: 1em;
+    display: flex;
+    align-items: center;
 }
 
 .menu-item .icon-box .text i {
@@ -482,7 +457,7 @@ nav .menu-item.highlight:hover ~ #sub-menu-container #sub-menu-holder #sub-menu-
   .menu-item .sub-menu.double{
     display: block;
     min-width: min-content;
-    min-width: 18.25em;
+    min-width: 13.25em;
     height: auto;
   }
   nav .menu-item:nth-of-type(1):hover ~ #sub-menu-container #sub-menu-holder {
