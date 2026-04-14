@@ -50,7 +50,7 @@ const PLACEHOLDER_IMG =
     <div
         class="overflow-hidden bg-zinc-800 hover:shadow-[0_2px_12px_6px_rgba(29,29,29,0.5)] group"
     >
-        <a href={`/${url_seccion}/${post.slug}/`}>
+        <a href={`/el-otro-lado/${post.slug}/`}>
             <img
                 loading="lazy"
                 class="block h-auto w-full aspect-video object-cover group-hover:text-[var(--amarillo-beat)]"
@@ -61,7 +61,7 @@ const PLACEHOLDER_IMG =
             />
         </a>
         <div class="flex items-center justify-between leading-tight px-2">
-            <a class="no-underline" href={`/${url_seccion}/${post.slug}/`}>
+            <a class="no-underline" href={`/el-otro-lado/${post.slug}/`}>
                 <h2
                     class="text-base text-gray-200 group-hover:text-[#ef4444] leading-normal"
                     set:html={post.title.rendered}

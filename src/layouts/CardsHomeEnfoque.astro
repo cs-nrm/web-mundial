@@ -18,7 +18,7 @@ const featuredImages = posts.map(p =>
 ---
 
     <div class="container m-auto">
-      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Acerca de</h1>
+      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Noticias</h1>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="lg:col-span-2">
             <a href={`/acerca-de/${posts[0].slug}/`}>
@@ -39,7 +39,7 @@ const featuredImages = posts.map(p =>
           <div class="flex flex-col gap-4 lg:col-span-2">
             <div class="flex flex-col lg:flex-row gap-4 lg:h-1/2">
               <div class="relative">
-                <a href={`/acerca-de/${posts[1].slug}/`}>
+                <a href={`/noticias/${posts[1].slug}/`}>
                   <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
                     <h2 class="text-base font-medium" set:html={posts[1].title.rendered}></h2>
@@ -54,7 +54,7 @@ const featuredImages = posts.map(p =>
               </div>
               <!-- Secundaria 2 -->
               <div class="relative">
-                <a href={`/acerca-de/${posts[2].slug}/`}>
+                <a href={`/noticias/${posts[2].slug}/`}>
                   <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
                     <h2 class="text-base font-medium" set:html={posts[2].title.rendered}></h2>
@@ -69,7 +69,7 @@ const featuredImages = posts.map(p =>
               </div>
             </div>
             <div class="lg:col-span-2 h-1/2">
-              <a href={`/acerca-de/${posts[3].slug}/`}>
+              <a href={`/noticias/${posts[3].slug}/`}>
               <div class="relative h-full">
                 <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
@@ -89,7 +89,7 @@ const featuredImages = posts.map(p =>
     </div>
 
 <div class="m-auto text-center">
-    <a href="/acerca-de" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
+    <a href="/noticias" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
         <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-black uppercase text-xs font-bold tracking-[1px] rounded-xl">
             <span class="p-4">MÁS NOTICIAS AQUÍ</span>
         </button>

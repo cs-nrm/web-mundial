@@ -1,49 +1,29 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import BoxBanner from '../../components/BoxBanner.astro';
-import { wpSitesConfig } from '../../config/sites.js';
+import { wpSiteEnfoqueConfig } from '../../config/sites.js';
 
-const PER_PAGE = 6; // por sitio — se mezclan y ordenan por fecha
-
+const PER_PAGE = 12;
 const pageParam = Astro.url.searchParams.get('pagina');
 const currentPage = Math.max(1, parseInt(pageParam || '1', 10));
 
-// Deduplicar sitios (oye aparece dos veces en el config)
-const uniqueSites = wpSitesConfig.filter(
-    (s, i, arr) => arr.findIndex(x => x.url === s.url) === i
-);
-
 const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
 
-// Fetch paginado desde cada sitio en paralelo
-const results = await Promise.all(
-    uniqueSites.map(async (site) => {
-        try {
-            const res = await fetch(`${site.url}&per_page=${PER_PAGE}&page=${currentPage}`);
-            if (!res.ok) return { posts: [], totalPages: 1 };
-            const data = await res.json();
-            const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
-            const posts = data.map((p: any) => ({
-                ...p,
-                _estacion: site.estacion,
-                _logo: site.logo,
-            }));
-            return { posts, totalPages };
-        } catch {
-            return { posts: [], totalPages: 1 };
-        }
-    })
-);
+let posts = [];
+let totalPages = 1;
 
-// Mezclar y ordenar por fecha descendente
-const posts = results
-    .flatMap(r => r.posts)
-    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+try {
+    const url = `${wpSiteEnfoqueConfig.url}&per_page=${PER_PAGE}&page=${currentPage}`;
+    const res = await fetch(url);
+    if (res.ok) {
+        posts = await res.json();
+        totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
+    }
+} catch (err) {
+    console.error('noticias/index: error fetching posts', err);
+}
 
-// Total de páginas: el máximo entre todos los sitios
-const totalPages = Math.max(...results.map(r => r.totalPages), 1);
-
-function featuredImg(post: any) {
+function featuredImg(post) {
     return (
         post._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
         post._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
@@ -51,11 +31,12 @@ function featuredImg(post: any) {
     );
 }
 
-function pageUrl(n: number) {
+function pageUrl(n) {
     return n === 1 ? '/noticias' : `/noticias?pagina=${n}`;
 }
 
-function pageRange(current: number, total: number) {
+// Generar rango de páginas a mostrar (máx 5 botones)
+function pageRange(current, total) {
     const delta = 2;
     const range = [];
     for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
@@ -66,26 +47,23 @@ function pageRange(current: number, total: number) {
 const pages = pageRange(currentPage, totalPages);
 ---
 
-<Layout title="Noticias — La Fiesta del Fútbol">
+<Layout title="Acerca de — La Fiesta del Fútbol">
     <section class="w-full py-6">
         <div class="container mx-auto px-4">
 
             <h1 class="titulos rojo uppercase goodtime text-center my-6 text-2xl lg:text-3xl font-bold">
-                Noticias
+                Acerca de
             </h1>
 
             {posts.length === 0 ? (
-                <p class="text-center text-gray-500 py-20">No hay noticias disponibles.</p>
+                <p class="text-center text-gray-500 py-20">No hay artículos disponibles.</p>
             ) : (
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {posts.map((post: any) => {
+                    {posts.map((post) => {
                         const img = featuredImg(post);
                         const date = new Date(post.date).toLocaleDateString('es-MX', {
                             year: 'numeric', month: 'long', day: 'numeric',
                         });
-                        const categoria = post._embedded?.['wp:term']?.[1]?.[0]?.name
-                            ?? post._embedded?.['wp:term']?.[0]?.[0]?.name
-                            ?? '';
                         return (
                             <a href={`/noticias/${post.slug}/`} class="group block rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white">
                                 <div class="relative overflow-hidden h-48">
@@ -95,13 +73,8 @@ const pages = pageRange(currentPage, totalPages);
                                         alt={post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || post.title.rendered}
                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
-                                    {categoria && (
-                                        <div class="absolute top-2 right-2 bg-black/60 text-white text-[9px] px-2 py-1 rounded">
-                                            {categoria}
-                                        </div>
-                                    )}
                                     {post._logo && (
-                                        <div class="absolute bottom-2 left-2 bg-black/60 rounded-lg px-2 py-1 flex items-center gap-1">
+                                        <div class="absolute top-2 left-2 bg-black/60 rounded-lg px-2 py-1 flex items-center gap-1">
                                             <span class="text-[9px] text-white">Creado por:</span>
                                             <img class="w-[40px] h-auto" src={post._logo} alt={post._estacion} />
                                         </div>
@@ -134,7 +107,7 @@ const pages = pageRange(currentPage, totalPages);
                         </>
                     )}
 
-                    {pages.map((n: number) => (
+                    {pages.map((n) => (
                         <a
                             href={pageUrl(n)}
                             class={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${

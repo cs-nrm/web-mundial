@@ -20,10 +20,10 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
 ---
 
     <div class="container m-auto">
-      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Noticias</h1>
+      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">El Otro Lado</h1>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="relative">
-            <a href={`/noticias/${posts[0].slug}/`}>
+            <a href={`/el-otro-lado/${posts[0].slug}/`}>
               <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                 <span>{getCategoria(posts[0])}</span>
@@ -40,7 +40,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
             </a>
           </div>
           <div class="lg:col-span-2">
-            <a href={`/noticias/${posts[1].slug}/`}>
+            <a href={`/el-otro-lado/${posts[1].slug}/`}>
               <div class="relative h-full">
                 <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
@@ -59,7 +59,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
             </a>
           </div>
           <div class="relative">
-            <a href={`/noticias/${posts[2].slug}/`}>
+            <a href={`/el-otro-lado/${posts[2].slug}/`}>
               <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[2])}</span>
@@ -77,7 +77,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           </div>
 
           <div class="relative">
-            <a href={`/noticias/${posts[3].slug}/`}>
+            <a href={`/el-otro-lado/${posts[3].slug}/`}>
               <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[3])}</span>
@@ -94,7 +94,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
             </a>
           </div>
           <div class="relative">
-            <a href={`/noticias/${posts[4].slug}/`}>
+            <a href={`/el-otro-lado/${posts[4].slug}/`}>
               <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[4])}</span>
@@ -111,7 +111,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
             </a>
           </div>
           <div class="lg:col-span-2">
-            <a href={`/noticias/${posts[5].slug}/`}>
+            <a href={`/el-otro-lado/${posts[5].slug}/`}>
               <div class="relative h-full">
                 <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
@@ -131,7 +131,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           </div>
 
           <div class="lg:col-span-2">
-            <a href={`/noticias/${posts[6].slug}/`}>
+            <a href={`/el-otro-lado/${posts[6].slug}/`}>
               <div class="relative h-full">
                 <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[6]} alt={posts[6]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
@@ -150,7 +150,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
             </a>
           </div>
           <div class="relative">
-            <a href={`/noticias/${posts[7].slug}/`}>
+            <a href={`/el-otro-lado/${posts[7].slug}/`}>
               <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[7]} alt={posts[7]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[7])}</span>
@@ -167,7 +167,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
             </a>
           </div>
           <div class="relative">
-            <a href={`/noticias/${posts[8].slug}/`}>
+            <a href={`/el-otro-lado/${posts[8].slug}/`}>
               <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[8]} alt={posts[8]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[8])}</span>
@@ -191,7 +191,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
     </div>
 
 <div class="m-auto text-center">
-    <a href="/noticias" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
+    <a href="/el-otro-lado" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
         <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-black uppercase text-xs font-bold tracking-[1px] rounded-xl">
             <span class="p-4">MÁS NOTICIAS AQUÍ</span>
         </button>
