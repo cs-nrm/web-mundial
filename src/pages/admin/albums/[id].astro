@@ -90,6 +90,15 @@ for (const c of (canjeos ?? [])) {
             : <span>—</span>
           }
         </div>
+        <div><span class="info-label">Banner patrocinador</span>
+          {album.banner_patrocinador_url
+            ? <span style="display:flex;align-items:center;gap:0.75rem">
+                <img src={album.banner_patrocinador_url} alt="Banner patrocinador" style="height:3rem;border-radius:0.375rem;object-fit:contain;border:1px solid #e5e7eb" />
+                <a href={album.banner_patrocinador_url} target="_blank" class="link-ext">Ver imagen</a>
+              </span>
+            : <span>—</span>
+          }
+        </div>
         <div>
           <span class="info-label">Total cards</span>
           <span>{album.total_cards ?? '—'}</span>
@@ -170,6 +179,29 @@ for (const c of (canjeos ?? [])) {
             <label>URL Logo</label>
             <input name="logo_url" type="url" value={album.logo_url ?? ''} placeholder="https://..." />
             <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Logo que aparece en el encabezado del álbum.</p>
+          </div>
+          <div class="form-row">
+            <label>Banner patrocinador</label>
+            <div class="upload-area" id="banner-upload-area">
+              <img id="banner-img-preview" class="img-preview"
+                src={album.banner_patrocinador_url ?? ''}
+                alt="Preview banner"
+                style={album.banner_patrocinador_url ? '' : 'display:none'}
+              />
+              <label for="banner-file-input" class="upload-label" id="banner-upload-label"
+                style={album.banner_patrocinador_url ? 'display:none' : ''}>
+                <span class="upload-icon">🖼️</span>
+                <span id="banner-upload-text">Seleccionar imagen</span>
+                <span class="upload-hint">JPG, PNG, WebP · máx 5 MB</span>
+              </label>
+              <input id="banner-file-input" type="file" accept="image/jpeg,image/png,image/webp" class="file-input" />
+            </div>
+            <input name="banner_patrocinador_url" id="banner_patrocinador_url" type="url"
+              value={album.banner_patrocinador_url ?? ''}
+              placeholder="O pega una URL directamente"
+              class="url-fallback"
+            />
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Se muestra a la derecha del cuadro para canjear códigos.</p>
           </div>
           <div class="form-row">
             <label>Total de cards</label>
@@ -499,6 +531,7 @@ for (const c of (canjeos ?? [])) {
       logo_url: fd.get('logo_url') || null,
       total_cards: fd.get('total_cards') ? parseInt(fd.get('total_cards') as string) : null,
       active: (albumForm.querySelector('[name=active]') as HTMLInputElement)?.checked,
+      banner_patrocinador_url: fd.get('banner_patrocinador_url') || null,
     }
 
     const res = await fetch(`/api/admin/albums/${albumId}`, {
@@ -559,6 +592,48 @@ for (const c of (canjeos ?? [])) {
       uploadStatus.textContent = `❌ ${err.message ?? 'Error al subir'}`
       imgPreview.hidden = true
       uploadText.textContent = 'Seleccionar imagen'
+    }
+  })
+
+  // ---- Upload banner patrocinador ----
+  const bannerFileInput = document.getElementById('banner-file-input') as HTMLInputElement
+  const bannerImgPreview = document.getElementById('banner-img-preview') as HTMLImageElement
+  const bannerUploadLabel = document.getElementById('banner-upload-label') as HTMLLabelElement
+  const bannerUrlInput = document.getElementById('banner_patrocinador_url') as HTMLInputElement
+
+  bannerFileInput?.addEventListener('change', async () => {
+    const file = bannerFileInput.files?.[0]
+    if (!file) return
+
+    bannerImgPreview.src = URL.createObjectURL(file)
+    bannerImgPreview.style.display = ''
+    if (bannerUploadLabel) bannerUploadLabel.style.display = 'none'
+
+    const fd = new FormData()
+    fd.append('file', file)
+
+    try {
+      const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      bannerUrlInput.value = data.url
+    } catch (err: any) {
+      alert(`Error al subir banner: ${err.message ?? 'Error desconocido'}`)
+      bannerImgPreview.style.display = 'none'
+      if (bannerUploadLabel) bannerUploadLabel.style.display = ''
+    }
+  })
+
+  // Si el usuario pega una URL manualmente, actualizar el preview
+  bannerUrlInput?.addEventListener('change', () => {
+    const url = bannerUrlInput.value.trim()
+    if (url) {
+      bannerImgPreview.src = url
+      bannerImgPreview.style.display = ''
+      if (bannerUploadLabel) bannerUploadLabel.style.display = 'none'
+    } else {
+      bannerImgPreview.style.display = 'none'
+      if (bannerUploadLabel) bannerUploadLabel.style.display = ''
     }
   })
 

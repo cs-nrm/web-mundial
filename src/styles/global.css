@@ -4,10 +4,9 @@
   License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap');
+/* Syne se carga via <link> en BaseHead.astro — no usar @import aquí */
 
-
- :root {
+:root {
 	--accent: #2337ff;
 	--accent-dark: #000d8a;
 	--black: 15, 18, 25;
@@ -51,7 +50,7 @@
 }
 
 .spartan{
-  font-family: 'Inconsolata';
+  font-family: 'Syne', sans-serif;
 }
 .syne {
   font-family: 'Syne', sans-serif;
@@ -61,8 +60,8 @@
 }
 
 
-body {	
-  font-family: 'Syne';
+body {
+  font-family: 'Syne', sans-serif;
   letter-spacing: 0.05em;
 	margin: 0;
 	padding: 0;
@@ -110,7 +109,7 @@ h6 {
 	margin: 0 0 0.5rem 0;
 	color: rgb(var(--gray-beat));
 	line-height: 1.2;
-  font-family: 'Syne';
+  font-family: 'Syne', sans-serif;
 }
 h1 {
 	font-size: 3.052em;

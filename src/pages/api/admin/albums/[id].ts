@@ -31,7 +31,7 @@ export const PATCH: APIRoute = async ({ request, cookies, locals, params }) => {
     return new Response(JSON.stringify({ error: 'Cuerpo inválido' }), { status: 400 })
   }
 
-  const { name, slug, descripcion, cover_url, active, estacion, color_acento, color_acento2, color_texto, logo_url, total_cards } = body
+  const { name, slug, descripcion, cover_url, active, estacion, color_acento, color_acento2, color_texto, logo_url, total_cards, banner_patrocinador_url } = body
 
   if (slug && !/^[a-z0-9-]+$/.test(slug)) {
     return new Response(JSON.stringify({ error: 'Slug inválido' }), { status: 400 })
@@ -56,6 +56,7 @@ export const PATCH: APIRoute = async ({ request, cookies, locals, params }) => {
   if (color_texto !== undefined) updates.color_texto = color_texto || null
   if (logo_url !== undefined) updates.logo_url = logo_url || null
   if (total_cards !== undefined) updates.total_cards = total_cards ?? null
+  if (banner_patrocinador_url !== undefined) updates.banner_patrocinador_url = banner_patrocinador_url || null
 
   const supabase = createSupabaseServerClient(request, cookies)
   const { error } = await supabase
