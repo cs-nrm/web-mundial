@@ -191,6 +191,10 @@ const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImag
         buscarYCargar(0)
       }
 
+      window.agregarAlPlayer = function agregarAlPlayer(song) {
+        if (song) songsList.push(song)
+      }
+
       window.cerrarPlayer = function cerrarPlayer() {
         document.getElementById('player-panel').style.display = 'none'
         if (playerReady) ytPlayer.stopVideo()

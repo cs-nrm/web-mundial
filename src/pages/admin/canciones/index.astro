@@ -27,10 +27,10 @@ const { data: songs, count } = await query
 const totalPaginas = Math.ceil((count ?? 0) / porPagina)
 
 const estacionColors: Record<string, string> = {
-  oye: 'bg-blue-100 text-blue-700',
-  beat: 'bg-orange-100 text-orange-700',
-  stereocien: 'bg-purple-100 text-purple-700',
-  sabrosita: 'bg-pink-100 text-pink-700',
+  oye: '#e2241a',
+  beat: '#ffaa1f',
+  stereocien: '#012169',
+  sabrosita: '#f2510a',
 }
 ---
 <AdminLayout title="Catálogo de Canciones">
@@ -82,8 +82,7 @@ const estacionColors: Record<string, string> = {
             <td style="padding:0.7rem 1rem;color:#1a1a2e;font-weight:500;">{song.artist}</td>
             <td style="padding:0.7rem 1rem;color:#374151;">{song.title}</td>
             <td style="padding:0.7rem 1rem;">
-              <span style={`padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600;`}
-                class={estacionColors[song.estacion] ?? 'bg-gray-100 text-gray-700'}>
+              <span style={`padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600;background:${estacionColors[song.estacion] ?? '#6b7280'}22;color:${estacionColors[song.estacion] ?? '#6b7280'}`}>
                 {song.estacion}
               </span>
             </td>

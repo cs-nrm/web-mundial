@@ -36,17 +36,17 @@ const enPlaylist = new Set((misCanciones ?? []).map(ps => ps.song_id))
 
 const ESTACIONES = ['oye', 'beat', 'stereocien', 'sabrosita'] as const
 const estacionColors: Record<string, string> = {
-  oye: '#3b82f6',
-  beat: '#f97316',
-  stereocien: '#8b5cf6',
-  sabrosita: '#ec4899',
+  oye: '#e2241a',
+  beat: '#ffaa1f',
+  stereocien: '#012169',
+  sabrosita: '#f2510a',
 }
 ---
 <Layout title={playlist.nombre}>
 
   <!-- Hero header — fondo negro con acento lima -->
   <div class="bg-[#0a0a0a] px-4 pt-10 pb-16">
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-5xl mx-auto">
       <a href="/perfil/playlist" class="inter text-sm text-gray-400 hover:text-[#c5e513] transition flex items-center gap-1 w-fit mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         Mis playlists
@@ -82,11 +82,23 @@ const estacionColors: Record<string, string> = {
 
   <!-- Contenido — fondo blanco levantado sobre el hero -->
   <div class="bg-gray-50 min-h-screen px-4 -mt-6 pt-8 pb-16">
-    <div class="max-w-3xl mx-auto space-y-5">
+    <div class="max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-      <!-- Mis canciones -->
+      <!-- Izquierda: Mi playlist -->
+      <div class="lg:sticky lg:top-6">
       <div class="bg-white rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)">
-        <h2 class="syne font-bold text-[#0a0a0a] text-lg mb-4">En mi playlist</h2>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="syne font-bold text-[#0a0a0a] text-lg">En mi playlist</h2>
+          <button
+            id="btn-reproducir-inline"
+            hidden={(misCanciones ?? []).length === 0}
+            onclick="window.abrirPlayer(window.getSongsFromDOM())"
+            class="inter flex items-center gap-1.5 bg-[#c5e513] text-[#0a0a0a] font-semibold text-xs px-3 py-1.5 rounded-lg hover:brightness-90 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M8 5v14l11-7z"/></svg>
+            Reproducir
+          </button>
+        </div>
         <div id="lista-mis-canciones">
           {(misCanciones ?? []).length === 0 ? (
             <p class="inter text-gray-400 text-center text-sm py-8">Aún no tienes canciones. Agrégalas del catálogo abajo.</p>
@@ -95,7 +107,7 @@ const estacionColors: Record<string, string> = {
               {(misCanciones ?? []).map(ps => {
                 const song = ps.songs_catalog as any
                 return (
-                  <div class="flex items-center justify-between py-3" data-song-row={song.id}>
+                  <div class="flex items-center justify-between py-3" data-song-row={song.id} data-artist={song.artist} data-title={song.title}>
                     <div>
                       <p class="inter font-medium text-[#111827] text-sm">{song.artist}</p>
                       <p class="inter text-xs text-gray-400 mt-0.5">{song.title}</p>
@@ -118,8 +130,10 @@ const estacionColors: Record<string, string> = {
           )}
         </div>
       </div>
+      </div><!-- /sticky wrapper -->
 
-      <!-- Catálogo -->
+      <!-- Derecha: Catálogo -->
+      <div>
       <div class="bg-white rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)">
         <h2 class="syne font-bold text-[#0a0a0a] text-lg mb-4">Agregar canciones</h2>
 
@@ -147,7 +161,7 @@ const estacionColors: Record<string, string> = {
         />
 
         <!-- Lista catálogo -->
-        <div id="catalogo-lista" class="max-h-96 overflow-y-auto divide-y divide-gray-100">
+        <div id="catalogo-lista" class="max-h-[calc(100vh-340px)] min-h-[200px] overflow-y-auto divide-y divide-gray-100 pr-4">
           {(catalogo ?? []).map(song => (
             <div
               class="catalogo-item flex items-center justify-between py-3"
@@ -182,9 +196,11 @@ const estacionColors: Record<string, string> = {
           ))}
         </div>
       </div>
+      </div><!-- /right column -->
 
-    </div>
-  </div>
+      </div><!-- /grid -->
+    </div><!-- /max-w-5xl -->
+  </div><!-- /bg-gray-50 -->
 
   <!-- Modal renombrar -->
   <div id="modal-renombrar" hidden class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -258,12 +274,11 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
     const artist = item?.dataset.artistOrig ?? ''
     const title = item?.dataset.titleOrig ?? ''
     const estacion = item?.dataset.estacion ?? ''
-    const color = { oye: '#3b82f6', beat: '#f97316', stereocien: '#8b5cf6', sabrosita: '#ec4899' }[estacion] ?? '#6b7280'
+    const color = { oye: '#e2241a', beat: '#ffaa1f', stereocien: '#012169', sabrosita: '#f2510a' }[estacion] ?? '#6b7280'
 
-    // Quitar mensaje vacío si existe
+    // Quitar mensaje vacío si existe (solo si aún no hay contenedor de canciones)
     const lista = document.getElementById('lista-mis-canciones')
-    const vacio = lista.querySelector('p')
-    if (vacio) {
+    if (!lista.querySelector('.divide-y')) {
       const div = document.createElement('div')
       div.className = 'divide-y divide-gray-100'
       lista.replaceChildren(div)
@@ -274,6 +289,8 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
     const fila = document.createElement('div')
     fila.className = 'flex items-center justify-between py-3'
     fila.dataset.songRow = songId
+    fila.dataset.artist = artist
+    fila.dataset.title = title
     fila.innerHTML = `
       <div>
         <p class="inter font-medium text-[#111827] text-sm">${artist}</p>
@@ -288,6 +305,10 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
     contenedor.prepend(fila)
 
     actualizarContador(1)
+    document.getElementById('btn-reproducir-inline')?.removeAttribute('hidden')
+    if (document.getElementById('player-panel')?.style.display !== 'none') {
+      window.agregarAlPlayer?.({ artist, title })
+    }
   } else {
     btn.disabled = false
     btn.textContent = '+'
@@ -315,6 +336,9 @@ window.quitarCancion = async function quitarCancion(songId, _btn) {
     }
 
     actualizarContador(-1)
+    if (document.querySelectorAll('[data-song-row]').length === 0) {
+      document.getElementById('btn-reproducir-inline')?.setAttribute('hidden', '')
+    }
   }
 }
 
@@ -348,4 +372,11 @@ async function eliminarPlaylist() {
 
 // Exponer la lista de canciones para el player global
 window.__playlistSongs = songsList
+
+window.getSongsFromDOM = function() {
+  return Array.from(document.querySelectorAll('[data-song-row]')).map(row => ({
+    artist: row.dataset.artist ?? '',
+    title: row.dataset.title ?? '',
+  }))
+}
 </script>
