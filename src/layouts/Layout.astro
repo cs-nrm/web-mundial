@@ -195,6 +195,23 @@ const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImag
         if (song) songsList.push(song)
       }
 
+      window.abrirPlayerShuffle = function abrirPlayerShuffle(songs) {
+        if (songs && songs.length) songsList = songs
+        if (!songsList.length) return
+        const startIndex = Math.floor(Math.random() * songsList.length)
+        const indices = songsList.map((_, i) => i).filter(i => i !== startIndex)
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]]
+        }
+        shuffleOn = true
+        shuffledQueue = [startIndex, ...indices]
+        currentSongIndex = startIndex
+        document.getElementById('btn-shuffle').classList.add('active')
+        document.getElementById('player-panel').style.display = 'block'
+        buscarYCargar(startIndex)
+      }
+
       window.cerrarPlayer = function cerrarPlayer() {
         document.getElementById('player-panel').style.display = 'none'
         if (playerReady) ytPlayer.stopVideo()

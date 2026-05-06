@@ -79,10 +79,11 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
   const supabase = createSupabaseServerClient(request, cookies)
 
-  // Insertar ignorando duplicados (mismo artista + título)
+  // Insertar ignorando duplicados (mismo artista + título + estación)
+  // Una canción puede existir en múltiples estaciones como entradas separadas
   const { data, error } = await supabase
     .from('songs_catalog')
-    .upsert(payload, { onConflict: 'artist,title', ignoreDuplicates: true })
+    .upsert(payload, { onConflict: 'artist,title,estacion', ignoreDuplicates: true })
     .select('id')
 
   if (error) {

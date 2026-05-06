@@ -633,14 +633,15 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
 
   /* Imagen — aspecto 2:3, el footer es altura extra */
-  .card-img {
+  /* :global porque estos elementos también se crean dinámicamente via JS */
+  :global(.card-img) {
     width: 100%;
     aspect-ratio: 2 / 3;
     object-fit: cover;
     display: block;
     flex-shrink: 0;
   }
-  .card-img-placeholder {
+  :global(.card-img-placeholder) {
     aspect-ratio: 2 / 3;
     width: 100%;
     flex-shrink: 0;
@@ -648,7 +649,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
 
   /* Footer: número | nombre */
-  .card-footer {
+  :global(.card-footer) {
     padding: 0.55rem 0.75rem 0.65rem;
     background: linear-gradient(135deg, var(--accent2), var(--accent));
     display: flex;
@@ -656,7 +657,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     align-items: center;
     gap: 0.4rem;
   }
-  .card-num {
+  :global(.card-num) {
     font-size: 0.65rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -667,13 +668,13 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .card-sep {
+  :global(.card-sep) {
     font-size: 0.6rem;
     color: var(--text-on-accent);
     opacity: 0.4;
     flex-shrink: 0;
   }
-  .card-name {
+  :global(.card-name) {
     font-size: 0.65rem;
     font-weight: 800;
     color: var(--text-on-accent);

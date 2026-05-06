@@ -41,6 +41,11 @@ const estacionColors: Record<string, string> = {
   stereocien: '#012169',
   sabrosita: '#f2510a',
 }
+const estacionTextColors: Record<string, string> = {
+  oye: 'white',
+  beat: '#0a0a0a',
+}
+const estacionSolid = new Set(['oye', 'beat'])
 ---
 <Layout title={playlist.nombre}>
 
@@ -61,11 +66,19 @@ const estacionColors: Record<string, string> = {
         </div>
         <div class="flex gap-2 flex-wrap items-center pt-1">
           {(misCanciones ?? []).length > 0 && (
-            <button onclick="window.abrirPlayer(window.__playlistSongs)"
+            <>
+            <button onclick="window.abrirPlayer(window.getSongsFromDOM())"
               class="inter flex items-center gap-2 bg-[#c5e513] text-[#0a0a0a] font-semibold text-sm px-5 py-2.5 rounded-xl hover:brightness-90 transition">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M8 5v14l11-7z"/></svg>
               Reproducir
             </button>
+            <button onclick="window.abrirPlayerShuffle(window.getSongsFromDOM())"
+              class="inter flex items-center gap-2 border-2 border-white/20 text-white/70 font-semibold text-sm px-4 py-2.5 rounded-xl hover:border-white/60 hover:text-white transition">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+              Aleatorio
+            </button>
+            </>
+          )}
           )}
           <button onclick="document.getElementById('modal-renombrar').removeAttribute('hidden')"
             class="inter text-sm border-2 border-white/20 text-white/60 px-4 py-2.5 rounded-xl hover:border-white/60 hover:text-white transition">
@@ -81,43 +94,51 @@ const estacionColors: Record<string, string> = {
   </div>
 
   <!-- Contenido — fondo blanco levantado sobre el hero -->
-  <div class="bg-gray-50 min-h-screen px-4 -mt-6 pt-8 pb-16">
+  <div class="min-h-screen px-4 -mt-6 pt-8 pb-16" style="background:#320E41">
     <div class="max-w-5xl mx-auto">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
       <!-- Izquierda: Mi playlist -->
       <div class="lg:sticky lg:top-6">
-      <div class="bg-white rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)">
+      <div class="bg-[#f8ef22] rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)" style="background:#f8ef22">
         <div class="flex items-center justify-between mb-4">
           <h2 class="syne font-bold text-[#0a0a0a] text-lg">En mi playlist</h2>
           <button
             id="btn-reproducir-inline"
             hidden={(misCanciones ?? []).length === 0}
             onclick="window.abrirPlayer(window.getSongsFromDOM())"
-            class="inter flex items-center gap-1.5 bg-[#c5e513] text-[#0a0a0a] font-semibold text-xs px-3 py-1.5 rounded-lg hover:brightness-90 transition">
+            class="inter flex items-center gap-1.5 bg-[#320E41] text-white font-semibold text-xs px-3 py-1.5 rounded-lg hover:brightness-110 transition">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M8 5v14l11-7z"/></svg>
             Reproducir
+          </button>
+          <button
+            id="btn-shuffle-inline"
+            hidden={(misCanciones ?? []).length === 0}
+            onclick="window.abrirPlayerShuffle(window.getSongsFromDOM())"
+            class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#320E41]/20 text-[#320E41] hover:bg-[#320E41] hover:text-white transition"
+            title="Reproducir en aleatorio">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
           </button>
         </div>
         <div id="lista-mis-canciones">
           {(misCanciones ?? []).length === 0 ? (
-            <p class="inter text-gray-400 text-center text-sm py-8">Aún no tienes canciones. Agrégalas del catálogo abajo.</p>
+            <p class="inter text-[#320E41]/60 text-center text-sm py-8">Aún no tienes canciones. Agrégalas del catálogo abajo.</p>
           ) : (
-            <div class="divide-y divide-gray-100">
+            <div class="divide-y divide-[#320E41]/20">
               {(misCanciones ?? []).map(ps => {
                 const song = ps.songs_catalog as any
                 return (
                   <div class="flex items-center justify-between py-3" data-song-row={song.id} data-artist={song.artist} data-title={song.title}>
                     <div>
-                      <p class="inter font-medium text-[#111827] text-sm">{song.artist}</p>
-                      <p class="inter text-xs text-gray-400 mt-0.5">{song.title}</p>
+                      <p class="inter font-medium text-[#320E41] text-sm">{song.artist}</p>
+                      <p class="inter text-xs text-[#320E41]/60 mt-0.5">{song.title}</p>
                     </div>
                     <div class="flex items-center gap-3">
-                      <span style={`background:${estacionColors[song.estacion]}18;color:${estacionColors[song.estacion]};`}
+                      <span style={`background:${estacionSolid.has(song.estacion) ? estacionColors[song.estacion] : estacionColors[song.estacion]+'22'};color:${estacionTextColors[song.estacion] ?? estacionColors[song.estacion]};`}
                         class="inter text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md">{song.estacion}</span>
                       <button
                         onclick={`quitarCancion('${song.id}', this)`}
-                        class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-400 transition rounded-full hover:bg-red-50"
+                        class="w-7 h-7 flex items-center justify-center text-[#320E41]/30 hover:text-red-600 transition rounded-full hover:bg-red-100/50"
                         title="Quitar"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -134,18 +155,18 @@ const estacionColors: Record<string, string> = {
 
       <!-- Derecha: Catálogo -->
       <div>
-      <div class="bg-white rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)">
+      <div class="bg-[#f8ef22] rounded-2xl p-6" style="box-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06)" style="background:#f8ef22">
         <h2 class="syne font-bold text-[#0a0a0a] text-lg mb-4">Agregar canciones</h2>
 
         <!-- Filtros estación -->
         <div class="flex gap-2 flex-wrap mb-4">
           <button onclick="filtrarEstacion('todas')" data-estacion="todas"
-            class="filtro-btn active inter px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-[#c5e513] bg-[#c5e513] text-[#0a0a0a] transition">
+            class="filtro-btn active inter px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-[#320E41] bg-[#320E41] text-white transition">
             Todas
           </button>
           {ESTACIONES.map(e => (
             <button onclick={`filtrarEstacion('${e}')`} data-estacion={e}
-              class="filtro-btn inter px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-800 transition">
+              class="filtro-btn inter px-3 py-1.5 rounded-full text-xs font-semibold border-2 border-[#320E41]/30 text-[#320E41]/70 hover:border-[#320E41] hover:text-[#320E41] transition">
               {e.charAt(0).toUpperCase() + e.slice(1)}
             </button>
           ))}
@@ -157,11 +178,11 @@ const estacionColors: Record<string, string> = {
           id="buscar"
           placeholder="Buscar artista o canción..."
           oninput="filtrarCatalogo()"
-          class="inter w-full border-2 border-gray-100 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-[#c5e513] transition mb-4 bg-gray-50"
+          class="inter w-full border-2 border-[#320E41]/20 rounded-xl px-4 py-2.5 text-[#320E41] text-sm focus:outline-none focus:border-[#320E41] transition mb-4 bg-[#320E41]/10 placeholder:text-[#320E41]/40"
         />
 
         <!-- Lista catálogo -->
-        <div id="catalogo-lista" class="max-h-[calc(100vh-340px)] min-h-[200px] overflow-y-auto divide-y divide-gray-100 pr-4">
+        <div id="catalogo-lista" class="max-h-[calc(100vh-340px)] min-h-[200px] overflow-y-auto divide-y divide-[#320E41]/20 pr-4">
           {(catalogo ?? []).map(song => (
             <div
               class="catalogo-item flex items-center justify-between py-3"
@@ -173,19 +194,19 @@ const estacionColors: Record<string, string> = {
               data-title-orig={song.title}
             >
               <div>
-                <p class="inter font-medium text-[#111827] text-sm">{song.artist}</p>
-                <p class="inter text-xs text-gray-400 mt-0.5">{song.title}</p>
+                <p class="inter font-medium text-[#320E41] text-sm">{song.artist}</p>
+                <p class="inter text-xs text-[#320E41]/60 mt-0.5">{song.title}</p>
               </div>
               <div class="flex items-center gap-3 pr-1">
-                <span style={`background:${estacionColors[song.estacion]}18;color:${estacionColors[song.estacion]};`}
+                <span style={`background:${estacionSolid.has(song.estacion) ? estacionColors[song.estacion] : estacionColors[song.estacion]+'22'};color:${estacionTextColors[song.estacion] ?? estacionColors[song.estacion]};`}
                   class="inter text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md">{song.estacion}</span>
                 {enPlaylist.has(song.id) ? (
-                  <span class="btn-agregar w-8 h-8 flex items-center justify-center text-[#c5e513] font-bold text-base" data-song-id={song.id}>
+                  <span class="btn-agregar w-8 h-8 flex items-center justify-center text-[#320E41] font-bold text-base" data-song-id={song.id}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                   </span>
                 ) : (
                   <button
-                    class="btn-agregar w-8 h-8 flex items-center justify-center rounded-full bg-[#c5e513] text-[#0a0a0a] hover:brightness-90 transition font-bold text-xl flex-shrink-0"
+                    class="btn-agregar w-8 h-8 flex items-center justify-center rounded-full bg-[#320E41] text-white hover:brightness-125 transition font-bold text-xl flex-shrink-0"
                     data-song-id={song.id}
                     onclick={`window.agregarCancion('${song.id}', this)`}
                     title="Agregar"
@@ -229,7 +250,7 @@ const estacionColors: Record<string, string> = {
 
   <style>
     #modal-renombrar[hidden] { display: none !important; }
-    .filtro-btn.active { border-color: #c5e513 !important; background: #c5e513 !important; color: #0a0a0a !important; }
+    .filtro-btn.active { border-color: #320E41 !important; background: #320E41 !important; color: white !important; }
   </style>
 </Layout>
 
@@ -274,13 +295,18 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
     const artist = item?.dataset.artistOrig ?? ''
     const title = item?.dataset.titleOrig ?? ''
     const estacion = item?.dataset.estacion ?? ''
-    const color = { oye: '#e2241a', beat: '#ffaa1f', stereocien: '#012169', sabrosita: '#f2510a' }[estacion] ?? '#6b7280'
+    const estColors = { oye: '#e2241a', beat: '#ffaa1f', stereocien: '#012169', sabrosita: '#f2510a' }
+    const estTextColors = { oye: 'white', beat: '#0a0a0a' }
+    const estSolid = new Set(['oye', 'beat'])
+    const color = estColors[estacion] ?? '#6b7280'
+    const badgeBg = estSolid.has(estacion) ? color : color + '22'
+    const badgeText = estTextColors[estacion] ?? color
 
     // Quitar mensaje vacío si existe (solo si aún no hay contenedor de canciones)
     const lista = document.getElementById('lista-mis-canciones')
     if (!lista.querySelector('.divide-y')) {
       const div = document.createElement('div')
-      div.className = 'divide-y divide-gray-100'
+      div.className = 'divide-y divide-[#320E41]/20'
       lista.replaceChildren(div)
     }
 
@@ -293,12 +319,12 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
     fila.dataset.title = title
     fila.innerHTML = `
       <div>
-        <p class="inter font-medium text-[#111827] text-sm">${artist}</p>
-        <p class="inter text-xs text-gray-400 mt-0.5">${title}</p>
+        <p class="inter font-medium text-[#320E41] text-sm">${artist}</p>
+        <p class="inter text-xs text-[#320E41]/60 mt-0.5">${title}</p>
       </div>
       <div class="flex items-center gap-3">
-        <span style="background:${color}18;color:${color};" class="inter text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md">${estacion}</span>
-        <button onclick="window.quitarCancion('${songId}', this)" class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-400 transition rounded-full hover:bg-red-50" title="Quitar">
+        <span style="background:${badgeBg};color:${badgeText};" class="inter text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md">${estacion}</span>
+        <button onclick="window.quitarCancion('${songId}', this)" class="w-7 h-7 flex items-center justify-center text-[#320E41]/30 hover:text-red-600 transition rounded-full hover:bg-red-100/50" title="Quitar">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </button>
       </div>`
@@ -306,6 +332,7 @@ window.agregarCancion = async function agregarCancion(songId, btn) {
 
     actualizarContador(1)
     document.getElementById('btn-reproducir-inline')?.removeAttribute('hidden')
+    document.getElementById('btn-shuffle-inline')?.removeAttribute('hidden')
     if (document.getElementById('player-panel')?.style.display !== 'none') {
       window.agregarAlPlayer?.({ artist, title })
     }
@@ -338,6 +365,7 @@ window.quitarCancion = async function quitarCancion(songId, _btn) {
     actualizarContador(-1)
     if (document.querySelectorAll('[data-song-row]').length === 0) {
       document.getElementById('btn-reproducir-inline')?.setAttribute('hidden', '')
+      document.getElementById('btn-shuffle-inline')?.setAttribute('hidden', '')
     }
   }
 }

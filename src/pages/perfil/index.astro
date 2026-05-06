@@ -164,7 +164,7 @@ const { count: playlistCount } = await supabase
             <span class="promo-link">Ver →</span>
           </a>
 
-          <a href="/perfil/playlist" class="promo-card">
+          <a href="/perfil/playlist" class="promo-card" style="background:#320E41;border-color:rgba(255,255,255,0.1)">
             <span class={`promo-badge ${(playlistCount ?? 0) > 0 ? 'badge-active' : 'badge-pending'}`}>
               {(playlistCount ?? 0) > 0 ? 'Activo' : 'Pendiente'}
             </span>

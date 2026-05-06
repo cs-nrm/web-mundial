@@ -32,6 +32,24 @@ const estacionColors: Record<string, string> = {
   stereocien: '#012169',
   sabrosita: '#f2510a',
 }
+
+// En la vista "todas", agrupa por artist+title para mostrar múltiples badges por canción
+type SongEntry = { id: string; estacion: string; activo: boolean }
+type SongRow = { artist: string; title: string; entries: SongEntry[] }
+const songsAgrupados: SongRow[] = estacionParam === 'todas'
+  ? Object.values(
+      (songs ?? []).reduce((acc: Record<string, SongRow>, s: any) => {
+        const key = `${s.artist.toLowerCase()}|${s.title.toLowerCase()}`
+        if (!acc[key]) acc[key] = { artist: s.artist, title: s.title, entries: [] }
+        acc[key].entries.push({ id: s.id, estacion: s.estacion, activo: s.activo })
+        return acc
+      }, {})
+    )
+  : (songs ?? []).map((s: any) => ({
+      artist: s.artist,
+      title: s.title,
+      entries: [{ id: s.id, estacion: s.estacion, activo: s.activo }],
+    }))
 ---
 <AdminLayout title="Catálogo de Canciones">
 
@@ -77,29 +95,37 @@ const estacionColors: Record<string, string> = {
         </tr>
       </thead>
       <tbody>
-        {(songs ?? []).map((song, i) => (
+        {songsAgrupados.map((row, i) => (
           <tr style={`border-bottom:1px solid #f3f4f6;${i % 2 === 0 ? '' : 'background:#fafafa'}`}>
-            <td style="padding:0.7rem 1rem;color:#1a1a2e;font-weight:500;">{song.artist}</td>
-            <td style="padding:0.7rem 1rem;color:#374151;">{song.title}</td>
+            <td style="padding:0.7rem 1rem;color:#1a1a2e;font-weight:500;">{row.artist}</td>
+            <td style="padding:0.7rem 1rem;color:#374151;">{row.title}</td>
             <td style="padding:0.7rem 1rem;">
-              <span style={`padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600;background:${estacionColors[song.estacion] ?? '#6b7280'}22;color:${estacionColors[song.estacion] ?? '#6b7280'}`}>
-                {song.estacion}
-              </span>
+              <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                {row.entries.map(e => (
+                  <span style={`padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600;background:${estacionColors[e.estacion] ?? '#6b7280'}22;color:${estacionColors[e.estacion] ?? '#6b7280'}`}>
+                    {e.estacion}
+                  </span>
+                ))}
+              </div>
             </td>
             <td style="padding:0.7rem 1rem;text-align:center;">
-              <label class="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={song.activo}
-                  data-id={song.id}
-                  onchange="toggleSong(this)"
-                />
-                <span class="toggle-slider"></span>
-              </label>
+              <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+                {row.entries.map(e => (
+                  <label class="toggle-switch" title={e.estacion}>
+                    <input
+                      type="checkbox"
+                      checked={e.activo}
+                      data-id={e.id}
+                      onchange="toggleSong(this)"
+                    />
+                    <span class="toggle-slider"></span>
+                  </label>
+                ))}
+              </div>
             </td>
           </tr>
         ))}
-        {(songs ?? []).length === 0 && (
+        {songsAgrupados.length === 0 && (
           <tr>
             <td colspan="4" style="padding:2rem;text-align:center;color:#9ca3af;">
               No hay canciones. Importa un archivo CSV o Excel para comenzar.
