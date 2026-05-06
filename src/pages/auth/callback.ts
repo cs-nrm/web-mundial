@@ -47,7 +47,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
     }
   }
 
-  const redirectAfter = cookies.get('auth_redirect')?.value ?? '/'
+  const redirectAfter = cookies.get('auth_redirect')?.value ?? '/perfil'
   cookies.delete('auth_redirect', { path: '/' })
   return redirect(redirectAfter)
 }
