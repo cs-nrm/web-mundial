@@ -2,7 +2,8 @@
 import Layout from '../../layouts/Layout.astro'
 import { createSupabaseServerClient } from '../../lib/supabase'
 
-const { user, hasGenerales } = Astro.locals
+const { user, hasGenerales, estacion_favorita, role } = Astro.locals
+const isSuperadmin = role === 'superadmin'
 if (!user) {
   return Astro.redirect(`/auth/login?redirect=/perfil`)
 }
@@ -22,12 +23,18 @@ const { data: profile } = await supabase
   .maybeSingle()
 const avatarUrl: string | null = profile?.avatar_url ?? null
 
-// Todos los álbumes activos con su color y logo
-const { data: albums } = await supabase
+// Álbumes activos: superadmin ve todos, usuario normal solo el de su estación
+let albumsQuery = supabase
   .from('albums')
   .select('id, name, slug, color_acento, logo_url, total_cards')
   .eq('active', true)
   .order('created_at', { ascending: true })
+
+if (!isSuperadmin && estacion_favorita) {
+  albumsQuery = albumsQuery.eq('estacion', estacion_favorita)
+}
+
+const { data: albums } = await albumsQuery
 
 // Progreso del usuario en cada álbum
 type AlbumProgress = {
@@ -125,7 +132,18 @@ const { count: playlistCount } = await supabase
     <div class="perfil-content">
 
       <!-- Álbumes -->
-      {albumsProgress.length > 0 && (
+      {!isSuperadmin && !estacion_favorita ? (
+        <section class="perfil-section">
+          <h2 class="section-title spartan">Mis Álbumes</h2>
+          <div class="no-estacion">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="no-estacion-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <p class="no-estacion-msg">Tienes que seleccionar una estación para poder continuar.</p>
+            <a href="/perfil/datos" class="no-estacion-btn spartan">Completar perfil</a>
+          </div>
+        </section>
+      ) : albumsProgress.length > 0 && (
         <section class="perfil-section">
           <h2 class="section-title spartan">Mis Álbumes</h2>
           <div class="albums-list">
@@ -278,6 +296,42 @@ const { count: playlistCount } = await supabase
     color: rgba(255,255,255,0.3); margin-bottom: 1rem;
     font-family: 'Open Sans', sans-serif;
   }
+
+  /* Sin estación */
+  .no-estacion {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 0.875rem;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+  }
+  .no-estacion-icon {
+    width: 2rem; height: 2rem;
+    color: rgba(255,200,50,0.6);
+  }
+  .no-estacion-msg {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.55);
+    font-family: 'Open Sans', sans-serif;
+    max-width: 320px;
+  }
+  .no-estacion-btn {
+    margin-top: 0.25rem;
+    background: #EA262A;
+    color: white;
+    text-decoration: none;
+    padding: 0.55rem 1.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    transition: opacity 0.2s;
+  }
+  .no-estacion-btn:hover { opacity: 0.85; }
 
   /* Lista de álbumes */
   .albums-list {

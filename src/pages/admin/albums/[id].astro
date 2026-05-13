@@ -100,6 +100,46 @@ for (const c of (canjeos ?? [])) {
           }
         </div>
         <div>
+          <span class="info-label">Color header</span>
+          {album.color_header
+            ? <span style={`display:inline-flex;align-items:center;gap:0.5rem`}>
+                <span style={`display:inline-block;width:1rem;height:1rem;border-radius:50%;background:${album.color_header};border:1px solid rgba(0,0,0,0.1)`}></span>
+                <span class="mono">{album.color_header}</span>
+              </span>
+            : <span style="color:#aaa;font-size:0.8rem">—</span>
+          }
+        </div>
+        <div>
+          <span class="info-label">Color body</span>
+          {album.color_body
+            ? <span style={`display:inline-flex;align-items:center;gap:0.5rem`}>
+                <span style={`display:inline-block;width:1rem;height:1rem;border-radius:50%;background:${album.color_body};border:1px solid rgba(0,0,0,0.1)`}></span>
+                <span class="mono">{album.color_body}</span>
+              </span>
+            : <span style="color:#aaa;font-size:0.8rem">—</span>
+          }
+        </div>
+        <div>
+          <span class="info-label">Color fondo card</span>
+          {album.color_fondo_card
+            ? <span style={`display:inline-flex;align-items:center;gap:0.5rem`}>
+                <span style={`display:inline-block;width:1rem;height:1rem;border-radius:50%;background:${album.color_fondo_card};border:1px solid rgba(0,0,0,0.1)`}></span>
+                <span class="mono">{album.color_fondo_card}</span>
+              </span>
+            : <span style="color:#aaa;font-size:0.8rem">—</span>
+          }
+        </div>
+        <div>
+          <span class="info-label">Color texto card</span>
+          {album.color_texto_card
+            ? <span style={`display:inline-flex;align-items:center;gap:0.5rem`}>
+                <span style={`display:inline-block;width:1rem;height:1rem;border-radius:50%;background:${album.color_texto_card};border:1px solid rgba(0,0,0,0.1)`}></span>
+                <span class="mono">{album.color_texto_card}</span>
+              </span>
+            : <span style="color:#aaa;font-size:0.8rem">—</span>
+          }
+        </div>
+        <div>
           <span class="info-label">Total cards</span>
           <span>{album.total_cards ?? '—'}</span>
           {album.total_cards && <span style="color:#6b7280;font-size:0.8rem"> ({(cards ?? []).length} cargadas)</span>}
@@ -162,18 +202,81 @@ for (const c of (canjeos ?? [])) {
             <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Panel de cards, botón Canjear y footer del modal. Si se deja igual que acento 1 no hay degradado.</p>
           </div>
           <div class="form-row">
-            <label>Color de texto sobre acento</label>
-            <div style="display:flex;gap:1rem">
-              <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.875rem">
-                <input type="radio" name="color_texto" value="#ffffff" checked={!album.color_texto || album.color_texto === '#ffffff'} />
-                Blanco
-              </label>
-              <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.875rem">
-                <input type="radio" name="color_texto" value="#000000" checked={album.color_texto === '#000000'} />
-                Negro
-              </label>
+            <label>Color texto del botón Canjear</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_texto" type="color" value={album.color_texto ?? '#ffffff'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_texto_hex" type="text" value={album.color_texto ?? '#ffffff'}
+                placeholder="#ffffff" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
             </div>
-            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Elige negro cuando el color de acento es claro (ej. amarillo).</p>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Texto sobre el botón y el footer de cada card. Usa negro si el acento es claro (ej. amarillo).</p>
+          </div>
+          <div class="form-row">
+            <label>Color header (fondo del encabezado)</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_header" type="color" value={album.color_header ?? '#0f1118'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_header_hex" type="text" value={album.color_header ?? '#0f1118'}
+                placeholder="#0f1118" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Fondo de la sección superior (nombre, álbum, progreso).</p>
+          </div>
+          <div class="form-row">
+            <label>Color texto header</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_texto_header" type="color" value={album.color_texto_header ?? '#ffffff'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_texto_header_hex" type="text" value={album.color_texto_header ?? '#ffffff'}
+                placeholder="#ffffff" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Color del nombre, título del álbum y conteo de estampas.</p>
+          </div>
+          <div class="form-row">
+            <label>Color body (fondo del contenido)</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_body" type="color" value={album.color_body ?? '#0f1118'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_body_hex" type="text" value={album.color_body ?? '#0f1118'}
+                placeholder="#0f1118" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Fondo de la sección de cards (debajo de la barra de progreso).</p>
+          </div>
+          <div class="form-row">
+            <label>Color texto body</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_texto_body" type="color" value={album.color_texto_body ?? '#ffffff'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_texto_body_hex" type="text" value={album.color_texto_body ?? '#ffffff'}
+                placeholder="#ffffff" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Color del título y descripción en la sección de canjear código.</p>
+          </div>
+          <div class="form-row">
+            <label>Color fondo card</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_fondo_card" type="color" value={album.color_fondo_card ?? '#1c1f28'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_fondo_card_hex" type="text" value={album.color_fondo_card ?? '#1c1f28'}
+                placeholder="#1c1f28" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Fondo de cada tarjeta desbloqueada y del modal.</p>
+          </div>
+          <div class="form-row">
+            <label>Color texto card</label>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <input name="color_texto_card" type="color" value={album.color_texto_card ?? '#ffffff'}
+                style="width:2.5rem;height:2.25rem;padding:0.1rem;border:1px solid #d1d5db;border-radius:0.375rem;cursor:pointer" />
+              <input name="color_texto_card_hex" type="text" value={album.color_texto_card ?? '#ffffff'}
+                placeholder="#ffffff" maxlength="7"
+                style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.4rem 0.6rem;font-family:monospace;font-size:0.875rem" />
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-top:0.25rem">Color del número y nombre en el footer de cada card.</p>
           </div>
           <div class="form-row">
             <label>URL Logo</label>
@@ -194,6 +297,10 @@ for (const c of (canjeos ?? [])) {
                 <span id="banner-upload-text">Seleccionar imagen</span>
                 <span class="upload-hint">JPG, PNG, WebP · máx 5 MB</span>
               </label>
+              <button type="button" id="banner-change-btn" class="banner-change-btn"
+                style={album.banner_patrocinador_url ? '' : 'display:none'}>
+                🔄 Cambiar imagen
+              </button>
               <input id="banner-file-input" type="file" accept="image/jpeg,image/png,image/webp" class="file-input" />
             </div>
             <input name="banner_patrocinador_url" id="banner_patrocinador_url" type="url"
@@ -502,6 +609,13 @@ for (const c of (canjeos ?? [])) {
     }
     syncPicker('color_acento', 'color_acento_hex')
     syncPicker('color_acento2', 'color_acento2_hex')
+    syncPicker('color_texto', 'color_texto_hex')
+    syncPicker('color_header', 'color_header_hex')
+    syncPicker('color_texto_header', 'color_texto_header_hex')
+    syncPicker('color_body', 'color_body_hex')
+    syncPicker('color_texto_body', 'color_texto_body_hex')
+    syncPicker('color_fondo_card', 'color_fondo_card_hex')
+    syncPicker('color_texto_card', 'color_texto_card_hex')
   }
 
   albumForm?.addEventListener('submit', async (e) => {
@@ -527,7 +641,13 @@ for (const c of (canjeos ?? [])) {
       estacion: fd.get('estacion') || null,
       color_acento: getColor('color_acento_hex', 'color_acento'),
       color_acento2: getColor('color_acento2_hex', 'color_acento2'),
-      color_texto: fd.get('color_texto') || '#ffffff',
+      color_texto: getColor('color_texto_hex', 'color_texto'),
+      color_header: getColor('color_header_hex', 'color_header'),
+      color_body: getColor('color_body_hex', 'color_body'),
+      color_fondo_card: getColor('color_fondo_card_hex', 'color_fondo_card'),
+      color_texto_card: getColor('color_texto_card_hex', 'color_texto_card'),
+      color_texto_header: getColor('color_texto_header_hex', 'color_texto_header'),
+      color_texto_body: getColor('color_texto_body_hex', 'color_texto_body'),
       logo_url: fd.get('logo_url') || null,
       total_cards: fd.get('total_cards') ? parseInt(fd.get('total_cards') as string) : null,
       active: (albumForm.querySelector('[name=active]') as HTMLInputElement)?.checked,
@@ -599,7 +719,10 @@ for (const c of (canjeos ?? [])) {
   const bannerFileInput = document.getElementById('banner-file-input') as HTMLInputElement
   const bannerImgPreview = document.getElementById('banner-img-preview') as HTMLImageElement
   const bannerUploadLabel = document.getElementById('banner-upload-label') as HTMLLabelElement
+  const bannerChangeBtn = document.getElementById('banner-change-btn') as HTMLButtonElement
   const bannerUrlInput = document.getElementById('banner_patrocinador_url') as HTMLInputElement
+
+  bannerChangeBtn?.addEventListener('click', () => bannerFileInput?.click())
 
   bannerFileInput?.addEventListener('change', async () => {
     const file = bannerFileInput.files?.[0]
@@ -608,6 +731,7 @@ for (const c of (canjeos ?? [])) {
     bannerImgPreview.src = URL.createObjectURL(file)
     bannerImgPreview.style.display = ''
     if (bannerUploadLabel) bannerUploadLabel.style.display = 'none'
+    if (bannerChangeBtn) bannerChangeBtn.style.display = ''
 
     const fd = new FormData()
     fd.append('file', file)
@@ -631,9 +755,11 @@ for (const c of (canjeos ?? [])) {
       bannerImgPreview.src = url
       bannerImgPreview.style.display = ''
       if (bannerUploadLabel) bannerUploadLabel.style.display = 'none'
+      if (bannerChangeBtn) bannerChangeBtn.style.display = ''
     } else {
       bannerImgPreview.style.display = 'none'
       if (bannerUploadLabel) bannerUploadLabel.style.display = ''
+      if (bannerChangeBtn) bannerChangeBtn.style.display = 'none'
     }
   })
 
@@ -824,6 +950,15 @@ for (const c of (canjeos ?? [])) {
   .upload-hint { font-size: 0.72rem; color: #bbb; }
 
   .file-input { display: none; }
+
+  .banner-change-btn {
+    display: block; width: 100%;
+    padding: 0.5rem; font-size: 0.8rem; font-weight: 600;
+    color: #555; background: #f9fafb;
+    border: none; border-top: 1px solid #e5e7eb;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .banner-change-btn:hover { background: #f3f4f6; }
 
   .url-fallback {
     margin-top: 0.4rem;

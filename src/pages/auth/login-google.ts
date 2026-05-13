@@ -12,9 +12,8 @@ export const GET: APIRoute = async ({ url, cookies, redirect, request }) => {
 
   const supabase = createSupabaseServerClient(request, cookies)
 
-  // import.meta.env.SITE se hornea en el build desde astro.config.mjs
-  // y nunca contiene localhost, a diferencia de url.origin que depende del proxy.
-  const siteUrl = import.meta.env.SITE?.replace(/\/$/, '') ?? url.origin
+  // PUBLIC_SITE_URL en .env permite apuntar a localhost en dev
+  const siteUrl = (import.meta.env.PUBLIC_SITE_URL ?? import.meta.env.SITE ?? url.origin).replace(/\/$/, '')
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

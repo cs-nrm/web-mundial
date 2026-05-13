@@ -2,7 +2,8 @@
 import Layout from '../../layouts/Layout.astro'
 import { createSupabaseServerClient } from '../../lib/supabase'
 
-const { user } = Astro.locals
+const { user, estacion_favorita, role } = Astro.locals
+const isSuperadmin = role === 'superadmin'
 
 if (!user) {
   return Astro.redirect('/auth/login?redirect=/album')
@@ -10,13 +11,20 @@ if (!user) {
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
 
-const { data: albums } = await supabase
+let albumsQuery = supabase
   .from('albums')
   .select('id, slug, name, descripcion, cover_url')
   .eq('active', true)
   .order('created_at', { ascending: true })
 
-// Si hay un solo álbum activo, redirigir directamente
+// Si el usuario tiene estación (y no es superadmin), filtrar solo su álbum
+if (!isSuperadmin && estacion_favorita) {
+  albumsQuery = albumsQuery.eq('estacion', estacion_favorita)
+}
+
+const { data: albums } = await albumsQuery
+
+// Si hay un solo álbum (o exactamente el de su estación), redirigir directamente
 if (albums && albums.length === 1) {
   return Astro.redirect(`/album/${albums[0].slug}`)
 }

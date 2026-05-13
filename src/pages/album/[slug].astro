@@ -3,7 +3,8 @@ import Layout from '../../layouts/Layout.astro'
 import { createSupabaseServerClient } from '../../lib/supabase'
 
 const { slug } = Astro.params
-const { user } = Astro.locals
+const { user, estacion_favorita, role } = Astro.locals
+const isSuperadmin = role === 'superadmin'
 
 if (!user) {
   return Astro.redirect(`/auth/login?redirect=/album/${slug}`)
@@ -14,7 +15,7 @@ const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
 const [{ data: album }, { data: profile }] = await Promise.all([
   supabase
     .from('albums')
-    .select('id, slug, name, descripcion, cover_url, color_acento, color_acento2, color_texto, logo_url, total_cards, banner_patrocinador_url')
+    .select('id, slug, name, descripcion, cover_url, color_acento, color_acento2, color_texto, color_header, color_body, color_fondo_card, color_texto_card, color_texto_header, color_texto_body, logo_url, total_cards, banner_patrocinador_url, estacion')
     .eq('slug', slug)
     .eq('active', true)
     .maybeSingle(),
@@ -26,6 +27,11 @@ const [{ data: album }, { data: profile }] = await Promise.all([
 ])
 
 if (!album) {
+  return Astro.redirect('/album')
+}
+
+// Si el álbum tiene estación y el usuario también, validar que coincidan (superadmin puede ver todos)
+if (!isSuperadmin && album.estacion && estacion_favorita && album.estacion !== estacion_favorita) {
   return Astro.redirect('/album')
 }
 
@@ -57,12 +63,18 @@ const pct = total > 0 ? Math.round((collected / total) * 100) : 0
 const accentColor = album.color_acento ?? '#ff6b35'
 const accent2Color = album.color_acento2 ?? accentColor
 const textColor = album.color_texto ?? '#ffffff'
+const heroColor = album.color_header ?? '#0f1118'
+const bodyColor = album.color_body ?? '#0f1118'
+const cardBg = album.color_fondo_card ?? '#1c1f28'
+const cardText = album.color_texto_card ?? '#ffffff'
+const headerText = album.color_texto_header ?? '#ffffff'
+const bodyText = album.color_texto_body ?? '#ffffff'
 const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Participante'
 const avatarUrl: string | null = profile?.avatar_url ?? null
 ---
 
 <Layout title={`${album.name} — Mi Álbum`}>
-  <main class="album-page" style={`--accent: ${accentColor}; --accent2: ${accent2Color}; --accent-glow: ${accentColor}80; --accent-dim: ${accentColor}26; --text-on-accent: ${textColor};`}>
+  <main class="album-page" style={`--accent: ${accentColor}; --accent2: ${accent2Color}; --accent-glow: ${accentColor}80; --accent-dim: ${accentColor}26; --text-on-accent: ${textColor}; --hero-bg: ${heroColor}; --body-bg: ${bodyColor}; --card-bg: ${cardBg}; --card-text: ${cardText}; --header-text: ${headerText}; --body-text: ${bodyText};`}>
 
     <!-- Hero -->
     <div class="hero">
@@ -128,6 +140,15 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     </div>
 
     <div class="content">
+
+      <!-- Banner Takis -->
+      <div class="promo-banner">
+        <img
+          src="https://storage.googleapis.com/nrm-web/mundial/leader_takis_aficion1000.jpg"
+          alt="Takis"
+          class="promo-banner-img"
+        />
+      </div>
 
       <!-- Canjear código -->
       <div class="canjear-card">
@@ -232,6 +253,12 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
       locked.outerHTML = `${imgHtml}<div class="card-footer"><span class="card-num spartan">${num}</span><span class="card-sep">|</span><span class="card-name spartan">${cardName}</span></div>`
     }
 
+    // Badge "NUEVA"
+    const badge = document.createElement('span')
+    badge.className = 'nueva-badge'
+    badge.textContent = 'NUEVA'
+    slot.appendChild(badge)
+
     const collected = parseInt(grid.dataset.collected ?? '0') + 1
     const total = parseInt(grid.dataset.total ?? '0')
     grid.dataset.collected = String(collected)
@@ -244,7 +271,11 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
 
     setTimeout(() => {
       slot.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      setTimeout(() => slot.classList.remove('nueva'), 1500)
+      setTimeout(() => {
+        slot.classList.remove('nueva')
+        badge.classList.add('nueva-badge-out')
+        setTimeout(() => badge.remove(), 400)
+      }, 3500)
     }, 300)
   }
 
@@ -269,7 +300,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
       resultado.hidden = false
       if (data.ok) {
         resultado.className = 'canjear-resultado exito'
-        resultado.innerHTML = `🎉 ¡Estampa <strong>${data.card_name}</strong> desbloqueada!`
+        resultado.innerHTML = `¡Estampa <strong>${data.card_name}</strong> desbloqueada!`
         input.value = ''
         unlockCard(data.card_id, data.card_name, data.card_image ?? '')
       } else {
@@ -335,12 +366,13 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
 
   .album-page {
     min-height: 100vh;
-    background: #0f1118;
+    background: var(--body-bg);
   }
 
   /* Hero */
   .hero {
     padding: 3rem 1.5rem 3rem;
+    background: var(--hero-bg);
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
   .hero-inner {
@@ -400,7 +432,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   .hero-username {
     font-size: clamp(1.1rem, 3vw, 1.5rem);
     font-weight: 700;
-    color: white;
+    color: var(--header-text);
     margin-bottom: 0.9rem;
     letter-spacing: -0.01em;
     line-height: 1;
@@ -418,7 +450,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   .hero-title {
     font-size: clamp(2rem, 7vw, 4.5rem);
     font-weight: 900;
-    color: white;
+    color: var(--header-text);
     line-height: 0.9;
     text-transform: uppercase;
     letter-spacing: -0.02em;
@@ -496,6 +528,17 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     .hero-sponsor { display: none; }
   }
 
+  /* Banner promocional */
+  .promo-banner {
+    margin-bottom: 1.5rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  .promo-banner-img {
+    width: 100%;
+    display: block;
+  }
+
   /* Canjear */
   .canjear-card {
     background: rgba(255,255,255,0.04);
@@ -515,7 +558,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   .canjear-left h2 {
     font-size: 1.1rem;
     font-weight: 800;
-    color: white;
+    color: var(--body-text);
     margin-bottom: 0.3rem;
   }
   .canjear-left p {
@@ -550,7 +593,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
   .btn-canjear {
     background: linear-gradient(135deg, var(--accent2), var(--accent));
-    color: white;
+    color: var(--text-on-accent);
     border: none;
     padding: 0.75rem 1.75rem;
     border-radius: 0.6rem;
@@ -605,7 +648,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
 
   .figurita-card.obtenida {
-    background: #1c1f28;
+    background: var(--card-bg);
     border: 1.5px solid rgba(255,107,53,0.55);
     box-shadow: 0 0 24px rgba(255,107,53,0.12), 0 6px 24px rgba(0,0,0,0.5);
   }
@@ -627,9 +670,40 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     65%  { transform: scale(1.08) translateY(-6px); }
     100% { transform: scale(1) translateY(-7px); opacity: 1; }
   }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 2px var(--accent), 0 0 30px var(--accent-glow), 0 8px 30px rgba(0,0,0,0.5); }
+    50%       { box-shadow: 0 0 0 3px var(--accent), 0 0 55px var(--accent-glow), 0 8px 30px rgba(0,0,0,0.5); }
+  }
   .figurita-card.nueva {
-    animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    box-shadow: 0 0 0 2px var(--accent), 0 0 50px var(--accent-glow), 0 10px 40px rgba(0,0,0,0.5);
+    animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+               pulse-glow 1.4s ease-in-out 0.45s infinite;
+  }
+
+  /* Badge "NUEVA" */
+  .nueva-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-size: 0.5rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    font-family: 'League Spartan', sans-serif;
+    pointer-events: none;
+    z-index: 2;
+    animation: badge-in 0.3s ease forwards;
+  }
+  @keyframes badge-in {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .nueva-badge-out {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    opacity: 0;
+    transform: scale(0.7);
   }
 
   /* Imagen — aspecto 2:3, el footer es altura extra */
@@ -661,7 +735,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     font-size: 0.65rem;
     font-weight: 800;
     letter-spacing: 0.06em;
-    color: var(--text-on-accent);
+    color: var(--card-text);
     opacity: 0.85;
     font-family: 'Syne', sans-serif;
     line-height: 1;
@@ -670,14 +744,14 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
   :global(.card-sep) {
     font-size: 0.6rem;
-    color: var(--text-on-accent);
+    color: var(--card-text);
     opacity: 0.4;
     flex-shrink: 0;
   }
   :global(.card-name) {
     font-size: 0.65rem;
     font-weight: 800;
-    color: var(--text-on-accent);
+    color: var(--card-text);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     line-height: 1.2;
@@ -699,14 +773,16 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
   .lock-icon {
     width: 2.25rem; height: 2.25rem;
-    color: rgba(255,255,255,0.12);
+    color: var(--card-text);
+    opacity: 0.2;
   }
   .locked-label {
     font-size: 0.55rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.15);
+    color: var(--card-text);
+    opacity: 0.25;
     text-align: center;
     font-family: 'Syne', sans-serif;
   }
@@ -738,7 +814,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     overflow: hidden;
     border: 2px solid var(--accent);
     box-shadow: 0 0 50px var(--accent-glow), 0 20px 60px rgba(0,0,0,0.7);
-    background: #1a1d26;
+    background: var(--card-bg);
     animation: modal-in 0.25s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
   }
   @keyframes modal-in {
@@ -782,7 +858,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0.06em;
-    color: var(--text-on-accent);
+    color: var(--card-text);
     opacity: 0.85;
     font-family: 'Syne', sans-serif;
     white-space: nowrap;
@@ -790,14 +866,14 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
   .card-modal-sep {
     font-size: 0.75rem;
-    color: var(--text-on-accent);
+    color: var(--card-text);
     opacity: 0.4;
     flex-shrink: 0;
   }
   .card-modal-name {
     font-size: 0.85rem;
     font-weight: 800;
-    color: var(--text-on-accent);
+    color: var(--card-text);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     overflow: hidden;

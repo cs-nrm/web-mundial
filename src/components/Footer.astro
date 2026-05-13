@@ -8,31 +8,10 @@ import Salsaman from "./Salsaman.astro";
 <div><!--Player transition:persist /--></div>
 
 <div class="preloader">
-  <!--div class="circle-container">
-      <div class="circle"></div>
-    </div>
-    <div class="circle-container">
-      <div class="circle"></div>
-    </div>
-    <div class="circle-container">
-      <div class="circle"></div>
-    </div-->
-  <img
-    src="https://storage.googleapis.com/nrm-web/mundial/loading-icon2.gif"
-    alt="Loading..."
-    class="loading-gif"
-  />
-  <!--div class="loader">
-		<ul class="hexagon-container">
-		  <li class="hexagon hex_1"></li>
-		  <li class="hexagon hex_2"></li>
-		  <li class="hexagon hex_3"></li>
-		  <li class="hexagon hex_4"></li>
-		  <li class="hexagon hex_5"></li>
-		  <li class="hexagon hex_6"></li>
-		  <li class="hexagon hex_7"></li>
-		</ul>
-	  </div-->
+  <div class="nrm-spinner">
+    <div class="nrm-spinner-ring"></div>
+    <div class="nrm-spinner-ring nrm-spinner-ring--2"></div>
+  </div>
 </div>
 <footer class="footer footer-estacion text-center">
   <!--div class="logo-est-footer"><img src="https://storage.googleapis.com/nrm-web/stereocien/12.svg"/></div-->
@@ -301,6 +280,30 @@ import Salsaman from "./Salsaman.astro";
 
   .preloader {
     z-index: 9999;
+  }
+
+  /* Spinner */
+  .nrm-spinner {
+    position: relative;
+    width: 52px;
+    height: 52px;
+  }
+  .nrm-spinner-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: #EA262A;
+    animation: nrm-spin 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  }
+  .nrm-spinner-ring--2 {
+    inset: 8px;
+    border-top-color: rgba(234, 38, 42, 0.35);
+    animation-duration: 1.4s;
+    animation-direction: reverse;
+  }
+  @keyframes nrm-spin {
+    to { transform: rotate(360deg); }
   }
   .loader {
     position: fixed;

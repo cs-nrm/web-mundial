@@ -64,30 +64,35 @@ const estacionSolid = new Set(['oye', 'beat'])
             {(misCanciones ?? []).length} {(misCanciones ?? []).length === 1 ? 'canción' : 'canciones'}
           </p>
         </div>
-        <div class="flex gap-2 flex-wrap items-center pt-1">
-          {(misCanciones ?? []).length > 0 && (
-            <>
-            <button onclick="window.abrirPlayer(window.getSongsFromDOM())"
-              class="inter flex items-center gap-2 bg-[#c5e513] text-[#0a0a0a] font-semibold text-sm px-5 py-2.5 rounded-xl hover:brightness-90 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M8 5v14l11-7z"/></svg>
-              Reproducir
+        <div class="flex flex-col items-end gap-3 pt-1">
+          <div class="flex gap-2 flex-wrap items-center justify-end">
+            {(misCanciones ?? []).length > 0 && (
+              <>
+              <button onclick="window.abrirPlayer(window.getSongsFromDOM())"
+                class="inter flex items-center gap-2 bg-[#c5e513] text-[#0a0a0a] font-semibold text-sm px-5 py-2.5 rounded-xl hover:brightness-90 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M8 5v14l11-7z"/></svg>
+                Reproducir
+              </button>
+              <button onclick="window.abrirPlayerShuffle(window.getSongsFromDOM())"
+                class="inter flex items-center gap-2 border-2 border-white/20 text-white/70 font-semibold text-sm px-4 py-2.5 rounded-xl hover:border-white/60 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+                Aleatorio
+              </button>
+              </>
+            )}
+            <button onclick="document.getElementById('modal-renombrar').removeAttribute('hidden')"
+              class="inter text-sm border-2 border-white/20 text-white/60 px-4 py-2.5 rounded-xl hover:border-white/60 hover:text-white transition">
+              Renombrar
             </button>
-            <button onclick="window.abrirPlayerShuffle(window.getSongsFromDOM())"
-              class="inter flex items-center gap-2 border-2 border-white/20 text-white/70 font-semibold text-sm px-4 py-2.5 rounded-xl hover:border-white/60 hover:text-white transition">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-              Aleatorio
+            <button onclick="window.eliminarPlaylist()"
+              class="inter text-sm border-2 border-red-500/30 text-red-400/80 px-4 py-2.5 rounded-xl hover:border-red-400 hover:text-red-400 transition">
+              Eliminar
             </button>
-            </>
-          )}
-          )}
-          <button onclick="document.getElementById('modal-renombrar').removeAttribute('hidden')"
-            class="inter text-sm border-2 border-white/20 text-white/60 px-4 py-2.5 rounded-xl hover:border-white/60 hover:text-white transition">
-            Renombrar
-          </button>
-          <button onclick="eliminarPlaylist()"
-            class="inter text-sm border-2 border-red-500/30 text-red-400/80 px-4 py-2.5 rounded-xl hover:border-red-400 hover:text-red-400 transition">
-            Eliminar
-          </button>
+          </div>
+          <div class="flex items-center gap-3 whitespace-nowrap">
+            <span class="inter text-[11px] text-gray-500 uppercase tracking-widest">Presentado por:</span>
+            <img src="https://storage.googleapis.com/nrm-web/mundial/takis-logo2.png" alt="Takis" class="h-20 object-contain" />
+          </div>
         </div>
       </div>
     </div>
@@ -96,6 +101,16 @@ const estacionSolid = new Set(['oye', 'beat'])
   <!-- Contenido — fondo blanco levantado sobre el hero -->
   <div class="min-h-screen px-4 -mt-6 pt-8 pb-16" style="background:#320E41">
     <div class="max-w-5xl mx-auto">
+
+      <!-- Banner Takis -->
+      <div class="rounded-xl overflow-hidden mb-6">
+        <img
+          src="https://storage.googleapis.com/nrm-web/mundial/leader_takis_aficion1000.jpg"
+          alt="Takis"
+          class="w-full block"
+        />
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
       <!-- Izquierda: Mi playlist -->
@@ -240,7 +255,7 @@ const estacionSolid = new Set(['oye', 'beat'])
           class="inter flex-1 border-2 border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
           Cancelar
         </button>
-        <button onclick="renombrarPlaylist()"
+        <button onclick="window.renombrarPlaylist()"
           class="inter flex-1 bg-[#c5e513] text-[#0a0a0a] font-semibold text-sm py-3 rounded-xl hover:brightness-90 transition">
           Guardar
         </button>
@@ -378,7 +393,7 @@ function actualizarContador(delta) {
 }
 
 
-async function renombrarPlaylist() {
+window.renombrarPlaylist = async function renombrarPlaylist() {
   const nombre = document.getElementById('input-nuevo-nombre').value.trim()
   if (!nombre) return
   const res = await fetch(`/api/perfil/playlists/${playlistId}`, {
@@ -392,7 +407,7 @@ async function renombrarPlaylist() {
   }
 }
 
-async function eliminarPlaylist() {
+window.eliminarPlaylist = async function eliminarPlaylist() {
   if (!confirm('¿Eliminar esta playlist? Se perderán todas las canciones.')) return
   const res = await fetch(`/api/perfil/playlists/${playlistId}`, { method: 'DELETE' })
   if (res.ok) window.location.href = '/perfil/playlist'

@@ -19,9 +19,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const ctx = await getUserContext(supabase, session.user.id)
     context.locals.hasGenerales = ctx.hasGenerales
     context.locals.role = ctx.role
+    context.locals.estacion_favorita = ctx.estacion_favorita
   } else {
     context.locals.hasGenerales = false
     context.locals.role = 'user'
+    context.locals.estacion_favorita = null
   }
 
   // Fallback de emergencia: cookie firmada cuando Google/Supabase no están disponibles

@@ -82,7 +82,7 @@ const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImag
 
 
     <!-- Player persistente entre navegaciones -->
-    <div id="player-panel" transition:persist class="fixed bottom-4 right-4 z-50 w-80 rounded-2xl overflow-hidden shadow-2xl bg-gray-900 text-white" style="display:none">
+    <div id="player-panel" class="fixed bottom-4 right-4 z-50 w-80 rounded-2xl overflow-hidden shadow-2xl bg-gray-900 text-white" style="display:none">
       <div class="flex items-center justify-between px-4 py-2 border-b border-white/10">
         <span class="text-xs text-gray-400" id="player-counter"></span>
         <button onclick="window.cerrarPlayer()" class="text-gray-400 hover:text-white text-xl leading-none">×</button>
@@ -270,6 +270,7 @@ const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImag
     </script>
 
     <script src="https://1407747097.rsc.cdn77.org/worldcup/latest/df-draw-widget.iife.js"></script>
+    <script>import '../scripts/animations.ts'</script>
 
   </body>
 </html>

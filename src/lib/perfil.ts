@@ -5,11 +5,12 @@ export type UserRole = 'superadmin' | 'admin' | 'editor' | 'estadistica' | 'user
 export async function getUserContext(supabase: SupabaseClient, userId: string) {
   const [{ data: profile }, { data: generales }] = await Promise.all([
     supabase.from('profiles').select('role').eq('id', userId).maybeSingle(),
-    supabase.from('user_generales').select('user_id').eq('user_id', userId).maybeSingle(),
+    supabase.from('user_generales').select('user_id, estacion_favorita').eq('user_id', userId).maybeSingle(),
   ])
   return {
     role: (profile?.role as UserRole) ?? 'user',
     hasGenerales: !!generales,
+    estacion_favorita: (generales?.estacion_favorita as string | null) ?? null,
   }
 }
 
