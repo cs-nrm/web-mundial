@@ -173,6 +173,25 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
       <!-- Grid de estampas -->
       <div class="figuritas-grid" id="figuritas-grid"
         data-collected={collected} data-total={total}>
+
+        {/* Estampa especial: avatar del usuario */}
+        {avatarUrl && (
+          <div
+            class="figurita-card obtenida avatar-card"
+            data-card-id="avatar"
+            data-name="Mi Avatar"
+            data-image={avatarUrl}
+            data-num="#00"
+          >
+            <img src={avatarUrl} alt="Mi Avatar" class="card-img avatar-card-img" />
+            <div class="card-footer">
+              <span class="card-num spartan">#00</span>
+              <span class="card-sep">|</span>
+              <span class="card-name spartan">Mi Avatar</span>
+            </div>
+          </div>
+        )}
+
         {(cards ?? []).map((card: any) => {
           const tiene = collectedSet.has(card.id)
           return (
@@ -788,6 +807,15 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   }
 
   .figurita-card.obtenida { cursor: pointer; }
+
+  /* Tarjeta del avatar */
+  .avatar-card {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 28px var(--accent-glow), 0 6px 24px rgba(0,0,0,0.5) !important;
+  }
+  .avatar-card-img {
+    object-position: top center;
+  }
 
   /* Modal */
   .card-modal {
