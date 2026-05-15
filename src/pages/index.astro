@@ -16,10 +16,11 @@ import SuperLeader from "../components/SuperLeader.astro";
 import BillBoard from "../components/BillBoard.astro";
 import Modal from "../components/Modal.astro";
 import CardsHomeTres from "../layouts/CardsHomeTres.astro";
+import CardsHomeGamecast from "../layouts/CardsHomeGamecast.astro";
 
 
 const posts = await getArticlesEnfoque();
-console.log('📄 index.astro posts:', posts.length, 'posts loaded');
+console.log('index.astro posts:', posts.length, 'posts loaded');
 if (posts.length > 0) {
     console.log('   First post:', posts[0]?.title?.rendered);
 }
@@ -30,6 +31,7 @@ if (posts.length > 0) {
     <section><CardsHomeEnfoque posts={posts} /></section>
     <SuperLeader />
     <section><CardsHomeTres posts={posts} /></section>
+    <section><CardsHomeGamecast /></section>
     <!--section><CardsHomeOtroMundial /></section>
     <section><CardsHomeMundialfacil /></section-->
     <section><CardsHomeNoticias/></section>

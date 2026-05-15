@@ -1,0 +1,231 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout title="Avatar — Próximamente · La Fiesta del Fútbol">
+  <main class="prox-page">
+
+    <section class="prox-hero">
+      <div class="prox-badge">Perfil</div>
+      <h1 class="spartan">Exprésate como el verdadero aficionado que eres.</h1>
+      <p class="prox-lead">
+        Crea tu propio avatar futbolero: elige tu jersey, tu estilo, tus colores y muéstrale al mundo de
+        qué lado estás. ¡Porque en La Fiesta del Fútbol, la hinchada también tiene cara!
+      </p>
+    </section>
+
+    <section class="prox-body">
+      <div class="prox-inner">
+        <p>
+          Tu perfil en La Fiesta del Fútbol merece un look tan único como tú. Próximamente podrás diseñar
+          tu avatar personalizado desde cero: el cabello, los ojos, la barba, los lentes... y por
+          supuesto, el jersey de tu estación favorita.
+        </p>
+        <p>
+          No importa si eres del tipo que grita los goles desde el sofá o el que pinta la cara en el
+          estadio. Aquí hay un avatar perfecto esperándote.
+        </p>
+
+        <div class="prox-features">
+          <h2 class="spartan">Personaliza cada detalle:</h2>
+          <ul>
+            <li>
+              <span class="prox-dot"></span>
+              Jersey de tu estación: Beat, PlayNRM, Estéreo Cien, Sabrosita o Enfoque
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Cabello, cejas, ojos, boca, barba y bigote a tu gusto
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Gorras, lentes y marcos exclusivos del torneo
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Fondos temáticos para hacerlo completamente tuyo
+            </li>
+          </ul>
+        </div>
+
+        <p class="prox-cierre">
+          Un avatar que te represente en el torneo más grande del mundo. Porque en esta fiesta,
+          <strong>tú también juegas</strong>.
+        </p>
+      </div>
+    </section>
+
+    <section class="prox-cta">
+      <p class="prox-cta-label">¿Quieres crear tu avatar desde el primer día?</p>
+      <form class="prox-form" id="form-aviso">
+        <input
+          type="email"
+          name="email"
+          placeholder="tu@correo.com"
+          required
+          class="prox-input"
+        />
+        <button type="submit" class="prox-btn spartan">¡Avísame cuando pueda personalizarlo!</button>
+      </form>
+      <p class="prox-form-note" id="form-msg" hidden>¡Listo! Te avisamos en cuanto esté disponible.</p>
+    </section>
+
+  </main>
+</Layout>
+
+<script>
+  const form = document.getElementById('form-aviso') as HTMLFormElement | null
+  const msg  = document.getElementById('form-msg')
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    form.hidden = true
+    if (msg) msg.hidden = false
+  })
+</script>
+
+<style>
+  .prox-page {
+    min-height: 100vh;
+    background: #320E41;
+    color: #fff;
+  }
+
+  .prox-hero {
+    padding: 5rem 1.5rem 3rem;
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .prox-badge {
+    display: inline-block;
+    background: #7af12b;
+    color: #320E41;
+    font-weight: 800;
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: .3rem .9rem;
+    border-radius: 999px;
+    margin-bottom: 1.5rem;
+  }
+  .prox-hero h1 {
+    font-size: clamp(1.75rem, 5vw, 3rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 1.25rem;
+  }
+  .prox-lead {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,.8);
+    line-height: 1.65;
+  }
+
+  .prox-body {
+    background: rgba(255,255,255,.05);
+    padding: 3rem 1.5rem;
+  }
+  .prox-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: rgba(255,255,255,.85);
+  }
+  .prox-inner strong { color: #7af12b; }
+
+  .prox-features {
+    background: rgba(122,241,43,.08);
+    border-left: 3px solid #7af12b;
+    border-radius: 0 1rem 1rem 0;
+    padding: 1.5rem 1.75rem;
+    margin: .5rem 0;
+  }
+  .prox-features h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #7af12b;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .prox-features ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+  }
+  .prox-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    color: rgba(255,255,255,.9);
+  }
+  .prox-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #EA262A;
+    margin-top: .55rem;
+  }
+  .prox-cierre {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: rgba(255,255,255,.9);
+  }
+
+  .prox-cta {
+    padding: 3.5rem 1.5rem 5rem;
+    text-align: center;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .prox-cta-label {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,.7);
+    margin-bottom: 1.25rem;
+  }
+  .prox-form {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .prox-input {
+    flex: 1;
+    min-width: 220px;
+    background: rgba(255,255,255,.1);
+    border: 1.5px solid rgba(255,255,255,.2);
+    border-radius: .75rem;
+    padding: .75rem 1.1rem;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .prox-input:focus { border-color: #7af12b; }
+  .prox-input::placeholder { color: rgba(255,255,255,.4); }
+  .prox-btn {
+    background: #EA262A;
+    color: #fff;
+    font-weight: 800;
+    font-size: .95rem;
+    padding: .75rem 1.5rem;
+    border: none;
+    border-radius: .75rem;
+    cursor: pointer;
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .prox-btn:hover { background: #c41f23; }
+  .prox-form-note {
+    margin-top: 1.25rem;
+    color: #7af12b;
+    font-weight: 600;
+  }
+</style>

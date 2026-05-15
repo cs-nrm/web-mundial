@@ -1,0 +1,181 @@
+{
+  "version": "1.1.0",
+  "descripcion": "Manifiesto de assets para el generador de avatares. Un avatar se compone capa por capa (z_order) eligiendo una pieza de cada categoria.",
+  "convencion": {
+    "estructura_carpetas": "universal/<categoria>/ contiene piezas disponibles para TODAS las estaciones. <estacion>/<categoria>/ contiene piezas exclusivas de esa estacion. Para que una pieza este disponible en N estaciones especificas (pero no todas), se duplica fisicamente en la carpeta de cada estacion que la usa.",
+    "nombres": "categoria-NN.ext (NN = numero con cero a la izquierda, 01, 02, ..., 99). La numeracion es independiente entre universal y cada estacion: NO mezclar numeros entre carpetas para evitar colisiones; usar numeros distintos cuando una pieza es exclusiva de una estacion.",
+    "como_resolver_assets_de_una_estacion": "Para obtener las piezas disponibles de una categoria 'X' para la estacion 'Y', combinar: assets.universal[X] + assets[Y][X]. Si la categoria es 'por_estacion' (marco, fondo), solo usar assets[Y][X].",
+    "como_agregar_pieza": "1) Decidir si es universal o exclusiva de una estacion. 2) Soltar el archivo en la carpeta correspondiente con el nombre 'categoria-NN.ext' usando el siguiente numero libre. 3) Agregar la ruta al array correspondiente en este manifest."
+  },
+  "estaciones": ["beat", "oye", "sabrosita", "stereocien"],
+  "z_order": [
+    "fondo",
+    "cuerpo-jersey",
+    "cabello",
+    "cejas",
+    "ojos",
+    "lentes",
+    "boca",
+    "bigote",
+    "barba",
+    "gorra",
+    "marco"
+  ],
+  "categorias": {
+    "fondo": {
+      "scope": "por_estacion",
+      "requerido": true,
+      "descripcion": "Fondo de la composicion. Capa mas baja.",
+      "extensiones": ["jpg"]
+    },
+    "cuerpo-jersey": {
+      "scope": "compartido",
+      "requerido": true,
+      "descripcion": "Torso/jersey del avatar. Puede haber jerseys universales y jerseys exclusivos por estacion.",
+      "extensiones": ["png"]
+    },
+    "cabello": {
+      "scope": "compartido",
+      "requerido": true,
+      "descripcion": "Pelo del avatar.",
+      "extensiones": ["png"]
+    },
+    "cejas": {
+      "scope": "compartido",
+      "requerido": true,
+      "extensiones": ["png"]
+    },
+    "ojos": {
+      "scope": "compartido",
+      "requerido": true,
+      "extensiones": ["png"]
+    },
+    "lentes": {
+      "scope": "compartido",
+      "requerido": false,
+      "descripcion": "Pieza opcional. Va por encima de los ojos.",
+      "extensiones": ["png"]
+    },
+    "boca": {
+      "scope": "compartido",
+      "requerido": true,
+      "extensiones": ["png"]
+    },
+    "bigote": {
+      "scope": "compartido",
+      "requerido": false,
+      "extensiones": ["png"]
+    },
+    "barba": {
+      "scope": "compartido",
+      "requerido": false,
+      "extensiones": ["png"]
+    },
+    "gorra": {
+      "scope": "compartido",
+      "requerido": false,
+      "descripcion": "Pieza opcional. Va por encima del cabello.",
+      "extensiones": ["png"]
+    },
+    "marco": {
+      "scope": "por_estacion",
+      "requerido": true,
+      "descripcion": "Marco/frame con branding de la estacion. Capa mas alta.",
+      "extensiones": ["png"]
+    }
+  },
+  "assets": {
+    "universal": {
+      "ojos": [
+        "universal/ojos/ojos-01.png"
+      ],
+      "cejas": [
+        "universal/cejas/cejas-01.png"
+      ],
+      "cabello": [
+        "universal/cabello/cabello-01.png"
+      ],
+      "boca": [
+        "universal/boca/boca-01.png"
+      ],
+      "bigote": [
+        "universal/bigote/bigote-01.png"
+      ],
+      "barba": [
+        "universal/barba/barba-01.png",
+        "universal/barba/barba-02.png",
+        "universal/barba/barba-03.png"
+      ],
+      "lentes": [
+        "universal/lentes/lentes-01.png"
+      ],
+      "gorra": [
+        "universal/gorras/gorra-01.png"
+      ],
+      "cuerpo-jersey": [
+        "universal/cuerpo-jersey/jersey-01.png",
+        "universal/cuerpo-jersey/jersey-02.png",
+        "universal/cuerpo-jersey/jersey-03.png",
+        "universal/cuerpo-jersey/jersey-04.png",
+        "universal/cuerpo-jersey/jersey-05.png",
+        "universal/cuerpo-jersey/jersey-06.png",
+        "universal/cuerpo-jersey/jersey-07.png",
+        "universal/cuerpo-jersey/jersey-08.png",
+        "universal/cuerpo-jersey/jersey-09.png",
+        "universal/cuerpo-jersey/jersey-10.png",
+        "universal/cuerpo-jersey/jersey-11.png",
+        "universal/cuerpo-jersey/jersey-12.png"
+      ]
+    },
+    "beat": {
+      "marco": [
+        "beat/marcos/marco-01.png"
+      ],
+      "fondo": [
+        "beat/fondos/fondo-01.jpg",
+        "beat/fondos/fondo-02.jpg",
+        "beat/fondos/fondo-03.jpg",
+        "beat/fondos/fondo-04.jpg",
+        "beat/fondos/fondo-05.jpg"
+      ],
+      "cuerpo-jersey": [
+        "beat/cuerpo-jersey/jersey-14.png"
+      ]
+    },
+    "oye": {
+      "marco": [
+        "oye/marcos/marco-01.png"
+      ],
+      "fondo": [],
+      "cuerpo-jersey": [
+        "oye/cuerpo-jersey/jersey-14.png"
+      ]
+    },
+    "sabrosita": {
+      "marco": [
+        "sabrosita/marcos/marco-01.png"
+      ],
+      "fondo": [],
+      "cuerpo-jersey": []
+    },
+    "stereocien": {
+      "marco": [
+        "stereocien/marcos/marco-01.png"
+      ],
+      "fondo": [],
+      "cuerpo-jersey": [
+        "stereocien/cuerpo-jersey/jersey-13.png"
+      ]
+    }
+  },
+  "ejemplo_uso": {
+    "descripcion": "Pseudocodigo para resolver las piezas disponibles de una categoria para una estacion.",
+    "codigo": "function piezasDisponibles(categoria, estacion) {\n  const scope = manifest.categorias[categoria].scope;\n  if (scope === 'por_estacion') {\n    return manifest.assets[estacion][categoria] || [];\n  }\n  // scope === 'compartido': combinar universal + exclusivos de la estacion\n  const universales = manifest.assets.universal[categoria] || [];\n  const exclusivas = (manifest.assets[estacion] && manifest.assets[estacion][categoria]) || [];\n  return [...universales, ...exclusivas];\n}"
+  },
+  "notas": [
+    "Las estaciones oye, sabrosita y stereocien aun no tienen fondos. Cuando se agreguen, mover los archivos a <estacion>/fondos/ y actualizar el array correspondiente.",
+    "Sabrosita aun no tiene jerseys exclusivos. Si surge alguno, agregar la carpeta sabrosita/cuerpo-jersey/ y la entrada en assets.",
+    "Las extensiones por categoria estan definidas en 'categorias.<cat>.extensiones'. Mantener consistencia.",
+    "El jersey-14 esta fisicamente duplicado entre beat/ y oye/ porque ambas estaciones lo usan. Si en el futuro hay muchos casos asi, considerar migrar a un modelo declarativo con campo 'compatible_con' en lugar de duplicar archivos."
+  ]
+}

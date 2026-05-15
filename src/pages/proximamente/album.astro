@@ -1,0 +1,235 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout title="Álbum — Próximamente · La Fiesta del Fútbol">
+  <main class="prox-page">
+
+    <section class="prox-hero">
+      <div class="prox-badge">Colección</div>
+      <h1 class="spartan">¡El álbum de fútbol que siempre quisiste tener, ahora en pantalla!</h1>
+      <p class="prox-lead">
+        Por primera vez, puedes vivir la emoción de coleccionar las estampas del torneo sin mancharte los
+        dedos de pegamento. ¡Completa tu álbum, presume tus cromos y conviértete en el coleccionista más
+        crack del grupo!
+      </p>
+    </section>
+
+    <section class="prox-body">
+      <div class="prox-inner">
+        <p>
+          ¿Recuerdas la emoción de abrir un sobre de estampas? Ese corazón acelerado, la esperanza de
+          encontrar la que te faltaba... ¡Ahora vive esa experiencia con el sabor del torneo más grande
+          del planeta!
+        </p>
+        <p>
+          En <strong>La Fiesta del Fútbol</strong> estamos preparando el álbum digital más emocionante de
+          México. Colecciona cromos exclusivos, completa tu colección y demuestra que eres el fanático más
+          completo de todos.
+        </p>
+
+        <div class="prox-features">
+          <h2 class="spartan">¿Qué podrás hacer?</h2>
+          <ul>
+            <li>
+              <span class="prox-dot"></span>
+              Conseguir cromos únicos y exclusivos
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Ver tu álbum llenarse partido a partido
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Descubrir cromos especiales y ediciones limitadas
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Presumir tu colección completa a todos tus amigos
+            </li>
+          </ul>
+        </div>
+
+        <p class="prox-cierre">
+          Esto no es un álbum cualquiera. Es <strong>tu</strong> álbum. El de la fiesta de tu vida.
+        </p>
+      </div>
+    </section>
+
+    <section class="prox-cta">
+      <p class="prox-cta-label">¿Quieres ser el primero en saberlo?</p>
+      <form class="prox-form" id="form-aviso">
+        <input
+          type="email"
+          name="email"
+          placeholder="tu@correo.com"
+          required
+          class="prox-input"
+        />
+        <button type="submit" class="prox-btn spartan">¡Quiero ser el primero!</button>
+      </form>
+      <p class="prox-form-note" id="form-msg" hidden>¡Listo! Te avisamos en cuanto esté disponible.</p>
+    </section>
+
+  </main>
+</Layout>
+
+<script>
+  const form = document.getElementById('form-aviso') as HTMLFormElement | null
+  const msg  = document.getElementById('form-msg')
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    form.hidden = true
+    if (msg) msg.hidden = false
+  })
+</script>
+
+<style>
+  .prox-page {
+    min-height: 100vh;
+    background: #320E41;
+    color: #fff;
+  }
+
+  /* Hero */
+  .prox-hero {
+    padding: 5rem 1.5rem 3rem;
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .prox-badge {
+    display: inline-block;
+    background: #7af12b;
+    color: #320E41;
+    font-weight: 800;
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: .3rem .9rem;
+    border-radius: 999px;
+    margin-bottom: 1.5rem;
+  }
+  .prox-hero h1 {
+    font-size: clamp(1.75rem, 5vw, 3rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 1.25rem;
+  }
+  .prox-lead {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,.8);
+    line-height: 1.65;
+  }
+
+  /* Body */
+  .prox-body {
+    background: rgba(255,255,255,.05);
+    padding: 3rem 1.5rem;
+  }
+  .prox-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: rgba(255,255,255,.85);
+  }
+  .prox-inner strong { color: #7af12b; }
+
+  .prox-features {
+    background: rgba(122,241,43,.08);
+    border-left: 3px solid #7af12b;
+    border-radius: 0 1rem 1rem 0;
+    padding: 1.5rem 1.75rem;
+    margin: .5rem 0;
+  }
+  .prox-features h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #7af12b;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .prox-features ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+  }
+  .prox-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    color: rgba(255,255,255,.9);
+  }
+  .prox-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #EA262A;
+    margin-top: .55rem;
+  }
+  .prox-cierre {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: rgba(255,255,255,.9);
+  }
+
+  /* CTA */
+  .prox-cta {
+    padding: 3.5rem 1.5rem 5rem;
+    text-align: center;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .prox-cta-label {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,.7);
+    margin-bottom: 1.25rem;
+  }
+  .prox-form {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .prox-input {
+    flex: 1;
+    min-width: 220px;
+    background: rgba(255,255,255,.1);
+    border: 1.5px solid rgba(255,255,255,.2);
+    border-radius: .75rem;
+    padding: .75rem 1.1rem;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .prox-input:focus { border-color: #7af12b; }
+  .prox-input::placeholder { color: rgba(255,255,255,.4); }
+  .prox-btn {
+    background: #EA262A;
+    color: #fff;
+    font-weight: 800;
+    font-size: .95rem;
+    padding: .75rem 1.5rem;
+    border: none;
+    border-radius: .75rem;
+    cursor: pointer;
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .prox-btn:hover { background: #c41f23; }
+  .prox-form-note {
+    margin-top: 1.25rem;
+    color: #7af12b;
+    font-weight: 600;
+  }
+</style>

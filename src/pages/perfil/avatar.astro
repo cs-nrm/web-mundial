@@ -1,0 +1,712 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { createSupabaseServerClient } from '../../lib/supabase'
+import manifest from '../../../public/avatar/manifest.json'
+
+const { user, hasGenerales, estacion_favorita } = Astro.locals
+
+if (!user) return Astro.redirect('/auth/login?redirect=/perfil/avatar')
+if (!hasGenerales) return Astro.redirect('/perfil/datos')
+
+const estacion = (estacion_favorita as string) ?? 'beat'
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('avatar_url, avatar_config')
+  .eq('id', user.id)
+  .maybeSingle()
+
+function piezasDisponibles(categoria: string): string[] {
+  const catDef = (manifest.categorias as any)[categoria]
+  if (!catDef) return []
+  const assets = manifest.assets as any
+  if (catDef.scope === 'por_estacion') return assets[estacion]?.[categoria] ?? []
+  return [
+    ...(assets.universal?.[categoria] ?? []),
+    ...(assets[estacion]?.[categoria] ?? []),
+  ]
+}
+
+const LABELS: Record<string, string> = {
+  fondo: 'Fondo', 'cuerpo-jersey': 'Jersey', cabello: 'Cabello',
+  cejas: 'Cejas', ojos: 'Ojos', lentes: 'Lentes', boca: 'Boca',
+  bigote: 'Bigote', barba: 'Barba', gorra: 'Gorra', marco: 'Marco',
+}
+
+// SVG icon paths (24x24 viewBox, stroke-based)
+const ICONS: Record<string, string> = {
+  fondo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2.5"/><path d="M2 16l5-6 4 4 2.5-2.5L19 19"/><circle cx="16.5" cy="8.5" r="1.5"/></svg>`,
+  'cuerpo-jersey': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3s-1 2-2 2.5L3 4 2 9l3.5 1.5V21h13V10.5L22 9l-1-5-4 1.5C16 5 15 3 15 3c-1 1.5-1.5 2-3 2S10 4.5 9 3Z"/></svg>`,
+  cabello: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5c2-1.5 5-2 7-2s5 .5 7 2"/><path d="M5 5C4 8 4 13 4 16c0 2 3 4 8 4s8-2 8-4c0-3 0-8-1-11"/><path d="M7 9c1-1 3-1.5 5-1.5s4 .5 5 1.5"/></svg>`,
+  cejas: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 10c2-2.5 5-3 7-2.5"/><path d="M22 10c-2-2.5-5-3-7-2.5"/></svg>`,
+  ojos: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  lentes: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4"/><path d="M11 12h2"/><path d="M1 12h2m18 0h2"/></svg>`,
+  boca: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 12h10"/><path d="M7 12c1.5 4 9.5 4 10 0"/></svg>`,
+  bigote: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11c2-1.5 4-1 5 0 .5.5 1.5 1 4 1s3.5-.5 4-1c1-1 3-1.5 5 0"/><path d="M3 11c-.5-1.5.5-3 3-2"/><path d="M21 11c.5-1.5-.5-3-3-2"/></svg>`,
+  barba: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13c0 5 2.5 8 7 8s7-3 7-8"/><path d="M5 13L4 9M19 13l1-4"/><path d="M4 9c0-4 3-6 8-6s8 2 8 6"/></svg>`,
+  gorra: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 14a7 7 0 0114 0"/><path d="M2 14h20"/><path d="M14 14V9a2 2 0 00-4 0v5"/></svg>`,
+  marco: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3.5"/><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>`,
+}
+
+const CAT_DESCS: Record<string, string> = {
+  fondo: 'Fondo de tu estampa.',
+  'cuerpo-jersey': 'Jersey de tu avatar.',
+  cabello: 'Elige el cabello.',
+  cejas: 'Elige las cejas.',
+  ojos: 'Elige los ojos.',
+  lentes: 'Opcional — lentes o ninguno.',
+  boca: 'Elige la boca.',
+  bigote: 'Opcional — bigote o ninguno.',
+  barba: 'Opcional — barba o ninguno.',
+  gorra: 'Opcional — gorra o ninguno.',
+  marco: 'Marco con branding de tu estación.',
+}
+
+const zOrder = manifest.z_order
+const piezasPorCategoria = Object.fromEntries(zOrder.map(c => [c, piezasDisponibles(c)]))
+const categoriasRequeridas = Object.fromEntries(
+  zOrder.map(c => [c, (manifest.categorias as any)[c]?.requerido ?? true])
+)
+
+const clientData = {
+  zOrder,
+  piezas: piezasPorCategoria,
+  requerido: categoriasRequeridas,
+  savedConfig: (profile as any)?.avatar_config ?? null,
+  labels: LABELS,
+  descs: CAT_DESCS,
+}
+
+const STATION_COLORS: Record<string, string> = {
+  beat: '#f97316', oye: '#3b82f6', sabrosita: '#ec4899', stereocien: '#8b5cf6',
+}
+const accent = STATION_COLORS[estacion] ?? '#EA262A'
+const hasAvatar = !!(profile as any)?.avatar_url
+---
+
+<Layout title="Crea tu avatar">
+<main class="av" style={`--ac: ${accent}; --ac-dim: ${accent}22; --ac-glow: ${accent}44`}>
+
+  <!-- Top nav -->
+  <div class="av-nav">
+    <a href="/perfil" class="av-back">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Perfil
+    </a>
+    <span class="av-nav-title spartan">Crea tu avatar</span>
+    <div class="av-nav-actions">
+      <button id="btn-dl" class="av-nav-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Descargar
+      </button>
+      <button id="btn-save" class="av-nav-btn av-nav-btn-primary">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="btn-save-text">{hasAvatar ? 'Actualizar' : 'Guardar'}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Workspace: 3 paneles -->
+  <div class="av-workspace">
+
+    <!-- Panel 1: Preview de la estampa -->
+    <aside class="av-preview">
+      <div class="av-card-wrap">
+        <canvas id="av-canvas" width="600" height="900"></canvas>
+        <div id="av-loader" class="av-loader">
+          <div class="av-spinner"></div>
+        </div>
+      </div>
+      <div id="av-msg" class="av-msg" hidden></div>
+    </aside>
+
+    <!-- Panel 2: Barra de iconos de categorías -->
+    <nav class="av-sidebar" id="av-sidebar">
+      {zOrder.map((cat) => (
+        <button class="av-icon-btn" data-cat={cat} title={LABELS[cat]}>
+          <span class="av-icon" set:html={ICONS[cat]} />
+          <span class="av-icon-label">{LABELS[cat]}</span>
+        </button>
+      ))}
+    </nav>
+
+    <!-- Panel 3: Picker de piezas -->
+    <section class="av-picker">
+      <div class="av-picker-header">
+        <h2 id="av-cat-name" class="av-picker-title spartan"></h2>
+        <p id="av-cat-desc" class="av-picker-desc"></p>
+      </div>
+      <div class="av-grid" id="av-grid"></div>
+    </section>
+
+  </div>
+
+</main>
+</Layout>
+
+<script define:vars={{ clientData }}>
+  const { zOrder, piezas, requerido, savedConfig, labels, descs } = clientData
+
+  const canvas  = document.getElementById('av-canvas')
+  const ctx     = canvas.getContext('2d')
+  const loader  = document.getElementById('av-loader')
+  const sidebar = document.getElementById('av-sidebar')
+  const grid    = document.getElementById('av-grid')
+  const catName = document.getElementById('av-cat-name')
+  const catDesc = document.getElementById('av-cat-desc')
+  const msg     = document.getElementById('av-msg')
+  const btnSave = document.getElementById('btn-save')
+  const btnDl   = document.getElementById('btn-dl')
+  const saveText= document.getElementById('btn-save-text')
+
+  // Inicializar selecciones
+  const sel = {}
+  for (const cat of zOrder) {
+    const avail    = piezas[cat] ?? []
+    const isReq    = requerido[cat] ?? true
+    const saved    = savedConfig?.[cat]
+    if (saved !== undefined && (saved === null || avail.includes(saved))) {
+      sel[cat] = saved
+    } else {
+      sel[cat] = isReq ? (avail[0] ?? null) : null
+    }
+  }
+
+  let activeCat = zOrder[0]
+  let rendering = false
+
+  // ── Canvas ──────────────────────────────────────────────
+  async function render() {
+    if (rendering) return
+    rendering = true
+    loader.removeAttribute('hidden')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    for (const cat of zOrder) {
+      if (!sel[cat]) continue
+      try { await drawImg(`/avatar/${sel[cat]}`) } catch {}
+    }
+    loader.setAttribute('hidden', '')
+    rendering = false
+  }
+
+  function drawImg(src) {
+    return new Promise((ok, fail) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); ok() }
+      img.onerror = fail
+      img.src = src
+    })
+  }
+
+  // ── Sidebar ──────────────────────────────────────────────
+  function syncSidebar() {
+    sidebar.querySelectorAll('.av-icon-btn').forEach(btn => {
+      const cat = btn.dataset.cat
+      btn.classList.toggle('active', cat === activeCat)
+      btn.classList.toggle('done', sel[cat] !== null && sel[cat] !== undefined)
+    })
+  }
+
+  sidebar.querySelectorAll('.av-icon-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeCat = btn.dataset.cat
+      syncSidebar()
+      renderGrid()
+    })
+  })
+
+  // ── Grid ─────────────────────────────────────────────────
+  function renderGrid() {
+    const avail = piezas[activeCat] ?? []
+    const isReq = requerido[activeCat] ?? true
+    const cur   = sel[activeCat]
+
+    catName.textContent = labels[activeCat] ?? activeCat
+    catDesc.textContent = descs[activeCat] ?? ''
+    grid.innerHTML = ''
+
+    if (!isReq) {
+      grid.appendChild(makeNoneBtn(cur === null))
+    }
+
+    avail.forEach((path, i) => {
+      const label = `${labels[activeCat] ?? activeCat} ${String(i + 1).padStart(2, '0')}`
+      grid.appendChild(makePieceBtn(path, label, cur === path))
+    })
+
+    if (avail.length === 0 && isReq) {
+      const p = document.createElement('p')
+      p.className = 'av-empty'
+      p.textContent = 'Sin piezas disponibles.'
+      grid.appendChild(p)
+    }
+  }
+
+  const CHECK_SVG = `<svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`
+
+  function makeNoneBtn(selected) {
+    const btn = document.createElement('button')
+    btn.className = `av-piece${selected ? ' selected' : ''}`
+    btn.innerHTML = `
+      <div class="av-thumb av-thumb-none">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+      ${selected ? `<div class="av-check">${CHECK_SVG}</div>` : ''}`
+    btn.onclick = () => pick(null)
+    return btn
+  }
+
+  function makePieceBtn(path, label, selected) {
+    const btn = document.createElement('button')
+    btn.className = `av-piece${selected ? ' selected' : ''}`
+    btn.innerHTML = `
+      <div class="av-thumb">
+        <img src="/avatar/${path}" alt="${label}" loading="lazy" />
+      </div>
+      ${selected ? `<div class="av-check">${CHECK_SVG}</div>` : ''}`
+    btn.onclick = () => pick(path)
+    return btn
+  }
+
+  function pick(path) {
+    sel[activeCat] = path
+    renderGrid()
+    syncSidebar()
+    render()
+  }
+
+  // ── Guardar ──────────────────────────────────────────────
+  btnSave.addEventListener('click', async () => {
+    btnSave.disabled = true
+    saveText.textContent = 'Guardando...'
+    msg.setAttribute('hidden', '')
+
+    try {
+      const imageData = canvas.toDataURL('image/png')
+      const res = await fetch('/api/perfil/avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageData, config: sel }),
+      })
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.error)
+
+      msg.removeAttribute('hidden')
+      msg.className = 'av-msg ok'
+      msg.textContent = '¡Avatar guardado! Ya aparece en tu perfil y álbum.'
+      saveText.textContent = 'Actualizar'
+    } catch {
+      msg.removeAttribute('hidden')
+      msg.className = 'av-msg err'
+      msg.textContent = 'Error al guardar. Intenta de nuevo.'
+      saveText.textContent = 'Guardar'
+    } finally {
+      btnSave.disabled = false
+    }
+  })
+
+  // ── Descargar ────────────────────────────────────────────
+  btnDl.addEventListener('click', () => {
+    const a = document.createElement('a')
+    a.download = 'mi-avatar.png'
+    a.href = canvas.toDataURL('image/png')
+    a.click()
+  })
+
+  // ── Init ─────────────────────────────────────────────────
+  syncSidebar()
+  renderGrid()
+  render()
+</script>
+
+<style>
+  .av {
+    min-height: 100vh;
+    background: #0f1118;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Nav ── */
+  .av-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+  .av-back {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: rgba(255,255,255,0.35);
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-family: 'Open Sans', sans-serif;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+  .av-back svg { width: 0.9rem; height: 0.9rem; }
+  .av-back:hover { color: rgba(255,255,255,0.7); }
+  .av-nav-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    white-space: nowrap;
+  }
+  .av-nav-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .av-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.6rem;
+    font-family: 'League Spartan', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .av-nav-btn svg { width: 0.9rem; height: 0.9rem; flex-shrink: 0; }
+  .av-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .av-nav-btn {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.09);
+  }
+  .av-nav-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.1);
+    color: white;
+  }
+  .av-nav-btn-primary {
+    background: var(--ac) !important;
+    color: white !important;
+    border-color: transparent !important;
+    box-shadow: 0 0 16px var(--ac-glow);
+  }
+  .av-nav-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow: 0 0 24px var(--ac-glow);
+  }
+
+  /* ── Workspace: 3 columnas ── */
+  .av-workspace {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Panel 1: Preview */
+  .av-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.5rem 1.25rem;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    background: #11141d;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .av-card-wrap {
+    position: relative;
+    width: 180px;
+    aspect-ratio: 2 / 3;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    border: 1.5px solid var(--ac);
+    background: linear-gradient(to bottom, #1e293b, #0f172a);
+    box-shadow: 0 0 0 1px var(--ac-dim), 0 0 28px var(--ac-glow), 0 8px 40px rgba(0,0,0,0.7);
+    flex-shrink: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .av-card-wrap { width: 210px; }
+  }
+
+  .av-card-wrap canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .av-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10,12,18,0.6);
+    backdrop-filter: blur(2px);
+  }
+  .av-loader[hidden] { display: none; }
+  .av-spinner {
+    width: 1.75rem; height: 1.75rem;
+    border: 2px solid rgba(255,255,255,0.08);
+    border-top-color: var(--ac);
+    border-radius: 50%;
+    animation: spin 0.65s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .av-msg {
+    width: 100%;
+    max-width: 200px;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.72rem;
+    font-family: 'Open Sans', sans-serif;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .av-msg[hidden] { display: none; }
+  .av-msg.ok  { background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.18); }
+  .av-msg.err { background: rgba(239,68,68,0.08); color: #fca5a5; border: 1px solid rgba(239,68,68,0.18); }
+
+  /* Panel 2: Sidebar de iconos */
+  .av-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.25rem 0;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    background: #11141d;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    width: 96px;
+    scrollbar-width: none;
+  }
+  .av-sidebar::-webkit-scrollbar { display: none; }
+
+  .av-icon-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0;
+    border-radius: 0;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.28);
+    transition: color 0.15s;
+    width: 100%;
+    position: relative;
+  }
+  .av-icon-btn:hover { color: rgba(255,255,255,0.65); }
+  .av-icon-btn:hover .av-icon { background: rgba(255,255,255,0.07); }
+  .av-icon-btn.active { color: var(--ac); }
+  .av-icon-btn.active .av-icon {
+    background: var(--ac-dim);
+    box-shadow: 0 0 14px var(--ac-glow);
+  }
+  .av-icon-btn.done .av-icon::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px rgba(16,185,129,0.6);
+  }
+  .av-icon-btn.active.done .av-icon::after { display: none; }
+
+  .av-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 0.75rem;
+    background: transparent;
+    transition: background 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .av-icon svg { width: 24px; height: 24px; }
+  .av-icon-label {
+    font-family: 'League Spartan', sans-serif;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  /* Panel 3: Picker de piezas */
+  .av-picker {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.06) transparent;
+  }
+  .av-picker::-webkit-scrollbar { width: 3px; }
+  .av-picker::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
+
+  .av-picker-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+  }
+  .av-picker-desc {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.25);
+    font-family: 'Open Sans', sans-serif;
+    line-height: 1.4;
+  }
+
+  /* Grid de piezas */
+  .av-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+  }
+  @media (min-width: 640px) {
+    .av-grid { grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+  }
+
+  .av-piece {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #1e232d;
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    padding: 0.25rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .av-piece:hover {
+    background: #2b303b;
+    border-color: rgba(255,255,255,0.1);
+  }
+  .av-piece.selected {
+    background: var(--ac-dim);
+    border-color: var(--ac);
+    box-shadow: 0 0 16px var(--ac-glow);
+  }
+
+  .av-check {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: var(--ac);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0f111a;
+    z-index: 2;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.4);
+  }
+
+  .av-thumb {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 0.75rem;
+    background: #0f1118;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    overflow: hidden;
+  }
+  .av-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .av-thumb-none {
+    color: rgba(255,255,255,0.18);
+    aspect-ratio: 1;
+  }
+
+  .av-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.15);
+    font-family: 'Open Sans', sans-serif;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 640px) {
+    .av-workspace {
+      flex-direction: column;
+      overflow: auto;
+    }
+    .av-preview {
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      border-right: none;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 1rem;
+      gap: 1rem;
+      overflow: visible;
+      min-height: auto;
+    }
+    .av-card-wrap {
+      width: 110px;
+      flex-shrink: 0;
+    }
+    .av-msg { max-width: none; font-size: 0.68rem; }
+    .av-sidebar {
+      flex-direction: row;
+      width: 100%;
+      height: auto;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-right: none;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 0.5rem 0.75rem;
+      gap: 0.5rem;
+      justify-content: flex-start;
+    }
+    .av-icon-btn {
+      width: auto;
+      flex-shrink: 0;
+    }
+    .av-icon {
+      width: 40px;
+      height: 40px;
+    }
+    .av-picker { padding: 1rem 0.875rem; gap: 0.875rem; }
+    .av-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  }
+</style>

@@ -1,0 +1,229 @@
+---
+import Layout from '../../layouts/Layout.astro'
+---
+
+<Layout title="Playlist — Próximamente · La Fiesta del Fútbol">
+  <main class="prox-page">
+
+    <section class="prox-hero">
+      <div class="prox-badge">Música</div>
+      <h1 class="spartan">La banda sonora del torneo, armada por ti.</h1>
+      <p class="prox-lead">
+        Crea tu propia playlist con los himnos, los cánticos y los temasos que pondrán a bailar a todo el
+        estadio. ¡Porque la fiesta sin buena música no es fiesta!
+      </p>
+    </section>
+
+    <section class="prox-body">
+      <div class="prox-inner">
+        <p>
+          ¿Con qué canción celebras un gol? ¿Cuál pones cuando tu selección sale al campo? ¿La que suena
+          cuando todo se pone tenso en los penales?
+        </p>
+        <p>
+          Muy pronto en <strong>La Fiesta del Fútbol</strong> podrás armar la playlist perfecta para cada
+          momento del torneo. Desde el calentamiento hasta la celebración más épica de tu vida.
+        </p>
+
+        <div class="prox-features">
+          <h2 class="spartan">Lo que viene:</h2>
+          <ul>
+            <li>
+              <span class="prox-dot"></span>
+              Crea playlists personalizadas con tu nombre y tu estilo
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Agrega los temas que más te emocionan del torneo
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Organiza tu música por momentos: previa, partido, gol, festejo
+            </li>
+            <li>
+              <span class="prox-dot"></span>
+              Comparte tus playlists con los demás aficionados de La Fiesta
+            </li>
+          </ul>
+        </div>
+
+        <p class="prox-cierre">
+          La música hace al Mundial. Y <strong>tú</strong> haces la música.
+        </p>
+      </div>
+    </section>
+
+    <section class="prox-cta">
+      <p class="prox-cta-label">¿Quieres armar tu playlist desde el día uno?</p>
+      <form class="prox-form" id="form-aviso">
+        <input
+          type="email"
+          name="email"
+          placeholder="tu@correo.com"
+          required
+          class="prox-input"
+        />
+        <button type="submit" class="prox-btn spartan">¡Avísame cuando abra!</button>
+      </form>
+      <p class="prox-form-note" id="form-msg" hidden>¡Listo! Te avisamos en cuanto esté disponible.</p>
+    </section>
+
+  </main>
+</Layout>
+
+<script>
+  const form = document.getElementById('form-aviso') as HTMLFormElement | null
+  const msg  = document.getElementById('form-msg')
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    form.hidden = true
+    if (msg) msg.hidden = false
+  })
+</script>
+
+<style>
+  .prox-page {
+    min-height: 100vh;
+    background: #320E41;
+    color: #fff;
+  }
+
+  .prox-hero {
+    padding: 5rem 1.5rem 3rem;
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .prox-badge {
+    display: inline-block;
+    background: #7af12b;
+    color: #320E41;
+    font-weight: 800;
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: .3rem .9rem;
+    border-radius: 999px;
+    margin-bottom: 1.5rem;
+  }
+  .prox-hero h1 {
+    font-size: clamp(1.75rem, 5vw, 3rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 1.25rem;
+  }
+  .prox-lead {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,.8);
+    line-height: 1.65;
+  }
+
+  .prox-body {
+    background: rgba(255,255,255,.05);
+    padding: 3rem 1.5rem;
+  }
+  .prox-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: rgba(255,255,255,.85);
+  }
+  .prox-inner strong { color: #7af12b; }
+
+  .prox-features {
+    background: rgba(122,241,43,.08);
+    border-left: 3px solid #7af12b;
+    border-radius: 0 1rem 1rem 0;
+    padding: 1.5rem 1.75rem;
+    margin: .5rem 0;
+  }
+  .prox-features h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #7af12b;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .prox-features ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+  }
+  .prox-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    color: rgba(255,255,255,.9);
+  }
+  .prox-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #EA262A;
+    margin-top: .55rem;
+  }
+  .prox-cierre {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: rgba(255,255,255,.9);
+  }
+
+  .prox-cta {
+    padding: 3.5rem 1.5rem 5rem;
+    text-align: center;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .prox-cta-label {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,.7);
+    margin-bottom: 1.25rem;
+  }
+  .prox-form {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .prox-input {
+    flex: 1;
+    min-width: 220px;
+    background: rgba(255,255,255,.1);
+    border: 1.5px solid rgba(255,255,255,.2);
+    border-radius: .75rem;
+    padding: .75rem 1.1rem;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .prox-input:focus { border-color: #7af12b; }
+  .prox-input::placeholder { color: rgba(255,255,255,.4); }
+  .prox-btn {
+    background: #EA262A;
+    color: #fff;
+    font-weight: 800;
+    font-size: .95rem;
+    padding: .75rem 1.5rem;
+    border: none;
+    border-radius: .75rem;
+    cursor: pointer;
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .prox-btn:hover { background: #c41f23; }
+  .prox-form-note {
+    margin-top: 1.25rem;
+    color: #7af12b;
+    font-weight: 600;
+  }
+</style>

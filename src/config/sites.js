@@ -29,6 +29,12 @@ export const wpSiteEnfoqueConfig = {
   logo: `${LOGOS_BASE}/mundial/logo-enfoque2.png`,
 }
 
+export const wpSiteGamecastConfig = {
+  url: 'http://34.61.203.222/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=27867&tags=29732',
+  estacion: 'enfoque',
+  logo: `${LOGOS_BASE}/mundial/logo-enfoque2.png`,
+}
+
 export const wpSiteOyeConfig = [
   {
   url: 'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=12352',

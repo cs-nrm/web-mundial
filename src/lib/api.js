@@ -1,8 +1,8 @@
-import { wpSites, wpSiteEnfoqueNoticias, wpSitesConfig, wpSiteEnfoqueConfig } from '../config/sites.js';
+import { wpSites, wpSiteEnfoqueNoticias, wpSitesConfig, wpSiteEnfoqueConfig, wpSiteGamecastConfig } from '../config/sites.js';
 
 // Mapa rápido de URL → { estacion, logo } para taggear posts al hacer fetch
 const siteMetaByUrl = Object.fromEntries(
-    [...wpSitesConfig, wpSiteEnfoqueConfig].map(s => [s.url, { estacion: s.estacion, logo: s.logo }])
+    [...wpSitesConfig, wpSiteEnfoqueConfig, wpSiteGamecastConfig].map(s => [s.url, { estacion: s.estacion, logo: s.logo }])
 )
 
 // Cache en memoria — se reutiliza entre requests mientras el proceso esté vivo
