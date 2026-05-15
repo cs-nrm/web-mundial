@@ -1,7 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import BoxBanner from '../../components/BoxBanner.astro';
-import { wpSiteEnfoqueConfig } from '../../config/sites.js';
+import { getArticles } from '../../lib/api.js';
+import { wpSiteOyeConfig } from '../../config/sites.js';
 
 const PER_PAGE = 12;
 const pageParam = Astro.url.searchParams.get('pagina');
@@ -13,14 +14,18 @@ let posts = [];
 let totalPages = 1;
 
 try {
-    const url = `${wpSiteEnfoqueConfig.url}&per_page=${PER_PAGE}&page=${currentPage}`;
-    const res = await fetch(url);
-    if (res.ok) {
-        posts = await res.json();
-        totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
-    }
+    const urls = wpSiteOyeConfig.map((site) => site.url);
+    const allPosts = await getArticles(undefined, { sites: urls });
+    const filteredPosts = allPosts.filter((post) =>
+      Array.isArray(post?.tags)
+        ? post.tags.includes(9120) || post.tags.includes(13520)
+        : false
+    );
+
+    totalPages = Math.max(1, Math.ceil(filteredPosts.length / PER_PAGE));
+    posts = filteredPosts.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 } catch (err) {
-    console.error('noticias/index: error fetching posts', err);
+    console.error('el-otro-mundial/index: error fetching posts', err);
 }
 
 function featuredImg(post:any) {
@@ -32,7 +37,7 @@ function featuredImg(post:any) {
 }
 
 function pageUrl(n:any) {
-    return n === 1 ? '/noticias' : `/noticias?pagina=${n}`;
+    return n === 1 ? '/el-otro-mundial' : `/el-otro-mundial?pagina=${n}`;
 }
 
 // Generar rango de páginas a mostrar (máx 5 botones)
@@ -47,12 +52,12 @@ function pageRange(current:any, total:any) {
 const pages = pageRange(currentPage, totalPages);
 ---
 
-<Layout title="Acerca de — La Fiesta del Fútbol">
+<Layout title="Jugadores a Seguir — La Fiesta del Fútbol">
     <section class="w-full py-6">
         <div class="container mx-auto px-4">
 
             <h1 class="titulos rojo uppercase goodtime text-center my-6 text-2xl lg:text-3xl font-bold">
-                Noticias
+                El Otro Mundial
             </h1>
 
             {posts.length === 0 ? (

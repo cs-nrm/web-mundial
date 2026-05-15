@@ -1,0 +1,506 @@
+---
+import { getArticles } from "../lib/api.js";
+import { wpSiteEnfoqueNoticias } from "../config/sites.js";
+
+const posts = await getArticles(undefined, { sites: wpSiteEnfoqueNoticias });
+
+if (!posts || posts.length < 4) {
+    console.warn(`CardsHomeEnfoque: se esperaban 4 posts, hay ${posts?.length || 0}`);
+}
+
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
+
+const getFeaturedImage = (post: any) =>
+    post._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
+    post._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+    PLACEHOLDER_IMG;
+
+const tagCards = [
+  { tag: 29243, title: 'Historia de los Mundiales' },
+  { tag: 29468, title: 'Jóvenes Promesa' },
+  { tag: 29667, title: 'Jugadores a Seguir' },
+];
+
+const getPostsByTag = (tag: number, limit: number = 2) => {
+  const filteredPosts = posts.filter((post: any) =>
+    Array.isArray(post?.tags)
+      ? post.tags.includes(tag)
+      : post?.tags == tag
+  );
+  return filteredPosts.slice(0, limit);
+};
+---
+<div class=" m-auto slider-tres relative">
+<div class="container1">
+    <div id="slide" class="slider">
+
+          {tagCards.map((card) => {
+            const postsForTag = getPostsByTag(card.tag, 2);
+            return postsForTag && postsForTag.length > 0
+              ? postsForTag.map((post, index) =>
+                  post && post.slug ? (
+                    <div class="item" key={`${card.tag}-${index}`} style={`background-image: url(${getFeaturedImage(post)})`}>
+                      <div class="content">
+                        <h1 class="titulos uppercase goodtime text-center bg-black rounded-xl text-white p-4 my-4 text-base md:text-xl lg:text-3xl font-bold w-fit " set:html={card.title}></h1>
+                        <div class="name" set:html={post.title?.rendered}></div>
+                        <div class="hidden lg:block" class="des" set:html={post.excerpt?.rendered || 'Sin descripción'}></div>
+                        {post._logo && (
+                          <div class="flex items-center gap-1 creado-por p-1 w-fit my-4">
+                            <span class="text-[10px]">Creado por:</span>
+                            <img class="w-[45px] h-auto" src={post._logo} alt={post._estacion || "Estación"} />
+                          </div>
+                        )}
+                        <a class="button" href={`/noticias/${post.slug}/`}>Leer más</a>
+                      </div>
+                    </div>
+                  ) : null
+                )
+              : null;
+          })}
+
+
+      <!--div class="item" style="background-image: url(https://images.unsplash.com/photo-1598188306155-25e400eb5078?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MzN8fGNhdHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1200&q=80);">
+        <div class="content">
+          <div class="name">KÍNH ỐP BẾP</div>
+          <div class="des">Tinh ru anh di chay pho, chua kip chay pho thi anhchay mat tieu</div>
+          <a class="button" href="https://kinhopbepthanhphat.com/">See more</a>
+        </div>
+      </div>
+      <div class="item" style="background-image: url(https://images.unsplash.com/photo-1573865526739-10659fec78a5?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&q=80);">
+        <div class="content">
+          <div class="name">KÍNH TRANG TRÍ</div>
+          <div class="des">Tinh ru anh di chay pho, chua kip chay pho thi anhchay mat tieu</div>
+          <a class="button" href="https://kinhtrangtrithanhphat.com/">See more</a>
+        </div>
+      </div>
+      <div class="item" style="background-image: url(https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTB8fGNhdHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1200&q=80);">
+        <div class="content">
+          <div class="name">TRANH KÍNH</div>
+          <div class="des">Tinh ru anh di chay pho, chua kip chay pho thi anhchay mat tieu</div>
+          <a class="button" href="https://kinhopbepthanhphat.com/bao-gia-tranh-kinh/">See more</a>
+        </div>
+      </div>
+      <div class="item" style="background-image: url(https://images.unsplash.com/photo-1478098711619-5ab0b478d6e6?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTZ8fGNhdHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1200&q=80);">
+        <div class="content">
+          <div class="name">KÍNH THỦY</div>
+          <div class="des">Tinh ru anh di chay pho, chua kip chay pho thi anhchay mat tieu</div>
+          <a class="button" href="https://kinhtrangtrithanhphat.com/bao-gia-kinh-trang-tri/">See more</a>
+        </div>
+      </div>
+      <div class="item" style="background-image: url(https://images.unsplash.com/photo-1511275539165-cc46b1ee89bf?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NDF8fGNhdHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1200&q=80);">
+        <div class="content">
+          <div class="name">PHÒNG TẮM KÍNH</div>
+          <div class="des">Tinh ru anh di chay pho, chua kip chay pho thi anhchay mat tieu</div>
+          <a class="button" href="https://phongtamkinhthanhphat.com/">See more</a>
+        </div>
+      </div>
+      <div class="item" style="background-image: url(https://images.unsplash.com/photo-1596854307943-279e29c90c14?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NjR8fGNhdHxlbnwwfHwwfHw%3D&auto=format&fit=crop&w=1200&q=80);">
+        <div class="content">
+          <div class="name">KÍNH CƯỜNG LỰC</div>
+          <div class="des">Tinh ru anh di chay pho, chua kip chay pho thi anhchay mat tieu</div>
+          <a class="button" href="https://phuongnamglass.com/">See more</a>
+        </div>
+      </div-->
+      
+    </div>
+    <div class="buttons">
+      <button id="prev"><i class="fa-solid fa-angle-left"></i></button>
+      <button id="next"><i class="fa-solid fa-angle-right"></i></button>
+    </div>
+  </div>
+</div>
+
+
+    <!--div class="container m-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {tagCards.map((card) => {
+            const postsForTag = getPostsByTag(card.tag, 2);
+            const post = postsForTag[0];
+            return post && post.slug ? (
+              <div>
+                <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold " set:html={card.title}></h1>
+                <div class="space-y-4">
+                  {postsForTag.map((post, index) => post && post.slug ? (
+                    <a href={`/acerca-de/${post.slug}/`} key={index}>
+                      <div class="relative h-full" data-anim="fade-up">
+                        <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={getFeaturedImage(post)} alt={post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                        <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
+                          <h2 class="text-base font-medium" set:html={post.title?.rendered || 'Sin título'}></h2>
+                          {post._logo && (
+                            <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                              <span class="text-[10px]">Creado por:</span>
+                              <img class="w-[45px] h-auto" src={post._logo} alt={post._estacion || "Estación"} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </a>
+                  ) : null)}
+                </div>
+              </div>
+            ) : null;
+          })}
+        </div>
+    </div-->
+
+<!--div class="m-auto text-center">
+    <a href="/noticias" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
+        <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-black uppercase text-xs font-bold tracking-[1px] rounded-xl">
+            <span class="p-4">MÁS NOTICIAS AQUÍ</span>
+        </button>
+    </a>
+</div-->
+
+<style>
+.cards-filtro-3{display: none;}
+
+@media (min-width: 769px) and (max-width: 1024px){
+  .cards-filtro-3{display: block;}
+}
+
+.news-content p{
+  font-size: 1rem;
+  padding: 15px 0;
+  line-height: 1;
+  font-weight: bold;
+}
+/*
+.texto-nota{
+  box-shadow: none;
+  mask-image: linear-gradient(to bottom, hsla(var(--color-black), 1) 0, hsla(var(--color-black), 1) 10%, hsla(var(--color-black), 0) 100%);
+}
+
+.text-uno{
+	display: -webkit-box;
+	-webkit-margin-before: 0;
+  margin-block-start: 0;
+  -webkit-margin-after: 12px;
+  margin-block-end: 12px;
+  line-height: 1.2;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}*/
+
+.slider-tres{
+   /* position: absolute;
+    left:50%;
+    top:50%;
+    transform: translate(-50%,-50%);*/
+    width:100%;
+    height:auto;
+    padding:50px;
+    background-color: #141414;
+    box-shadow: 0 30px 50px #dbdbdb;
+    overflow: hidden;
+}
+.slider-tres #slide{
+    width:max-content;
+    /*margin-top:50px;*/
+}
+.slider-tres .item{
+    width:200px;
+    height:300px;
+    background-position: 50% 50%;
+    display: inline-block;
+    transition: 0.5s;
+    background-size: cover;
+    background-position: top center;
+    position: absolute;
+    z-index: 1;
+    top:25%;
+    transform: translate(0,0%);
+    border-radius: 20px;
+    box-shadow:  0 30px 50px #505050;
+}
+.slider-tres .item:nth-child(1),
+.slider-tres .item:nth-child(2){
+    left:0;
+    top:0;
+    transform: translate(0,0);
+    border-radius: 0;
+    width:100%;
+    height:100%;
+    box-shadow: none;
+}
+.slider-tres .item:nth-child(3){
+    left:50%;
+}
+.slider-tres .item:nth-child(4){
+    left:calc(50% + 220px);
+}
+.slider-tres .item:nth-child(5){
+    left:calc(50% + 440px);
+}
+.slider-tres .item:nth-child(n+6){
+    left:calc(50% + 660px);
+    opacity: 0;
+}
+.slider-tres .item .content{
+    position: absolute;
+    top:50%;
+    left:50px;
+    width:40%;
+    text-align: left;
+    padding:0;
+    color:#eee;
+    transform: translate(0,-50%);
+    display: none;
+    font-family: system-ui;
+}
+.slider-tres .item:nth-child(2) .content{
+    display: block;
+    z-index: 11111;
+}
+.slider-tres .item .name{
+    font-size: 40px;
+    font-weight: bold;
+    opacity: 0;
+    line-height: 1.2;
+    animation:showcontent 1s ease-in-out 1 forwards
+}
+.slider-tres .item .des{
+    margin:20px 0;
+    opacity: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation:showcontent 1s ease-in-out 0.3s 1 forwards
+}
+.slider-tres .item button{
+    padding:10px 20px;
+    border:none;
+    opacity: 0;
+    animation:showcontent 1s ease-in-out 0.6s 1 forwards
+}
+
+@keyframes showcontent{
+    from{
+        opacity: 0;
+        transform: translate(0,100px);
+        filter:blur(33px);
+    }to{
+        opacity: 1;
+        transform: translate(0,0);
+        filter:blur(0);
+    }
+}
+.slider-tres .buttons{
+    position: absolute;
+    bottom:50px;
+    z-index: 222222;
+    text-align: center;
+    width:80%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.slider-tres .buttons button{
+    width:50px;
+    height:50px;
+    border-radius: 50%;
+    border:1px solid #555;
+    transition: 0.5s;
+}.slider-tres .buttons button:hover{
+    background-color: #bac383;
+}
+
+/*.item:nth-child(3) {
+    right: 440px;
+    left: auto;
+}
+
+.item:nth-child(n+6) {
+    right: 0;
+    left: auto;
+}
+
+.item:nth-child(5) {
+    left: auto;
+    right: 0;
+}
+
+.item:nth-child(4) {
+    right: 220px;
+    left: auto;
+}
+.item button {
+    color: #000;
+}*/
+.slider-tres div#slide {
+    position: relative;
+    height: 700px;
+    width: 100%;
+    display: inline-block;
+}
+.slider-tres .item:nth-child(5) {
+    left: calc(80% + 40px);
+}
+.slider-tres .item:nth-child(4) {
+    left: calc(65% + 20px);
+}
+.item:nth-child(3) {
+    left: 50%;
+}
+.slider-tres .item {
+    width: 15%;
+}
+.slider-tres .item button {
+    color: #000;
+}
+.item:nth-child(2):before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(0 0 0 / 24%);
+    top: 0;
+    left: 0;
+}
+.slider-tres .item:nth-child(1) {
+    z-index: 0;
+}
+.slider-tres .item:nth-child(2) {
+    z-index: 1;
+}
+.slider-tres .item:nth-child(n+6) {
+    z-index: -1;
+}
+.slider-tres .button{
+    background-color: #fff;
+    color: #000;
+    padding: 5px 15px;
+}
+
+
+@media(max-width: 992px){
+    .slider-tres div#slide {
+        height: 575px;
+    }
+
+    .slider-tres .item .content {
+        top: 25%;
+    }
+
+    .slider-tres .item {
+        height: 178px;
+    }
+
+    .slider-tres .item {top: 52%;}
+}
+@media(max-width: 768px){
+    .slider-tres .item:nth-child(3) {
+        left: calc(50px);
+    }
+
+    .slider-tres .item:nth-child(4) {
+        left: calc(25% + 40px);
+    }
+
+    .slider-tres .item {
+        width: 20%;
+    }
+
+    .slider-tres .item:nth-child(5) {
+        left: calc(50% + 30px);
+    }
+    .slider-tres .item .content{
+      width: 100%;
+    }
+    .slider-tres .item .name{
+      font-size: 20px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .slider-tres .button{
+      padding: 5px 5px;
+      font-size: 12px;
+    }
+}
+@media(max-width: 550px){
+    .slider-tres .item:nth-child(n+6) {}
+
+    .slider-tres .item:nth-child(5) {
+        opacity: 0;
+    }
+
+    .slider-tres .item .content {
+        left: 0;
+        padding-left: 15px;
+        padding-right: 15px;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .slider-tres .item:nth-child(3) {
+        left: 15px;
+    }
+
+    .slider-tres .item {
+        width: 31%;
+    }
+
+    .slider-tres .item:nth-child(4) {
+        left: calc(31% + 40px);
+    }
+    .slider-tres .buttons {
+        padding-left: 15px;
+        text-align: left;
+        padding-right: 15px;
+    }
+   /* div#slide {
+        height: 100vh;
+    }*/
+}
+
+</style>
+
+<script is:inline>
+var myVar = setInterval(myTimer, 5000);
+function myTimer() {
+  let lists = document.querySelectorAll('.slider-tres .item');
+   document.getElementById('slide').appendChild(lists[0]);
+}
+document.getElementById('next').onclick = function(){
+    let lists = document.querySelectorAll('.item');
+    
+    document.getElementById('slide').appendChild(lists[0]);
+     clearInterval(myVar);
+	myVar = setInterval(myTimer, 5000);
+   // 
+}
+
+document.getElementById('prev').onclick = function(){
+    let lists = document.querySelectorAll('.item');
+    document.getElementById('slide').prepend(lists[lists.length - 1]);
+}
+/*jQuery('.item').click(function(){
+	var target  = jQuery(this);
+
+// the collection you're looking in
+	var nodes = document.querySelectorAll(".item");
+
+	var index = [].indexOf.call(nodes, target);
+	alert(index);
+})*/
+(function() {
+$('.slider-tres .slider .item').click(function(e) {
+
+
+  var el = $(this).index();
+  /*;*/
+  console.log(el);
+
+  let lists = document.querySelectorAll('.slider-tres .item');
+  //document.getElementById('slide').prepend(lists[el]);
+  $( ".slider-tres #slide .item:nth-child(1)" ).after( this );
+  clearInterval(myVar);
+  myVar = setInterval(myTimer, 5000);
+ })
+  });
+</script>
+

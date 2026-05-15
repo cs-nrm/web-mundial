@@ -293,3 +293,10 @@ hr {
   height: auto;
   border-radius: 4px;
 }
+
+#ad-slot4 > div:hover iframe{
+  height: 400px !important;
+  z-index: 1;
+  position: relative;
+  cursor: pointer;
+}

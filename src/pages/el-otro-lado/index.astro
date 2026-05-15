@@ -122,25 +122,25 @@ const pages = pageRange(currentPage, totalPages);
                 <nav class="flex items-center justify-center gap-2 mt-10 flex-wrap" aria-label="Paginación">
                     {currentPage > 1 && (
                         <a href={pageUrl(currentPage - 1)}
-                           class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 transition-colors">
+                           class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">
                             ← Anterior
                         </a>
                     )}
 
                     {pages[0] > 1 && (
                         <>
-                            <a href={pageUrl(1)} class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 transition-colors">1</a>
+                            <a href={pageUrl(1)} class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">1</a>
                             {pages[0] > 2 && <span class="px-2 text-gray-400">…</span>}
                         </>
                     )}
 
-                    {pages.map((n: number) => (
+                    {pages.map((n) => (
                         <a
                             href={pageUrl(n)}
                             class={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
                                 n === currentPage
                                     ? 'bg-[var(--rojo)] text-[var(--verde)] border-[var(--rojo)]'
-                                    : 'border-gray-300 hover:bg-gray-100'
+                                    : 'border-gray-300 text-[var(--verde)] hover:bg-gray-100'
                             }`}
                         >
                             {n}
@@ -150,13 +150,13 @@ const pages = pageRange(currentPage, totalPages);
                     {pages[pages.length - 1] < totalPages && (
                         <>
                             {pages[pages.length - 1] < totalPages - 1 && <span class="px-2 text-gray-400">…</span>}
-                            <a href={pageUrl(totalPages)} class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 transition-colors">{totalPages}</a>
+                            <a href={pageUrl(totalPages)} class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">{totalPages}</a>
                         </>
                     )}
 
                     {currentPage < totalPages && (
                         <a href={pageUrl(currentPage + 1)}
-                           class="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-100 transition-colors">
+                           class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">
                             Siguiente →
                         </a>
                     )}

@@ -3,6 +3,7 @@ import Layout from "../../layouts/Layout.astro";
 import BoxBanner from "../../components/BoxBanner.astro";
 import MoreNews from "../../components/MoreNews.astro";
 import { wpSitesConfig } from "../../config/sites.js";
+import DoubleBox from "../../components/DoubleBox.astro";
 
 const { slug } = Astro.params;
 
@@ -109,6 +110,7 @@ const featuredImage =
                         <BoxBanner />
                         <div class="my-6 h-px bg-gray-200"></div>
                         <MoreNews />
+                        <DoubleBox />
                     </div>
                 </aside>
             </div>

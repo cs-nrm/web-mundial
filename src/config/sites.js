@@ -7,11 +7,6 @@ export const wpSitesConfig = [
     logo: `${LOGOS_BASE}/mundial/LOGO_BEAT.svg`,
   },
   {
-    url: 'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=12352',
-    estacion: 'oye',
-    logo: `${LOGOS_BASE}/oye/recursos/main-logo-header.svg`,
-  },
-  {
     url: 'https://stereociendigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=3986',
     estacion: 'stereocien',
     logo: `${LOGOS_BASE}/oye/recursos/logo-stereocien-2025%20.svg`,
@@ -34,11 +29,18 @@ export const wpSiteEnfoqueConfig = {
   logo: `${LOGOS_BASE}/mundial/logo-enfoque2.png`,
 }
 
-export const wpSiteOyeConfig = {
+export const wpSiteOyeConfig = [
+  {
   url: 'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=12352',
   estacion: 'oye',
   logo: `${LOGOS_BASE}/oye/recursos/main-logo-header.svg`,
-}
+  },
+  {
+    url: 'https://stereociendigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=3986',
+    estacion: 'stereocien',
+    logo: `${LOGOS_BASE}/oye/recursos/logo-stereocien-2025%20.svg`,
+  },
+]
 
 // Arrays planos para compatibilidad con código existente
 export const wpSites = wpSitesConfig.map(s => s.url)

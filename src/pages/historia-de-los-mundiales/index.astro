@@ -13,14 +13,14 @@ let posts = [];
 let totalPages = 1;
 
 try {
-    const url = `${wpSiteEnfoqueConfig.url}&per_page=${PER_PAGE}&page=${currentPage}`;
+    const url = `${wpSiteEnfoqueConfig.url}&tags=29243&per_page=${PER_PAGE}&page=${currentPage}`;
     const res = await fetch(url);
     if (res.ok) {
         posts = await res.json();
         totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1', 10);
     }
 } catch (err) {
-    console.error('noticias/index: error fetching posts', err);
+    console.error('historia-de-los-mundiales/index: error fetching posts', err);
 }
 
 function featuredImg(post:any) {
@@ -32,7 +32,7 @@ function featuredImg(post:any) {
 }
 
 function pageUrl(n:any) {
-    return n === 1 ? '/noticias' : `/noticias?pagina=${n}`;
+    return n === 1 ? '/historia-de-los-mundiales' : `/historia-de-los-mundiales?pagina=${n}`;
 }
 
 // Generar rango de páginas a mostrar (máx 5 botones)
@@ -47,12 +47,12 @@ function pageRange(current:any, total:any) {
 const pages = pageRange(currentPage, totalPages);
 ---
 
-<Layout title="Acerca de — La Fiesta del Fútbol">
+<Layout title="Historia de los Mundiales — La Fiesta del Fútbol">
     <section class="w-full py-6">
         <div class="container mx-auto px-4">
 
             <h1 class="titulos rojo uppercase goodtime text-center my-6 text-2xl lg:text-3xl font-bold">
-                Noticias
+                Historia de los Mundiales
             </h1>
 
             {posts.length === 0 ? (

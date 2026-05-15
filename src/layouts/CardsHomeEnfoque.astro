@@ -2,15 +2,22 @@
 import { getArticles } from "../lib/api.js";
 import { wpSiteEnfoqueNoticias } from "../config/sites.js";
 
-const posts = await getArticles(undefined, { sites: wpSiteEnfoqueNoticias });
+const posts = await getArticles(undefined, { sites: [wpSiteEnfoqueNoticias] });
 
-if (!posts || posts.length < 4) {
-    console.warn(`CardsHomeEnfoque: se esperaban 4 posts, hay ${posts?.length || 0}`);
+// Filtrar solo posts con el tag 29666
+const filteredPosts = (posts || []).filter((post) =>
+  Array.isArray(post?.tags)
+    ? post.tags.includes(29666)
+    : post?.tags == 29666
+);
+
+if (!filteredPosts || filteredPosts.length === 0) {
+    console.warn(`CardsHomeEnfoque: no hay posts con el tag 29666`);
 }
 
 const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
 
-const featuredImages = posts.map(p =>
+const featuredImages = (filteredPosts || []).map(p =>
     p._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
     p._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
     PLACEHOLDER_IMG
@@ -18,78 +25,86 @@ const featuredImages = posts.map(p =>
 ---
 
     <div class="container m-auto">
-      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold" data-anim="hero-title">Noticias</h1>
+      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold" data-anim="hero-title">Acerca de</h1>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="lg:col-span-2" data-anim="fade-up">
-            <a href={`/acerca-de/${posts[0].slug}/`}>
+            {filteredPosts?.[0] && (
+            <a href={`/acerca-de/${filteredPosts[0]?.slug}/`}>
             <div class="relative h-full">
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={filteredPosts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
-                <h2 class="text-base font-medium" set:html={posts[0].title.rendered}></h2>
-                {posts[0]._logo && (
+                <h2 class="text-base font-medium" set:html={filteredPosts[0]?.title?.rendered}></h2>
+                {filteredPosts[0]?._logo && (
                   <div class="flex items-center gap-1 creado-por p-1 w-fit">
                     <span class="text-[10px]">Creado por:</span>
-                    <img class="w-[45px] h-auto" src={posts[0]._logo} alt={posts[0]._estacion} />
+                    <img class="w-[45px] h-auto" src={filteredPosts[0]._logo} alt={filteredPosts[0]._estacion} />
                   </div>
                 )}
               </div>
             </div>
             </a>
+            )}
           </div>
           <div class="flex flex-col gap-4 lg:col-span-2" data-anim="fade-up">
             <div class="flex flex-col lg:flex-row gap-4 lg:h-1/2">
               <div class="relative" data-anim="fade-up">
-                <a href={`/noticias/${posts[1].slug}/`}>
-                  <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                {filteredPosts?.[1] && (
+                <a href={`/acerca-de/${filteredPosts[1]?.slug}/`}>
+                  <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={filteredPosts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-base font-medium" set:html={posts[1].title.rendered}></h2>
-                    {posts[1]._logo && (
+                    <h2 class="text-base font-medium" set:html={filteredPosts[1]?.title?.rendered}></h2>
+                    {filteredPosts[1]?._logo && (
                       <div class="flex items-center gap-1 creado-por p-1 w-fit">
                         <span class="text-[10px]">Creado por:</span>
-                        <img class="w-[45px] h-auto" src={posts[1]._logo} alt={posts[1]._estacion} />
+                        <img class="w-[45px] h-auto" src={filteredPosts[1]._logo} alt={filteredPosts[1]._estacion} />
                       </div>
                     )}
                   </div>
                 </a>
+                )}
               </div>
               <!-- Secundaria 2 -->
               <div class="relative" data-anim="fade-up">
-                <a href={`/noticias/${posts[2].slug}/`}>
-                  <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                {filteredPosts?.[2] && (
+                <a href={`/noticias/${filteredPosts[2]?.slug}/`}>
+                  <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={filteredPosts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                    <h2 class="text-base font-medium" set:html={posts[2].title.rendered}></h2>
-                    {posts[2]._logo && (
+                    <h2 class="text-base font-medium" set:html={filteredPosts[2]?.title?.rendered}></h2>
+                    {filteredPosts[2]?._logo && (
                       <div class="flex items-center gap-1 creado-por p-1 w-fit">
                         <span class="text-[10px]">Creado por:</span>
-                        <img class="w-[45px] h-auto" src={posts[2]._logo} alt={posts[2]._estacion} />
+                        <img class="w-[45px] h-auto" src={filteredPosts[2]._logo} alt={filteredPosts[2]._estacion} />
                       </div>
                     )}
                   </div>
                 </a>
+                )}
               </div>
             </div>
             <div class="lg:col-span-2 h-1/2" data-anim="fade-up">
-              <a href={`/noticias/${posts[3].slug}/`}>
+              {filteredPosts?.[3] && (
+              <a href={`/noticias/${filteredPosts[3]?.slug}/`}>
               <div class="relative h-full">
-                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={filteredPosts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
-                  <h2 class="text-base font-medium" set:html={posts[3].title.rendered}></h2>
-                  {posts[3]._logo && (
+                  <h2 class="text-base font-medium" set:html={filteredPosts[3]?.title?.rendered}></h2>
+                  {filteredPosts[3]?._logo && (
                     <div class="flex items-center gap-1 creado-por p-1 w-fit">
                       <span class="text-[10px]">Creado por:</span>
-                      <img class="w-[45px] h-auto" src={posts[3]._logo} alt={posts[3]._estacion} />
+                      <img class="w-[45px] h-auto" src={filteredPosts[3]._logo} alt={filteredPosts[3]._estacion} />
                     </div>
                   )}
                 </div>
               </div>
               </a>
+              )}
             </div>
           </div>
         </div>
     </div>
 
 <div class="m-auto text-center">
-    <a href="/noticias" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
+    <a href="/acerca-de" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
         <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-black uppercase text-xs font-bold tracking-[1px] rounded-xl">
             <span class="p-4">MÁS NOTICIAS AQUÍ</span>
         </button>

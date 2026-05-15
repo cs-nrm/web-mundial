@@ -24,7 +24,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="relative">
             <a href={`/acerca-de/${posts[0].slug}/`}>
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                 <span>{getCategoria(posts[0])}</span>
               </div>
@@ -42,7 +42,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           <div class="lg:col-span-2">
             <a href={`/acerca-de/${posts[1].slug}/`}>
               <div class="relative h-full">
-                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <img loading="lazy" class=" aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[1])}</span>
                 </div>
@@ -60,7 +60,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           </div>
           <div class="relative">
             <a href={`/acerca-de/${posts[2].slug}/`}>
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[2])}</span>
                 </div>
@@ -78,7 +78,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
 
           <div class="relative">
             <a href={`/acerca-de/${posts[3].slug}/`}>
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[3])}</span>
                 </div>
@@ -95,7 +95,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           </div>
           <div class="relative">
             <a href={`/acerca-de/${posts[4].slug}/`}>
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[4])}</span>
                 </div>
@@ -113,7 +113,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           <div class="lg:col-span-2">
             <a href={`/acerca-de/${posts[5].slug}/`}>
               <div class="relative h-full">
-                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[5])}</span>
                 </div>
@@ -133,7 +133,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           <div class="lg:col-span-2">
             <a href={`/acerca-de/${posts[6].slug}/`}>
               <div class="relative h-full">
-                <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[6]} alt={posts[6]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[6]} alt={posts[6]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[6])}</span>
                 </div>
@@ -151,7 +151,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           </div>
           <div class="relative">
             <a href={`/acerca-de/${posts[7].slug}/`}>
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[7]} alt={posts[7]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[7]} alt={posts[7]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[7])}</span>
                 </div>
@@ -168,7 +168,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
           </div>
           <div class="relative">
             <a href={`/acerca-de/${posts[8].slug}/`}>
-              <img loading="lazy" class="rounded-xl w-full h-full object-cover" src={featuredImages[8]} alt={posts[8]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[8]} alt={posts[8]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
               <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
                   <span>{getCategoria(posts[8])}</span>
                 </div>
