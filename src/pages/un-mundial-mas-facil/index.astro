@@ -1,0 +1,212 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BoxBanner from '../../components/BoxBanner.astro';
+import { getArticles } from '../../lib/api.js';
+import { wpSitesConfig } from '../../config/sites.js';
+
+const PER_PAGE = 12;
+const pageParam = Astro.url.searchParams.get('pagina');
+const currentPage = Math.max(1, parseInt(pageParam || '1', 10));
+const selectedTag = Astro.url.searchParams.get('tag') || 'all';
+
+const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
+
+let posts = [];
+let totalPages = 1;
+let tags = [];
+
+try {
+    const urls = wpSitesConfig.map((site) => site.url);
+    const allPosts = await getArticles(undefined, { sites: urls });
+    const filteredPosts = allPosts.filter((post) =>
+      Array.isArray(post?.tags)
+        ? post.tags.includes(1660) || post.tags.includes(500) || post.tags.includes(3360) || post.tags.includes(1661) || post.tags.includes(13528) || post.tags.includes(700) || post.tags.includes(9096)
+        : false
+    );
+
+    // Construir mapa de tags presentes en los posts filtrados (para el select)
+    const tagMap = new Map();
+    for (const p of filteredPosts) {
+        const termLists = p._embedded?.['wp:term'] ?? [];
+        const flat = termLists.flat ? termLists.flat() : [].concat(...termLists);
+        for (const t of flat) {
+            if (t?.taxonomy === 'post_tag' && t?.id) {
+                if (!tagMap.has(t.id)) tagMap.set(t.id, t.name);
+            }
+        }
+    }
+    tags = Array.from(tagMap, ([id, name]) => ({ id, name }));
+
+    // Si el usuario solicitó un tag específico, filtrar por él (server-side)
+    let postsForPagination = filteredPosts;
+    if (selectedTag !== 'all') {
+        postsForPagination = filteredPosts.filter(p => Array.isArray(p.tags) && p.tags.some((tag) => String(tag) === String(selectedTag)));
+    }
+
+    totalPages = Math.max(1, Math.ceil(postsForPagination.length / PER_PAGE));
+    posts = postsForPagination.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+} catch (err) {
+    console.error('el-otro-mundial/index: error fetching posts', err);
+}
+
+function featuredImg(post:any) {
+    return (
+        post._embedded?.['wp:featuredmedia']?.[0]?.media_details?.sizes?.medium_large?.source_url ||
+        post._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+        PLACEHOLDER_IMG
+    );
+}
+
+function pageUrl(n:any) {
+    const params = new URLSearchParams();
+    if (n > 1) params.set('pagina', String(n));
+    if (selectedTag && selectedTag !== 'all') params.set('tag', String(selectedTag));
+    const qs = params.toString();
+    return `/un-mundial-mas-facil${qs ? `?${qs}` : ''}`;
+}
+
+// Generar rango de páginas a mostrar (máx 5 botones)
+function pageRange(current:any, total:any) {
+    const delta = 2;
+    const range = [];
+    for (let i = Math.max(1, current - delta); i <= Math.min(total, current + delta); i++) {
+        range.push(i);
+    }
+    return range;
+}
+const pages = pageRange(currentPage, totalPages);
+const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._embedded?.['wp:term']?.[0]?.[0]?.name ?? '';
+---
+
+<Layout title="Jugadores a Seguir — La Fiesta del Fútbol">
+    <section class="w-full py-6">
+        <div class="container mx-auto px-4">
+
+            <h1 class="titulos rojo uppercase goodtime text-center my-6 text-2xl lg:text-3xl font-bold">
+                Un Mundial Más Fácil
+            </h1>
+
+            {posts.length === 0 ? (
+                <p class="text-center text-gray-500 py-20">No hay artículos disponibles.</p>
+            ) : (
+                <div>
+                    <!--div class="mb-6 flex justify-center items-center gap-3">
+                        <label for="tagFilter" class="text-sm font-medium">Tag:</label>
+                        <select id="tagFilter" class="border rounded px-3 py-2 text-sm">
+                            <option value="all" selected={selectedTag === 'all'}>Todos</option>
+                            {tags.map(tag => (
+                                <option value={String(tag.id)} selected={String(tag.id) === String(selectedTag)}>{tag.name}</option>
+                            ))}
+                        </select>
+                    </div-->
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {posts.map((post:any) => {
+                        const img = featuredImg(post);
+                        const date = new Date(post.date).toLocaleDateString('es-MX', {
+                            year: 'numeric', month: 'long', day: 'numeric',
+                        });
+                        return (
+                            <a href={`/un-mundial-mas-facil/${post.slug}/`} class="group block rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white">
+                                <div class="relative overflow-hidden h-48">
+                                    <img
+                                        loading="lazy"
+                                        src={img}
+                                        alt={post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || post.title.rendered}
+                                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                    {post._logo && (
+                                        <div class="absolute top-2 left-2 bg-black/60 rounded-lg px-2 py-1 flex items-center gap-1">
+                                            <span class="text-[9px] text-white">Creado por:</span>
+                                            <img class={'logo-' + post._estacion} src={post._logo} alt={post._estacion} />
+                                        </div>
+                                    )}
+                                    <div class="absolute bottom-0 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
+                                        <span>{getCategoria(post)}</span>
+                                    </div>
+                                </div>
+                                <div class="p-4">
+                                    <h2 class="font-semibold text-sm text-gray-800 leading-snug line-clamp-3 group-hover:text-[var(--rojo)] transition-colors" set:html={post.title.rendered} />
+                                    <p class="text-xs text-gray-400 mt-2">{date}</p>
+                                </div>
+                            </a>
+                        );
+                    })}
+                    </div>
+                </div>
+            )}
+
+            <!-- Paginación -->
+            {totalPages > 1 && (
+                <nav class="flex items-center justify-center gap-2 mt-10 flex-wrap" aria-label="Paginación">
+                    {currentPage > 1 && (
+                        <a href={pageUrl(currentPage - 1)}
+                           class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">
+                            ← Anterior
+                        </a>
+                    )}
+
+                    {pages[0] > 1 && (
+                        <div>
+                            <a href={pageUrl(1)} class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">1</a>
+                            {pages[0] > 2 && <span class="px-2 text-gray-400">…</span>}
+                        </div>
+                    )}
+
+                    {pages.map((n) => (
+                        <a
+                            href={pageUrl(n)}
+                            class={`px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                                n === currentPage
+                                    ? 'bg-[var(--rojo)] text-[var(--verde)] border-[var(--rojo)]'
+                                    : 'border-gray-300 text-[var(--verde)] hover:bg-gray-100'
+                            }`}
+                        >
+                            {n}
+                        </a>
+                    ))}
+
+                    {pages[pages.length - 1] < totalPages && (
+                        <div>
+                            {pages[pages.length - 1] < totalPages - 1 && <span class="px-2 text-gray-400">…</span>}
+                            <a href={pageUrl(totalPages)} class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">{totalPages}</a>
+                        </div>
+                    )}
+
+                    {currentPage < totalPages && (
+                        <a href={pageUrl(currentPage + 1)}
+                           class="px-3 py-2 rounded-lg border text-[var(--verde)] border-gray-300 text-sm hover:bg-gray-100 transition-colors">
+                            Siguiente →
+                        </a>
+                    )}
+                </nav>
+            )}
+
+        </div>
+    </section>
+</Layout>
+
+<style>
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+
+<script>
+  (function(){
+    const select = document.getElementById('tagFilter');
+    if (!select) return;
+    select.addEventListener('change', function(event){
+      const target = event.target as HTMLSelectElement;
+      const val = target.value;
+      const params = new URLSearchParams(window.location.search);
+      if (val === 'all') params.delete('tag'); else params.set('tag', val);
+      params.delete('pagina');
+      const qs = params.toString();
+      window.location.search = qs ? `?${qs}` : '';
+    });
+  })();
+</script>

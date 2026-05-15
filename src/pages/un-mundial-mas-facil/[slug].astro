@@ -1,0 +1,155 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import DoubleBox from "../../components/DoubleBox.astro";
+import BoxBanner from "../../components/BoxBanner.astro";
+import LeaderBoard from "../../components/LeaderBoard.astro";
+import MoreNews from "../../components/MoreNews.astro";
+import { wpSites, wpSiteEnfoqueConfig } from "../../config/sites.js";
+
+const { slug } = Astro.params;
+
+// Busca el post por slug en el sitio Enfoque primero (donde viven los posts de "Acerca de"),
+// y como fallback busca en el resto de los sitios de radio.
+async function findPostBySlug(slug:any) {
+    const allSites = [wpSiteEnfoqueConfig.url, ...wpSites];
+
+    const requests = allSites.map(async (siteUrl) => {
+        try {
+            // Asegurar que `content` esté incluido en _fields (el config solo trae excerpt)
+            const parsed = new URL(siteUrl);
+            const fields = parsed.searchParams.get('_fields') || '';
+            if (fields && !fields.includes('content')) {
+                parsed.searchParams.set('_fields', fields + ',content');
+            }
+            parsed.searchParams.set('slug', slug);
+
+            const res = await fetch(parsed.toString());
+            if (!res.ok) return null;
+            const data = await res.json();
+            if (data && data.length > 0) {
+                return data[0];
+            }
+            return null;
+        } catch (err) {
+            console.error(`Error searching for slug ${slug} on ${siteUrl}`, err);
+            return null;
+        }
+    });
+
+    const results = await Promise.all(requests);
+    return results.find((post) => post !== null);
+}
+
+const post = await findPostBySlug(slug);
+
+if (!post) {
+    return Astro.redirect("/404");
+}
+
+const PLACEHOLDER_IMG =
+    "https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg";
+const featuredImage =
+    post.yoast_head_json?.og_image?.[0]?.url ||
+    post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+    PLACEHOLDER_IMG;
+---
+
+<Layout
+    title={post.title.rendered}
+    img={featuredImage}
+    tags={post.yoast_head_json}
+    description={post.yoast_head_json?.og_description}
+>
+    <section class="w-full py-4 poppins" id="content-w-video">
+        <div class="container my-12 mx-auto px-4 md:px-12">
+            <div class="my-4">
+                <h1 class="font-bold text-black text-3xl md:text-4xl mb-4" set:html={post.title.rendered}/>
+                <div
+                    class="roboto flex items-center justify-between text-sm uppercase text-zinc-600 border-b border-zinc-400"
+                >
+                    <p class="text-zinc-500"> {post.yoast_head_json?.author || "Redacción"}</p>
+                    <p class="text-zinc-500">
+                        {
+                            new Date(post.date).toLocaleDateString("es-MX", {
+                                weekday: "long",
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                            })
+                        }
+                    </p>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <img
+                    class="w-full h-auto rounded-xl shadow-lg object-cover max-h-[600px]"
+                    src={featuredImage}
+                    alt={post.title.rendered}
+                />
+            </div>
+
+            <!--LeaderBoard /-->
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <article
+                    class="nota-interna flex-1 text-lg leading-relaxed text-gray-800 bg-white rounded-xl p-6 shadow-md"
+                >
+                    <!-- Share buttons could go here -->
+
+                    <div
+                        class="prose max-w-none"
+                        set:html={post.content.rendered}
+                    />
+                </article>
+
+                <aside class="w-full lg:w-[350px] flex-shrink-0">
+                    <div class="bg-white p-5 rounded-xl sticky top-4">
+                        <BoxBanner />
+                        <div class="my-6 h-px bg-gray-200"></div>
+                        <MoreNews />
+                        <DoubleBox />
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </section>
+</Layout>
+
+<style is:global>
+    /* Basic styling for WP content */
+    .nota-interna p {
+        margin-bottom: 1.5em;
+    }
+    .nota-interna h2 {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin-top: 1.5em;
+        margin-bottom: 0.5em;
+    }
+    .nota-interna h3 {
+        font-size: 1.25em;
+        font-weight: bold;
+        margin-top: 1.2em;
+        margin-bottom: 0.5em;
+    }
+    .nota-interna ul {
+        list-style-type: disc;
+        padding-left: 1.5em;
+        margin-bottom: 1.5em;
+    }
+    .nota-interna a {
+        color: #ea262a;
+        text-decoration: underline;
+    }
+    .nota-interna img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 1em 0;
+    }
+    .nota-interna iframe {
+        max-width: 100%;
+        margin: 1em 0;
+    }
+</style>

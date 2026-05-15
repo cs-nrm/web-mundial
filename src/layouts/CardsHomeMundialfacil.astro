@@ -1,11 +1,16 @@
 ---
 import { getArticles } from "../lib/api.js";
 import { wpSites } from "../config/sites.js";
+import BoxBanner from "../components/BoxBanner.astro";
 
-const posts = await getArticles(undefined, { sites: wpSites });
+const allowedTags = [1660, 500, 3360, 1661, 13528, 700, 9096];
+const allPosts = await getArticles(undefined, { sites: wpSites });
+const posts = allPosts.filter((post) =>
+  Array.isArray(post?.tags) && post.tags.some((tag:any) => allowedTags.includes(tag))
+);
 
 if (!posts || posts.length < 4) {
-    console.warn(`CardsHomeOtromundial: se esperaban 4 posts, hay ${posts?.length || 0}`);
+    console.warn(`CardsHomeMundialfacil: se esperaban 4 posts, hay ${posts?.length || 0}`);
 }
 
 const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
@@ -20,12 +25,13 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
 ---
 
     <div class="container m-auto">
-      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Un Mundial más Fácil</h1>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Un Mundial Más Fácil</h1>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_300px] gap-4">
           <div class="relative">
-            <a href={`/acerca-de/${posts[0].slug}/`}>
+
+            <a href={`/el-otro-lado/${posts[0].slug}/`}>
               <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[0]} alt={posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                 <span>{getCategoria(posts[0])}</span>
               </div>
               <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
@@ -39,11 +45,11 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
               </div>
             </a>
           </div>
-          <div class="lg:col-span-2">
-            <a href={`/acerca-de/${posts[1].slug}/`}>
+          <div class="lg:col-span-2" data-anim="fade-up">
+            <a href={`/el-otro-lado/${posts[1].slug}/`}>
               <div class="relative h-full">
-                <img loading="lazy" class=" aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[1]} alt={posts[1]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                   <span>{getCategoria(posts[1])}</span>
                 </div>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
@@ -58,10 +64,29 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
               </div>
             </a>
           </div>
-          <div class="relative">
-            <a href={`/acerca-de/${posts[2].slug}/`}>
+          <div class="relative flex items-center" data-anim="fade-up">
+            <BoxBanner />
+            <!--a href={`/el-otro-lado/${posts[2].slug}/`}>
               <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
+                  <span>{getCategoria(posts[2])}</span>
+                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[2].title.rendered}></h2>
+                {posts[2]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[2]._estacion}`} src={posts[2]._logo} alt={posts[2]._estacion} />
+                  </div>
+                )}
+              </div>
+            </a-->
+          </div>
+
+          <div class="relative" data-anim="fade-up">
+            <a href={`/el-otro-lado/${posts[2].slug}/`}>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={posts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                   <span>{getCategoria(posts[2])}</span>
                 </div>
               <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
@@ -75,11 +100,10 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
               </div>
             </a>
           </div>
-
-          <div class="relative">
-            <a href={`/acerca-de/${posts[3].slug}/`}>
+          <div class="relative" data-anim="fade-up">
+            <a href={`/el-otro-lado/${posts[3].slug}/`}>
               <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={posts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                   <span>{getCategoria(posts[3])}</span>
                 </div>
               <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
@@ -93,28 +117,31 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
               </div>
             </a>
           </div>
-          <div class="relative">
-            <a href={`/acerca-de/${posts[4].slug}/`}>
-              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+          <div class="lg:col-span-2" data-anim="fade-up">
+            <a href={`/el-otro-lado/${posts[4].slug}/`}>
+              <div class="relative h-full">
+                <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[4]} alt={posts[4]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                   <span>{getCategoria(posts[4])}</span>
                 </div>
-              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                <h2 class="text-base font-medium !leading-7" set:html={posts[4].title.rendered}></h2>
-                {posts[4]._logo && (
-                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
-                    <span class="text-[10px]">Creado por:</span>
-                    <img class={`logo-${posts[4]._estacion}`} src={posts[4]._logo} alt={posts[4]._estacion} />
-                  </div>
-                )}
+                <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
+                  <h2 class="text-base font-medium" set:html={posts[4].title.rendered}></h2>
+                  {posts[4]._logo && (
+                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${posts[4]._estacion}`} src={posts[4]._logo} alt={posts[4]._estacion} />
+                    </div>
+                  )}
+                </div>
               </div>
             </a>
           </div>
-          <div class="lg:col-span-2">
-            <a href={`/acerca-de/${posts[5].slug}/`}>
+
+          <div class="lg:col-span-2" data-anim="fade-up">
+            <a href={`/el-otro-lado/${posts[5].slug}/`}>
               <div class="relative h-full">
                 <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[5]} alt={posts[5]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+                <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                   <span>{getCategoria(posts[5])}</span>
                 </div>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
@@ -130,29 +157,27 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
             </a>
           </div>
 
-          <div class="lg:col-span-2">
-            <a href={`/acerca-de/${posts[6].slug}/`}>
-              <div class="relative h-full">
-                <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[6]} alt={posts[6]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-                <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+          <div class="relative" data-anim="fade-up">
+            <a href={`/el-otro-lado/${posts[6].slug}/`}>
+              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[6]} alt={posts[6]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                   <span>{getCategoria(posts[6])}</span>
                 </div>
-                <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
-                  <h2 class="text-base font-medium" set:html={posts[6].title.rendered}></h2>
-                  {posts[6]._logo && (
-                    <div class="flex items-center gap-1 creado-por p-1 w-fit">
-                      <span class="text-[10px]">Creado por:</span>
-                      <img class={`logo-${posts[6]._estacion}`} src={posts[6]._logo} alt={posts[6]._estacion} />
-                    </div>
-                  )}
-                </div>
+              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
+                <h2 class="text-base font-medium !leading-7" set:html={posts[6].title.rendered}></h2>
+                {posts[6]._logo && (
+                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
+                    <span class="text-[10px]">Creado por:</span>
+                    <img class={`logo-${posts[6]._estacion}`} src={posts[6]._logo} alt={posts[6]._estacion} />
+                  </div>
+                )}
               </div>
             </a>
           </div>
-          <div class="relative">
-            <a href={`/acerca-de/${posts[7].slug}/`}>
+          <div class="relative" data-anim="fade-up">
+            <a href={`/el-otro-lado/${posts[7].slug}/`}>
               <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[7]} alt={posts[7]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
+              <div class="absolute top-1 right-1 bg-black bg-opacity-60 p-1 w-fit uppercase text-xs font-bold tracking-[1px] rounded-[4px]">
                   <span>{getCategoria(posts[7])}</span>
                 </div>
               <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
@@ -166,23 +191,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
               </div>
             </a>
           </div>
-          <div class="relative">
-            <a href={`/acerca-de/${posts[8].slug}/`}>
-              <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[8]} alt={posts[8]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
-              <div class="absolute top-1 right-1 bg-black bg-opacity-60 text-white p-1 w-fit text-[10px] rounded-[4px]">
-                  <span>{getCategoria(posts[8])}</span>
-                </div>
-              <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
-                <h2 class="text-base font-medium !leading-7" set:html={posts[8].title.rendered}></h2>
-                {posts[8]._logo && (
-                  <div class="flex items-center gap-1 creado-por p-1 w-fit">
-                    <span class="text-[10px]">Creado por:</span>
-                    <img class={`logo-${posts[8]._estacion}`} src={posts[8]._logo} alt={posts[8]._estacion} />
-                  </div>
-                )}
-              </div>
-            </a>
-          </div>
+
 
 
 
@@ -191,8 +200,8 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
     </div>
 
 <div class="m-auto text-center">
-    <a href="/acerca-de" class="text-white hover:text-black">
-        <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-[#e2241a] uppercase text-xs font-bold tracking-[1px] rounded-xl">
+    <a href="/un-mundial-mas-facil" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
+        <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-black uppercase text-xs font-bold tracking-[1px] rounded-xl">
             <span class="p-4">MÁS NOTICIAS AQUÍ</span>
         </button>
     </a>
