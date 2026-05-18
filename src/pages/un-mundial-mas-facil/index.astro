@@ -40,7 +40,7 @@ try {
     // Si el usuario solicitó un tag específico, filtrar por él (server-side)
     let postsForPagination = filteredPosts;
     if (selectedTag !== 'all') {
-        postsForPagination = filteredPosts.filter(p => Array.isArray(p.tags) && p.tags.some((tag) => String(tag) === String(selectedTag)));
+        postsForPagination = filteredPosts.filter(p => Array.isArray(p.tags) && p.tags.some((tag:any) => String(tag) === String(selectedTag)));
     }
 
     totalPages = Math.max(1, Math.ceil(postsForPagination.length / PER_PAGE));
