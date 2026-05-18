@@ -84,25 +84,15 @@ import Menu from './Menu.astro';
 		.pre-site-station { display: none;        width: 172px;        height: 185px;        background: black;        position: absolute;        top: 48px;        z-index: 99999999999999999;        border-bottom-right-radius: 10px;        border-bottom-left-radius: 10px;        padding: 10px; text-align:left;}
 	}
 </style>
-<script >
-	$(document).ready(function(){
-
-	
-		$('.expand-radio-mobile .radio').click(function(){
-			if($('.expand-radio-mobile .pre-site-station').css('display') == 'block'){
-				$('.expand-radio-mobile .pre-site-station').css('display','none');	
-			}else{
-				$('.expand-radio-mobile .pre-site-station').css('display','block');	
-			}						
-		});
-		
-		/*
-		$('.expand-radio-mobile .radio').hover(function(){
-			$('.expand-radio-mobile .pre-site-station').css('display','block');
-		},function(){
-			$('.expand-radio-mobile .pre-site-station').css('display','none');
-		});
-		*/
+<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		const radio = document.querySelector('.expand-radio-mobile .radio');
+		const station = document.querySelector('.expand-radio-mobile .pre-site-station');
+		if (radio && station) {
+			radio.addEventListener('click', function() {
+				station.style.display = station.style.display === 'block' ? 'none' : 'block';
+			});
+		}
 	});
 </script>
 

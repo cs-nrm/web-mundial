@@ -11,7 +11,6 @@ var volume;
 var artist;
 var cancion;
 var hora;
-const radioButton = document.getElementById('radiobutton');
 const player = document.getElementById('player');
 const secchome = document.getElementById('home');
 
@@ -59,16 +58,12 @@ function initGPT() {
         googletag.display('ad-slot5');
         googletag.display('ad-slot6');
         googletag.display('ad-slot61');
-
-        //googletag.pubads().refresh([slot3]);
-        //setInterval(function(){googletag.pubads().refresh([slot3]);}, 180000);
     });
 }
 
 
 function safeRefreshSlots() {
     if (window.googletag && googletag.apiReady && googletag.pubads) {
-        // Repite para cada slot, si tienes más
         if (window.slot14) googletag.pubads().refresh([window.slot14]);
         if (window.slot141) googletag.pubads().refresh([window.slot141]);
         if (window.slot2) googletag.pubads().refresh([window.slot2]);
@@ -81,32 +76,26 @@ function safeRefreshSlots() {
         if (window.slot5) googletag.pubads().refresh([window.slot5]);
         if (window.slot6) googletag.pubads().refresh([window.slot6]);
         if (window.slot61) googletag.pubads().refresh([window.slot61]);
-        // O simplemente: googletag.pubads().refresh();
         console.log('Banners refrescados post navegación');
     } else {
-        safeRefreshSlots(); // Intenta de nuevo después de un breve retraso);
+        safeRefreshSlots();
     }
 }
 
 
-
 /* NAVIGATION */
 document.addEventListener('astro:before-preparation', ev => {
-    //  console.log('insert spin');    
     document.querySelector('main').classList.add('loading');
     document.querySelector('.preloader').classList.add('showpreloader');
     if (typeof progInterval !== 'undefined' && progInterval) {
         clearInterval(progInterval);
         progInterval = null;
     }
-
 });
 
 document.addEventListener("astro:after-swap", () => {
-
     const hasInstaEmbeds = !!document.querySelector('blockquote.instagram-media, .instagram-media, [data-instgrm-permalink], iframe[src*="instagram.com"]');
     if (hasInstaEmbeds) {
-        // Carga perezosa del SDK si aún no existe
         const ensureInstagramSDK = () => new Promise((resolve) => {
             if (window.instgrm && window.instgrm.Embeds && typeof window.instgrm.Embeds.process === 'function') {
                 resolve();
@@ -119,11 +108,9 @@ document.addEventListener("astro:after-swap", () => {
                 s.src = 'https://www.instagram.com/embed.js';
                 s.async = true;
                 s.onload = () => resolve();
-                // como fallback, resuelve tras un tiempo prudente
                 setTimeout(() => resolve(), 2000);
                 document.head.appendChild(s);
             } else {
-                // si ya existe la etiqueta pero aún no expone la API, espera un poco
                 setTimeout(() => resolve(), 500);
             }
         });
@@ -138,7 +125,6 @@ document.addEventListener("astro:after-swap", () => {
             }
         });
     }
-
 });
 
 
@@ -147,23 +133,8 @@ document.addEventListener('astro:page-load', ev => {
     initGPT();
     safeRefreshSlots();
 
-    window.addEventListener('scroll', function () {
-        const scrollY = window.scrollY;
-
-        if ($('.bar-stereo').hasClass('is-pinned')) {
-            $('.bar-stereo').addClass('compress');
-            $('.bar-stereo .logo').addClass('compress-logo');
-        }
-        if (scrollY <= 1) {
-            $('.bar-stereo').css('position', 'sticky');
-            $('.bar-stereo').removeClass('compress');
-            $('.bar-stereo .logo').removeClass('compress-logo');
-        }
-    });
-
     /* =======COMSCORE*/
     var ts = Math.round((new Date()).getTime() / 1000 * Math.random() * 10);
-    // cowensole.log(ts);
     self.COMSCORE && COMSCORE.beacon({
         c1: "2", c2: "6906652",
         options: {
@@ -172,25 +143,13 @@ document.addEventListener('astro:page-load', ev => {
         }
     });
 
-    fetch('/pageview_candidate.txt?' + ts)
-        .then(function (resp) {
-            console.log(resp);
-        });
-
+    fetch('/pageview_candidate.txt?' + ts).then(function (resp) {
+        console.log(resp);
+    });
     /* =======COMSCORE*/
-    //googletag.pubads().refresh();
-
 
     document.querySelector('main').classList.remove('loading');
     document.querySelector('.preloader').classList.remove('showpreloader');
-
-    const secenvivo = document.getElementById('envivo');
-
-
-
-
-
-
 
     const imagenNota = document.getElementById("imagen-nota");
     if (imagenNota) {
@@ -199,79 +158,47 @@ document.addEventListener('astro:page-load', ev => {
         imagenNota.style.backgroundImage = "url(" + imgNotaOriginal2 + ")";
     }
 
-
-    $('.wp-block-image').each(function () {
-        const datasrc = $(this).find('img').attr('data-src');
-        $(this).find('img').attr('src', datasrc);
+    document.querySelectorAll('.wp-block-image').forEach(function (el) {
+        const img = el.querySelector('img');
+        if (img) {
+            const datasrc = img.getAttribute('data-src');
+            if (datasrc) img.setAttribute('src', datasrc);
+        }
     });
-
 
     const containvideo = document.getElementById('content-w-video');
     if (containvideo) {
-        //console.log('sccion pop');  
-        //console.log(navigator.userAgent);
-        if (navigator.userAgent.indexOf("iPhone") != -1) {
+        const playerEl = document.getElementById('player');
 
-            $('.wp-block-embed-youtube .wp-block-embed__wrapper iframe').each(function (t, el) {
-                // console.log($(this));   
-                //const ele = $(this).attr('id','el-'+t);     
-                $(this).on('click', function () {
+        if (navigator.userAgent.indexOf("iPhone") != -1) {
+            document.querySelectorAll('.wp-block-embed-youtube .wp-block-embed__wrapper iframe').forEach(function (iframe, t) {
+                iframe.addEventListener('click', function () {
                     const getstatus = playerstatus();
                     if (getstatus == 'radio-playing') {
                         radioStop();
-                        //hidebarra();
-                        $('#player').attr('data-status', 'video-playing');
+                        if (playerEl) playerEl.setAttribute('data-status', 'video-playing');
                     }
                 });
-
             });
-
         } else {
-            $('.wp-block-embed-youtube .wp-block-embed__wrapper').each(function () {
-                // console.log($(this).find('iframe'));            
-                const plyr = new Plyr($(this).find('iframe').parent(), {
+            document.querySelectorAll('.wp-block-embed-youtube .wp-block-embed__wrapper').forEach(function (wrapper) {
+                const plyr = new Plyr(wrapper.querySelector('iframe').parentElement, {
                     debug: true,
                     controls: [
-                        'play-large', // The large play button in the center
-                        'restart', // Restart playback
-                        'rewind', // Rewind by the seek time (default 10 seconds)
-                        'play', // Play/pause playback
-                        'fast-forward', // Fast forward by the seek time (default 10 seconds)
-                        'progress', // The progress bar and scrubber for playback and buffering
-                        'current-time', // The current time of playback
-                        'duration', // The full duration of the media
-                        'mute', // Toggle mute
-                        'volume', // Volume control
-                        'captions', // Toggle captions
-                        'settings', // Settings menu
-                        'pip', // Picture-in-picture (currently Safari only)
-                        'airplay', // Airplay (currently Safari only)
-                        'download', // Show a download button with a link to either the current source or a custom URL you specify in your options
-                        'fullscreen',
+                        'play-large', 'restart', 'rewind', 'play', 'fast-forward',
+                        'progress', 'current-time', 'duration', 'mute', 'volume',
+                        'captions', 'settings', 'pip', 'airplay', 'download', 'fullscreen',
                     ],
                     playsinline: true
-
                 });
-                //console.log(plyr);
                 plyr.on('playing', function () {
                     const getstatus = playerstatus();
                     if (getstatus == 'radio-playing') {
                         radioStop();
-                        //hidebarra();
-                        $('#player').attr('data-status', 'video-playing');
+                        if (playerEl) playerEl.setAttribute('data-status', 'video-playing');
                     }
-                });
-
-                $('#radiobutton').on('click', function () {
-                    plyr.pause();
                 });
             });
         }
-
-
-
     }
-
-
 });
-
