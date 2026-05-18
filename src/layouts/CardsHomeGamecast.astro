@@ -35,7 +35,7 @@ function formatFecha(fecha: string | null | undefined) {
       const fechaFormateada = formatFecha(fecha);
 
       return (
-        <a href={`/gamecast/${post.slug}/`} data-anim="fade-up">
+        <a href={`/partidos-del-dia/${post.slug}/`} data-anim="fade-up">
           <div class="gamecast-card rounded-xl bg-black text-white p-4 h-full flex flex-col gap-3 justify-between hover:bg-neutral-900 transition-colors">
             {fechaFormateada && (
               <p class="text-xs text-neutral-400 uppercase tracking-widest">{fechaFormateada}</p>
