@@ -21,7 +21,7 @@ const tagCards = [
   { tag: 29667, title: 'Jugadores a Seguir' },
 ];
 
-const getPostsByTag = (tag: number, limit: number = 2) => {
+const getPostsByTag = (tag: number, limit: number = 3) => {
   const filteredPosts = posts.filter((post: any) =>
     Array.isArray(post?.tags)
       ? post.tags.includes(tag)
@@ -35,7 +35,7 @@ const getPostsByTag = (tag: number, limit: number = 2) => {
     <div id="slide" class="slider">
 
           {tagCards.map((card) => {
-            const postsForTag = getPostsByTag(card.tag, 2);
+            const postsForTag = getPostsByTag(card.tag, 3);
             return postsForTag && postsForTag.length > 0
               ? postsForTag.map((post, index) =>
                   post && post.slug ? (
@@ -114,7 +114,7 @@ const getPostsByTag = (tag: number, limit: number = 2) => {
     <!--div class="container m-auto">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {tagCards.map((card) => {
-            const postsForTag = getPostsByTag(card.tag, 2);
+            const postsForTag = getPostsByTag(card.tag, 3);
             const post = postsForTag[0];
             return post && post.slug ? (
               <div>
