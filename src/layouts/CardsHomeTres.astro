@@ -16,9 +16,9 @@ const getFeaturedImage = (post: any) =>
     PLACEHOLDER_IMG;
 
 const tagCards = [
-  { tag: 29243, title: 'Historia de los Mundiales' },
-  { tag: 29468, title: 'Jóvenes Promesa' },
-  { tag: 29667, title: 'Jugadores a Seguir' },
+  { tag: 29243, title: 'Historia de los Mundiales', slug: 'historia-de-los-mundiales' },
+  { tag: 29468, title: 'Jóvenes Promesa', slug: 'jovenes-promesa' },
+  { tag: 29667, title: 'Jugadores a Seguir', slug: 'jugadores-a-seguir' },
 ];
 
 const getPostsByTag = (tag: number, limit: number = 3) => {
@@ -39,7 +39,7 @@ const getPostsByTag = (tag: number, limit: number = 3) => {
             return postsForTag && postsForTag.length > 0
               ? postsForTag.map((post, index) =>
                   post && post.slug ? (
-                    <div class="item" key={`${card.tag}-${index}`} style={`background-image: url(${getFeaturedImage(post)})`}>
+                    <div class="item" style={`background-image: url(${getFeaturedImage(post)})`}>
                       <div class="content">
                         <h1 class="titulos uppercase goodtime text-center bg-black rounded-xl text-white p-4 my-4 text-base md:text-xl lg:text-3xl font-bold w-fit " set:html={card.title}></h1>
                         <div class="name" set:html={post.title?.rendered}></div>
@@ -50,7 +50,7 @@ const getPostsByTag = (tag: number, limit: number = 3) => {
                             <img class="w-[45px] h-auto" src={post._logo} alt={post._estacion || "Estación"} />
                           </div>
                         )}
-                        <a class="button" href={`/noticias/${post.slug}/`}>Leer más</a>
+                        <a class="button" href={`/${card.slug}/${post.slug}/`}>Leer más</a>
                       </div>
                     </div>
                   ) : null
@@ -290,7 +290,7 @@ const getPostsByTag = (tag: number, limit: number = 3) => {
 .slider-tres .buttons{
     position: absolute;
     bottom:50px;
-    z-index: 222222;
+    z-index: 999;
     text-align: center;
     width:80%;
     left: 50%;
