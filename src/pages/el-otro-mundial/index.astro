@@ -81,7 +81,7 @@ const pages = pageRange(currentPage, totalPages);
                                     {post._logo && (
                                         <div class="absolute top-2 left-2 bg-black/60 rounded-lg px-2 py-1 flex items-center gap-1">
                                             <span class="text-[9px] text-white">Creado por:</span>
-                                            <img class="w-[40px] h-auto" src={post._logo} alt={post._estacion} />
+                                            <img class={`logo-${post._estacion}`}  src={post._logo} alt={post._estacion} />
                                         </div>
                                     )}
                                 </div>
