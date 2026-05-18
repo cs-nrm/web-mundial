@@ -104,8 +104,8 @@ const getPostsByTag = (tag: number, limit: number = 3) => {
       
     </div>
     <div class="buttons">
-      <button id="prev"><i class="fa-solid fa-angle-left"></i></button>
-      <button id="next"><i class="fa-solid fa-angle-right"></i></button>
+      <button id="prev"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button id="next"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>
   </div>
 </div>
@@ -302,8 +302,14 @@ const getPostsByTag = (tag: number, limit: number = 3) => {
     border-radius: 50%;
     border:1px solid #555;
     transition: 0.5s;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
 }.slider-tres .buttons button:hover{
     background-color: #bac383;
+    color: #000;
 }
 
 /*.item:nth-child(3) {
@@ -463,47 +469,51 @@ const getPostsByTag = (tag: number, limit: number = 3) => {
 </style>
 
 <script is:inline>
-var myVar = setInterval(myTimer, 5000);
-function myTimer() {
-  let lists = document.querySelectorAll('.slider-tres .item');
-   document.getElementById('slide').appendChild(lists[0]);
-}
-document.getElementById('next').onclick = function(){
-    let lists = document.querySelectorAll('.item');
-    
-    document.getElementById('slide').appendChild(lists[0]);
-     clearInterval(myVar);
-	myVar = setInterval(myTimer, 5000);
-   // 
-}
-
-document.getElementById('prev').onclick = function(){
-    let lists = document.querySelectorAll('.item');
-    document.getElementById('slide').prepend(lists[lists.length - 1]);
-}
-/*jQuery('.item').click(function(){
-	var target  = jQuery(this);
-
-// the collection you're looking in
-	var nodes = document.querySelectorAll(".item");
-
-	var index = [].indexOf.call(nodes, target);
-	alert(index);
-})*/
 (function() {
-$('.slider-tres .slider .item').click(function(e) {
+  const slide = document.getElementById('slide');
 
+  function getItems() {
+    return slide.querySelectorAll('.item');
+  }
 
-  var el = $(this).index();
-  /*;*/
-  console.log(el);
+  var timer = setInterval(next, 5000);
 
-  let lists = document.querySelectorAll('.slider-tres .item');
-  //document.getElementById('slide').prepend(lists[el]);
-  $( ".slider-tres #slide .item:nth-child(1)" ).after( this );
-  clearInterval(myVar);
-  myVar = setInterval(myTimer, 5000);
- })
+  function resetTimer() {
+    clearInterval(timer);
+    timer = setInterval(next, 5000);
+  }
+
+  function next() {
+    slide.appendChild(getItems()[0]);
+  }
+
+  function prev() {
+    const items = getItems();
+    slide.prepend(items[items.length - 1]);
+  }
+
+  document.getElementById('next').onclick = function() {
+    next();
+    resetTimer();
+  };
+
+  document.getElementById('prev').onclick = function() {
+    prev();
+    resetTimer();
+  };
+
+  // Clic en card: la trae al primer plano (posición activa)
+  slide.addEventListener('click', function(e) {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    // Si el clic fue en el botón "Leer más", dejar navegar normalmente
+    if (e.target.closest('a.button')) return;
+    const items = getItems();
+    // Ya es la card activa (posición 2), no hacer nada
+    if (item === items[1]) return;
+    items[0].after(item);
+    resetTimer();
   });
+})();
 </script>
 

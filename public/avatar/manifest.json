@@ -7,7 +7,12 @@
     "como_resolver_assets_de_una_estacion": "Para obtener las piezas disponibles de una categoria 'X' para la estacion 'Y', combinar: assets.universal[X] + assets[Y][X]. Si la categoria es 'por_estacion' (marco, fondo), solo usar assets[Y][X].",
     "como_agregar_pieza": "1) Decidir si es universal o exclusiva de una estacion. 2) Soltar el archivo en la carpeta correspondiente con el nombre 'categoria-NN.ext' usando el siguiente numero libre. 3) Agregar la ruta al array correspondiente en este manifest."
   },
-  "estaciones": ["beat", "oye", "sabrosita", "stereocien"],
+  "estaciones": [
+    "beat",
+    "oye",
+    "sabrosita",
+    "stereocien"
+  ],
   "z_order": [
     "fondo",
     "cuerpo-jersey",
@@ -26,145 +31,167 @@
       "scope": "por_estacion",
       "requerido": true,
       "descripcion": "Fondo de la composicion. Capa mas baja.",
-      "extensiones": ["jpg"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "cuerpo-jersey": {
       "scope": "compartido",
       "requerido": true,
       "descripcion": "Torso/jersey del avatar. Puede haber jerseys universales y jerseys exclusivos por estacion.",
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "cabello": {
       "scope": "compartido",
       "requerido": true,
       "descripcion": "Pelo del avatar.",
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "cejas": {
       "scope": "compartido",
       "requerido": true,
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "ojos": {
       "scope": "compartido",
       "requerido": true,
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "lentes": {
       "scope": "compartido",
       "requerido": false,
       "descripcion": "Pieza opcional. Va por encima de los ojos.",
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "boca": {
       "scope": "compartido",
       "requerido": true,
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "bigote": {
       "scope": "compartido",
       "requerido": false,
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "barba": {
       "scope": "compartido",
       "requerido": false,
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "gorra": {
       "scope": "compartido",
       "requerido": false,
       "descripcion": "Pieza opcional. Va por encima del cabello.",
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     },
     "marco": {
       "scope": "por_estacion",
       "requerido": true,
       "descripcion": "Marco/frame con branding de la estacion. Capa mas alta.",
-      "extensiones": ["png"]
+      "extensiones": [
+        "webp"
+      ]
     }
   },
   "assets": {
     "universal": {
       "ojos": [
-        "universal/ojos/ojos-01.png"
+        "universal/ojos/ojos-01.webp"
       ],
       "cejas": [
-        "universal/cejas/cejas-01.png"
+        "universal/cejas/cejas-01.webp"
       ],
       "cabello": [
-        "universal/cabello/cabello-01.png"
+        "universal/cabello/cabello-01.webp"
       ],
       "boca": [
-        "universal/boca/boca-01.png"
+        "universal/boca/boca-01.webp"
       ],
       "bigote": [
-        "universal/bigote/bigote-01.png"
+        "universal/bigote/bigote-01.webp"
       ],
       "barba": [
-        "universal/barba/barba-01.png",
-        "universal/barba/barba-02.png",
-        "universal/barba/barba-03.png"
+        "universal/barba/barba-01.webp",
+        "universal/barba/barba-02.webp",
+        "universal/barba/barba-03.webp"
       ],
       "lentes": [
-        "universal/lentes/lentes-01.png"
+        "universal/lentes/lentes-01.webp"
       ],
       "gorra": [
-        "universal/gorras/gorra-01.png"
+        "universal/gorras/gorra-01.webp"
       ],
       "cuerpo-jersey": [
-        "universal/cuerpo-jersey/jersey-01.png",
-        "universal/cuerpo-jersey/jersey-02.png",
-        "universal/cuerpo-jersey/jersey-03.png",
-        "universal/cuerpo-jersey/jersey-04.png",
-        "universal/cuerpo-jersey/jersey-05.png",
-        "universal/cuerpo-jersey/jersey-06.png",
-        "universal/cuerpo-jersey/jersey-07.png",
-        "universal/cuerpo-jersey/jersey-08.png",
-        "universal/cuerpo-jersey/jersey-09.png",
-        "universal/cuerpo-jersey/jersey-10.png",
-        "universal/cuerpo-jersey/jersey-11.png",
-        "universal/cuerpo-jersey/jersey-12.png"
+        "universal/cuerpo-jersey/jersey-01.webp",
+        "universal/cuerpo-jersey/jersey-02.webp",
+        "universal/cuerpo-jersey/jersey-03.webp",
+        "universal/cuerpo-jersey/jersey-04.webp",
+        "universal/cuerpo-jersey/jersey-05.webp",
+        "universal/cuerpo-jersey/jersey-06.webp",
+        "universal/cuerpo-jersey/jersey-07.webp",
+        "universal/cuerpo-jersey/jersey-08.webp",
+        "universal/cuerpo-jersey/jersey-09.webp",
+        "universal/cuerpo-jersey/jersey-10.webp",
+        "universal/cuerpo-jersey/jersey-11.webp",
+        "universal/cuerpo-jersey/jersey-12.webp"
       ]
     },
     "beat": {
       "marco": [
-        "beat/marcos/marco-01.png"
+        "beat/marcos/marco-01.webp"
       ],
       "fondo": [
-        "beat/fondos/fondo-01.jpg",
-        "beat/fondos/fondo-02.jpg",
-        "beat/fondos/fondo-03.jpg",
-        "beat/fondos/fondo-04.jpg",
-        "beat/fondos/fondo-05.jpg"
+        "beat/fondos/fondo-01.webp",
+        "beat/fondos/fondo-02.webp",
+        "beat/fondos/fondo-03.webp",
+        "beat/fondos/fondo-04.webp",
+        "beat/fondos/fondo-05.webp"
       ],
       "cuerpo-jersey": [
-        "beat/cuerpo-jersey/jersey-14.png"
+        "beat/cuerpo-jersey/jersey-14.webp"
       ]
     },
     "oye": {
       "marco": [
-        "oye/marcos/marco-01.png"
+        "oye/marcos/marco-01.webp"
       ],
       "fondo": [],
       "cuerpo-jersey": [
-        "oye/cuerpo-jersey/jersey-14.png"
+        "oye/cuerpo-jersey/jersey-14.webp"
       ]
     },
     "sabrosita": {
       "marco": [
-        "sabrosita/marcos/marco-01.png"
+        "sabrosita/marcos/marco-01.webp"
       ],
       "fondo": [],
       "cuerpo-jersey": []
     },
     "stereocien": {
       "marco": [
-        "stereocien/marcos/marco-01.png"
+        "stereocien/marcos/marco-01.webp"
       ],
       "fondo": [],
       "cuerpo-jersey": [
-        "stereocien/cuerpo-jersey/jersey-13.png"
+        "stereocien/cuerpo-jersey/jersey-13.webp"
       ]
     }
   },
