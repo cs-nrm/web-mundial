@@ -17,6 +17,7 @@ import BillBoard from "../components/BillBoard.astro";
 import Modal from "../components/Modal.astro";
 import CardsHomeTres from "../layouts/CardsHomeTres.astro";
 import CardsHomeGamecast from "../layouts/CardsHomeGamecast.astro";
+import ConteoRegresivo from "../components/ConteoRegresivo.astro";
 
 
 const posts = await getArticlesEnfoque();
@@ -28,6 +29,7 @@ if (posts.length > 0) {
 
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <main id="home" class="">
+    <section><ConteoRegresivo /></section>
     <section><CardsHomeEnfoque posts={posts} /></section>
     <!--SuperLeader /-->
     <section><CardsHomeTres posts={posts} /></section>
