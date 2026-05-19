@@ -8,7 +8,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const redirectAfter = (form.get('redirect') as string) || '/'
 
   if (!email || !password) {
-    return redirect(`/auth/login?error=campos_requeridos&redirect=${encodeURIComponent(redirectAfter)}`)
+    return redirect(`/auth/login?error=campos_requeridos&redirect=${encodeURIComponent(redirectAfter)}`)  
   }
 
   const supabase = createSupabaseServerClient(request, cookies)
