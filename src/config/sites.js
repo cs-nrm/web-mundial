@@ -37,12 +37,12 @@ export const wpSiteGamecastConfig = {
 
 export const wpSiteOyeConfig = [
   {
-  url: 'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=12352',
+  url: 'https://playnrm.com/wp-json/wp/v2/posts?_embed&fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=12352&tags=13520',
   estacion: 'oye',
   logo: `${LOGOS_BASE}/oye/recursos/main-logo-header.svg`,
   },
   {
-    url: 'https://stereociendigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=3986',
+    url: 'https://stereociendigital.com.mx/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=3986&tags=9120',
     estacion: 'stereocien',
     logo: `${LOGOS_BASE}/oye/recursos/logo-stereocien-2025%20.svg`,
   },
@@ -51,7 +51,7 @@ export const wpSiteOyeConfig = [
 // Arrays planos para compatibilidad con código existente
 export const wpSites = wpSitesConfig.map(s => s.url)
 export const wpSiteEnfoqueNoticias = wpSiteEnfoqueConfig.url
-export const wpSiteOyeNoticias = wpSiteOyeConfig.url
+export const wpSiteOyeNoticias = wpSiteOyeConfig.map(s => s.url)
 
 // Mapping of Category Slugs to internal Site Sections
 export const categoryMapping = {

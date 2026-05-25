@@ -2,10 +2,10 @@
 import { getArticles } from "../lib/api.js";
 import { wpSiteOyeNoticias } from "../config/sites.js";
 
-const posts = await getArticles(undefined, { sites: [wpSiteOyeNoticias] });
+const posts = await getArticles(undefined, { sites: wpSiteOyeNoticias });
 
-if (!posts || posts.length < 4) {
-    console.warn(`CardsHomeOtromundial: se esperaban 4 posts, hay ${posts?.length || 0}`);
+if (!posts || posts.length < 5) {
+    console.warn(`CardsHomeOtromundial: se esperaban 5 posts, hay ${posts?.length || 0}`);
 }
 
 const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
@@ -19,10 +19,75 @@ const featuredImages = posts.map(p =>
 
 <div class="container m-auto">
   <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold">El Otro Mundial</h1>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    {posts.slice(0, 4).map((post, i) => (
+  <div class="w-full flex items-center justify-center">
+    <div x-data="{ activeSlide: 1, slideCount: 5 }" class="overflow-hidden relative">
+
+      
+        <div
+          class="flex transition-transform duration-500 ease-in-out"
+          :style="'transform: translateX(-' + (activeSlide - 1) * 100 + '%)'"
+          x-init="setInterval(() => { activeSlide = activeSlide < slideCount ? activeSlide + 1 : 1 }, 5000)"
+        >
+         {posts.slice(0, 5).map((post, i) => (
+          <div class="flex-none w-full max-h-[600px] md:max-h-[400px] bg-black relative rounded-3xl overflow-hidden">
+            
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+                <div class="text-white p-3 pl-16 flex flex-col justify-center">
+                  <a href={`/el-otro-mundial/${post.slug}/`}>
+                    <h2 class="pb-1 whitespace-normal text-2xl md:text-2xl lg:text-4xl" set:html={post.title.rendered} />
+                  </a>
+                  {post._logo && (
+                    <div class="flex items-center gap-1 p-1 w-fit creado-por">
+                      <span class="text-[10px]">Creado por:</span>
+                      <img class={`logo-${post._estacion}`} src={post._logo} alt={post._estacion} />
+                    </div>
+                  )}
+                </div>
+                <div class="borde">
+                  <a href={`/el-otro-mundial/${post.slug}/`}>
+                    <img loading="lazy" class="rounded-tl-[9.5rem] aspect-not h-auto" src={featuredImages[i]} alt={post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || 'Imagen'} />
+                  </a>
+                </div>
+              </div>
+          </div>
+         ))}
+        </div>
+
+
+      <!-- Prev/Next Arrows -->
+      <div class="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex items-center justify-between px-4 pointer-events-none">
+        <button
+          @click="activeSlide = activeSlide > 1 ? activeSlide - 1 : slideCount"
+          class="pointer-events-auto w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-black/70 text-[var(--verde)] rounded-full transition-all"
+        >
+          &#8592;
+        </button>
+        <button
+          @click="activeSlide = activeSlide < slideCount ? activeSlide + 1 : 1"
+          class="pointer-events-auto w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-black/70 text-[var(--verde)] rounded-full transition-all"
+        >
+          &#8594;
+        </button>
+      </div>
+
+      <!-- Dots Navigation -->
+      <div class="absolute bottom-0 left-0 right-0 flex justify-center space-x-2 p-4">
+        <template x-for="slideIndex in slideCount" :key="slideIndex">
+          <button
+            @click="activeSlide = slideIndex"
+            class="h-2 w-2 rounded-full"
+            :class="{'bg-orange-500': activeSlide === slideIndex, 'bg-white/50': activeSlide !== slideIndex}"
+          ></button>
+        </template>
+      </div>
+    </div>
+
+  </div>
+  <!--div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {posts.slice(0, 5).map((post, i) => (
       <div class="relative">
-        <a href={`/otro-mundial/${post.slug}/`}>
+        <a href={`/el-otro-mundial/${post.slug}/`}>
           <img loading="lazy" class="rounded-xl aspect-3/2 w-full h-full object-cover" src={featuredImages[i]} alt={post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || 'Imagen'} />
           <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
             <h2 class="text-base !leading-6 pb-1" set:html={post.title.rendered} />
@@ -36,20 +101,29 @@ const featuredImages = posts.map(p =>
         </a>
       </div>
     ))}
-  </div>
+  </div-->
 </div>
 
 <div class="m-auto text-center">
-  <a href="/otro-mundial" class="text-white hover:text-black">
-    <button class="ver-mas group relative h-8 m-2 overflow-hidden bg-[#e2241a] uppercase text-xs font-bold tracking-[1px] rounded-xl">
-      <span class="p-4">MÁS NOTICIAS AQUÍ</span>
-    </button>
-  </a>
+    <a href="/el-otro-mundial" class="text-[var(--verde)] hover:text-[var(--text-hover)]">
+        <button class="ver-mas group relative rounded-sm h-8 m-2 overflow-hidden bg-black uppercase text-xs font-bold tracking-[1px] rounded-xl">
+            <span class="p-4">MÁS NOTICIAS AQUÍ</span>
+        </button>
+    </a>
 </div>
 
 <style>
 @media (min-width: 769px) and (max-width: 1024px) {
   .cards-filtro-3 { display: block; }
+}
+
+.borde{
+    padding-top: 0.25rem;
+    padding-left: 0.25rem;
+    background-image: linear-gradient(243deg, #75ee2f, #21c126 12%, #24af29 23%, #9ae66e 33%, #62cb24 44%, #21c126 51%, #9ae66e 58%, #24af29 72%, #21c126 79%, #9ae66e 89%, #75ee2f);
+    border-top-left-radius: 9.688rem;
+    overflow: hidden;
+    margin-top: 2rem; 
 }
 
 </style>
