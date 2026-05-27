@@ -62,8 +62,15 @@ function initGPT() {
     googletag.pubads().addEventListener('slotRenderEnded', function(event) {
       var slotId = event.slot.getSlotElementId();
       var isEmpty = event.isEmpty;
-      console.log('[GPT] slotRenderEnded:', slotId, 'isEmpty=', isEmpty);
-
+      var lineItemId = event.lineItemId;
+      var creativeId = event.creativeId;
+      console.log('[GPT] slotRenderEnded:', slotId, '| LineItem:', lineItemId, '| Creative:', creativeId, '| isEmpty=', isEmpty);
+      
+      if (isEmpty) {
+        console.warn('[GPT] ⚠️ AdManager devolvió VACÍO para', slotId, '(LineItem:', lineItemId, ', Creative:', creativeId, ')');
+      } else if (lineItemId) {
+        console.log('[GPT] ✅ Anuncio servido:', slotId, 'LineItem ID:', lineItemId);
+      }
     });
 
     // Debug: habilitar con ?google_console=1
