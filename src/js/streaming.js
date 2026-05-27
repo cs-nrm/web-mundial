@@ -7,17 +7,28 @@ function initGPT() {
     if (typeof window.adFallback !== 'function') {
       window.adFallback = function(slots, containerId) {
         try {
-          console.warn('[GPT] adFallback stub called for', slots, containerId);
+          console.warn('[GPT] adFallback ejecutado para', slots, '→ container:', containerId);
           // marca el estado para depuración
           window._adFallbackStates = window._adFallbackStates || {};
-          slots.forEach(function(s){ window._adFallbackStates[s] = window._adFallbackStates[s] || {called:0}; window._adFallbackStates[s].called++; });
+          slots.forEach(function(s){ 
+            window._adFallbackStates[s] = window._adFallbackStates[s] || {called:0}; 
+            window._adFallbackStates[s].called++; 
+          });
+          
           // Inserta un placeholder simple solo si existe el contenedor de fallback
-          if (containerId && document.getElementById(containerId)) {
-            var c = document.getElementById(containerId);
-            c.innerHTML = '<div class="ad-fallback" style="background:#f3f3f3;color:#222;padding:8px;border:1px solid #ddd;text-align:center;font-size:14px;">Publicidad</div>';
+          if (containerId) {
+            var fallbackContainer = document.getElementById(containerId);
+            if (fallbackContainer) {
+              fallbackContainer.innerHTML = '<div class="ad-fallback-placeholder" style="background:#f0f0f0;color:#666;padding:10px;border:1px solid #ddd;text-align:center;font-size:12px;border-radius:4px;">Espacio publicitario disponible</div>';
+              console.log('[GPT] Fallback placeholder insertado en', containerId);
+            } else {
+              console.log('[GPT] ℹ️ Contenedor de fallback NO existe:', containerId, '(No AdSense, Google Ads, o fallback configurado)');
+            }
+          } else {
+            console.log('[GPT] ℹ️ Sin containerId para fallback');
           }
         } catch (e) {
-          console.error('[GPT] adFallback stub error', e);
+          console.error('[GPT] adFallback error:', e);
         }
       };
     }
@@ -40,8 +51,38 @@ function initGPT() {
     window.slot5   = googletag.defineSlot("/23349147378/Mundial", [300, 600],              'ad-slot5').defineSizeMapping(mappingDoubleBox).addService(googletag.pubads());
     window.slot14  = googletag.defineSlot("/23349147378/Mundial", [[600, 800], [320, 480]],'ad-slot14').defineSizeMapping(mappingModal).addService(googletag.pubads());
 
-    googletag.pubads().setTargeting("test", "responsive");
+    // Log de slots definidos
+    console.log('[GPT] Slots registrados:', googletag.pubads().getSlots().map(function(s){return s.getSlotElementId();}));
+
+    // Usar googletag.setConfig() en lugar de pubads().setTargeting() (deprecated)
+    googletag.setConfig({ targeting: { test: 'responsive' } });
     googletag.enableServices();
+
+    // Listener para detectar anuncios devueltos vacíos
+    googletag.pubads().addEventListener('slotRenderEnded', function(event) {
+      var slotId = event.slot.getSlotElementId();
+      var isEmpty = event.isEmpty;
+      console.log('[GPT] slotRenderEnded:', slotId, 'isEmpty=', isEmpty);
+      if (isEmpty) {
+        console.warn('[GPT] ⚠️ AdManager devolvió anuncio VACÍO para', slotId, '— probablemente faltan creatividades o no coincide el network/adunit');
+        // Ejecutar fallback solo cuando el anuncio es realmente vacío
+        var fallbackMap = {
+          'ad-slot3': 'ad-slot3-adsense',
+          'ad-slot4': 'ad-slot4-adsense',
+          'ad-slot32': 'ad-slot32-adsense',
+          'ad-slot42': 'ad-slot42-adsense',
+          'ad-slot6': 'ad-slot6-adsense',
+          'ad-slot2': 'ad-slot2-adsense',
+          'ad-slot5': 'ad-slot5-adsense'
+        };
+        if (fallbackMap[slotId]) {
+          if (typeof window.adFallback === 'function') {
+            console.log('[GPT] Ejecutando fallback para', slotId);
+            window.adFallback([slotId], fallbackMap[slotId]);
+          }
+        }
+      }
+    });
 
     // Debug: habilitar con ?google_console=1
     var __g_debug = (function() { try { return new URLSearchParams(window.location.search).has('google_console'); } catch(e){return false;} })();
@@ -52,19 +93,16 @@ function initGPT() {
       var exists = !!document.getElementById(id);
       if (__g_debug) console.log('[GPT DEBUG] display check for', id, 'exists=', exists);
       if (exists) {
-        googletag.display(id);
-        if (__g_debug) console.log('[GPT DEBUG] googletag.display called for', id);
+        try {
+          googletag.display(id);
+          console.log('[GPT] ✅ googletag.display() exitoso para', id);
+        } catch (e) {
+          console.error('[GPT] ❌ googletag.display() ERROR para', id, e);
+        }
       }
     });
 
-    // Registrar fallbacks GPT → AdSense
-    if (document.getElementById('ad-slot3'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot3'); adFallback(['ad-slot3'],  'ad-slot3-adsense'); }
-    if (document.getElementById('ad-slot4'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot4'); adFallback(['ad-slot4'],  'ad-slot4-adsense'); }
-    if (document.getElementById('ad-slot32')) { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot32'); adFallback(['ad-slot32'], 'ad-slot32-adsense'); }
-    if (document.getElementById('ad-slot42')) { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot42'); adFallback(['ad-slot42'], 'ad-slot42-adsense'); }
-    if (document.getElementById('ad-slot6'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot6'); adFallback(['ad-slot6'],  'ad-slot6-adsense'); }
-    if (document.getElementById('ad-slot2'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot2'); adFallback(['ad-slot2'],  'ad-slot2-adsense'); }
-    if (document.getElementById('ad-slot5'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot5'); adFallback(['ad-slot5'],  'ad-slot5-adsense'); }
+    // Los fallbacks ahora se ejecutan automáticamente en el listener slotRenderEnded
   });
 }
 
