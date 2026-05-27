@@ -63,25 +63,7 @@ function initGPT() {
       var slotId = event.slot.getSlotElementId();
       var isEmpty = event.isEmpty;
       console.log('[GPT] slotRenderEnded:', slotId, 'isEmpty=', isEmpty);
-      if (isEmpty) {
-        console.warn('[GPT] ⚠️ AdManager devolvió anuncio VACÍO para', slotId, '— probablemente faltan creatividades o no coincide el network/adunit');
-        // Ejecutar fallback solo cuando el anuncio es realmente vacío
-        var fallbackMap = {
-          'ad-slot3': 'ad-slot3-adsense',
-          'ad-slot4': 'ad-slot4-adsense',
-          'ad-slot32': 'ad-slot32-adsense',
-          'ad-slot42': 'ad-slot42-adsense',
-          'ad-slot6': 'ad-slot6-adsense',
-          'ad-slot2': 'ad-slot2-adsense',
-          'ad-slot5': 'ad-slot5-adsense'
-        };
-        if (fallbackMap[slotId]) {
-          if (typeof window.adFallback === 'function') {
-            console.log('[GPT] Ejecutando fallback para', slotId);
-            window.adFallback([slotId], fallbackMap[slotId]);
-          }
-        }
-      }
+
     });
 
     // Debug: habilitar con ?google_console=1
