@@ -1,67 +1,78 @@
 function initGPT() {
+  googletag.cmd.push(function() {
     googletag.destroySlots();
-    googletag.cmd.push(function () {
-        var mapping14  = googletag.sizeMapping().addSize([600, 800]).build();
-        var mapping141 = googletag.sizeMapping().addSize([320, 480]).build();
-        var mapping2   = googletag.sizeMapping().addSize([300, 250]).build();
-        var mapping3   = googletag.sizeMapping().addSize([970, 250]).build();
-        var mapping31  = googletag.sizeMapping().addSize([320, 50]).build();
-        var mapping4   = googletag.sizeMapping().addSize([728, 90]).build();
-        var mapping41  = googletag.sizeMapping().addSize([320, 50]).build();
-        var mapping42  = googletag.sizeMapping().addSize([728, 90]).build();
-        var mapping421 = googletag.sizeMapping().addSize([320, 50]).build();
-        var mapping5   = googletag.sizeMapping().addSize([300, 600]).build();
-        var mapping6   = googletag.sizeMapping().addSize([970, 90]).build();
-        var mapping61  = googletag.sizeMapping().addSize([320, 50]).build();
+    window._adFallbackStates = {};
 
-        window.slot14  = googletag.defineSlot("/23349147378/Mundial", [600, 800],  'ad-slot14' ).defineSizeMapping(mapping14 ).addService(googletag.pubads());
-        window.slot141 = googletag.defineSlot("/23349147378/Mundial", [320, 480],  'ad-slot141').defineSizeMapping(mapping141).addService(googletag.pubads());
-        window.slot2   = googletag.defineSlot("/23349147378/Mundial", [300, 250],  'ad-slot2'  ).defineSizeMapping(mapping2  ).addService(googletag.pubads());
-        window.slot3   = googletag.defineSlot("/23349147378/Mundial", [970, 250],  'ad-slot3'  ).defineSizeMapping(mapping3  ).addService(googletag.pubads());
-        window.slot31  = googletag.defineSlot("/23349147378/Mundial", [320, 50],   'ad-slot31' ).defineSizeMapping(mapping31 ).addService(googletag.pubads());
-        window.slot4   = googletag.defineSlot("/23349147378/Mundial", [728, 90],   'ad-slot4'  ).defineSizeMapping(mapping4  ).addService(googletag.pubads());
-        window.slot41  = googletag.defineSlot("/23349147378/Mundial", [320, 50],   'ad-slot41' ).defineSizeMapping(mapping41 ).addService(googletag.pubads());
-        window.slot42  = googletag.defineSlot("/23349147378/Mundial", [728, 90],   'ad-slot42' ).defineSizeMapping(mapping42 ).addService(googletag.pubads());
-        window.slot421 = googletag.defineSlot("/23349147378/Mundial", [320, 50],   'ad-slot421').defineSizeMapping(mapping421).addService(googletag.pubads());
-        window.slot5   = googletag.defineSlot("/23349147378/Mundial", [300, 600],  'ad-slot5'  ).defineSizeMapping(mapping5  ).addService(googletag.pubads());
-        window.slot6   = googletag.defineSlot("/23349147378/Mundial", [970, 90],   'ad-slot6'  ).defineSizeMapping(mapping6  ).addService(googletag.pubads());
-        window.slot61  = googletag.defineSlot("/23349147378/Mundial", [320, 50],   'ad-slot61' ).defineSizeMapping(mapping61 ).addService(googletag.pubads());
+    // Responsive mappings — addSize([viewport_w, viewport_h], [ad_w, ad_h])
+    var mappingBillboard   = googletag.sizeMapping().addSize([768, 0], [970, 250]).addSize([0, 0], [320, 50]).build();
+    var mappingLeader      = googletag.sizeMapping().addSize([768, 0], [728,  90]).addSize([0, 0], [320, 50]).build();
+    var mappingSuperLeader = googletag.sizeMapping().addSize([768, 0], [970,  90]).addSize([0, 0], [320, 50]).build();
+    var mappingBox         = googletag.sizeMapping().addSize([0, 0],   [300, 250]).build();
+    var mappingDoubleBox   = googletag.sizeMapping().addSize([0, 0],   [300, 600]).build();
+    var mappingModal       = googletag.sizeMapping().addSize([600, 0], [600, 800]).addSize([0, 0], [320, 480]).build();
+    var mappingVideoNota   = googletag.sizeMapping().addSize([0, 0], [400, 311]).build();
 
-        googletag.pubads().setTargeting("test", "responsive");
-        googletag.enableServices();
-        googletag.display('ad-slot14');
-        googletag.display('ad-slot141');
-        googletag.display('ad-slot2');
-        googletag.display('ad-slot3');
-        googletag.display('ad-slot31');
-        googletag.display('ad-slot4');
-        googletag.display('ad-slot41');
-        googletag.display('ad-slot42');
-        googletag.display('ad-slot421');
-        googletag.display('ad-slot5');
-        googletag.display('ad-slot6');
-        googletag.display('ad-slot61');
+    window.slot3   = googletag.defineSlot("/23349147378/Mundial", [[970, 250], [320, 50]], 'ad-slot3').defineSizeMapping(mappingBillboard).addService(googletag.pubads());
+    window.slot4   = googletag.defineSlot("/23349147378/Mundial", [[728,  90], [320, 50]], 'ad-slot4').defineSizeMapping(mappingLeader).addService(googletag.pubads());
+    window.slot32  = googletag.defineSlot("/23349147378/Mundial", [[728,  90], [320, 50]], 'ad-slot32').defineSizeMapping(mappingLeader).addService(googletag.pubads());
+    window.slot42  = googletag.defineSlot("/23349147378/Mundial", [[728,  90], [320, 50]], 'ad-slot42').defineSizeMapping(mappingLeader).addService(googletag.pubads());
+    window.slot6   = googletag.defineSlot("/23349147378/Mundial", [[970,  90], [320, 50]], 'ad-slot6').defineSizeMapping(mappingSuperLeader).addService(googletag.pubads());
+    window.slot2   = googletag.defineSlot("/23349147378/Mundial", [300, 250],              'ad-slot2').defineSizeMapping(mappingBox).addService(googletag.pubads());
+    window.slot5   = googletag.defineSlot("/23349147378/Mundial", [300, 600],              'ad-slot5').defineSizeMapping(mappingDoubleBox).addService(googletag.pubads());
+    window.slot14  = googletag.defineSlot("/23349147378/Mundial", [[600, 800], [320, 480]],'ad-slot14').defineSizeMapping(mappingModal).addService(googletag.pubads());
+
+    googletag.pubads().setTargeting("test", "responsive");
+    googletag.enableServices();
+
+    // Solo llamar display() si el div existe en el DOM de esta página
+    ['ad-slot3','ad-slot4','ad-slot32','ad-slot42','ad-slot6','ad-slot2','ad-slot5','ad-slot14',
+     'ad-slot201','ad-slot202','ad-slot203','ad-slot204','ad-slot205','ad-slot-videonota'].forEach(function(id) {
+      if (document.getElementById(id)) googletag.display(id);
     });
+
+    // Registrar fallbacks GPT → AdSense
+    if (document.getElementById('ad-slot3'))  adFallback(['ad-slot3'],  'ad-slot3-adsense');
+    if (document.getElementById('ad-slot4'))  adFallback(['ad-slot4'],  'ad-slot4-adsense');
+    if (document.getElementById('ad-slot32')) adFallback(['ad-slot32'], 'ad-slot32-adsense');
+    if (document.getElementById('ad-slot42')) adFallback(['ad-slot42'], 'ad-slot42-adsense');
+    if (document.getElementById('ad-slot6'))  adFallback(['ad-slot6'],  'ad-slot6-adsense');
+    if (document.getElementById('ad-slot2'))  adFallback(['ad-slot2'],  'ad-slot2-adsense');
+    if (document.getElementById('ad-slot5'))  adFallback(['ad-slot5'],  'ad-slot5-adsense');
+  });
 }
+
 
 function safeRefreshSlots() {
     if (window.googletag && googletag.apiReady && googletag.pubads) {
-        if (window.slot14)  googletag.pubads().refresh([window.slot14]);
-        if (window.slot141) googletag.pubads().refresh([window.slot141]);
-        if (window.slot2)   googletag.pubads().refresh([window.slot2]);
-        if (window.slot3)   googletag.pubads().refresh([window.slot3]);
-        if (window.slot31)  googletag.pubads().refresh([window.slot31]);
-        if (window.slot4)   googletag.pubads().refresh([window.slot4]);
-        if (window.slot41)  googletag.pubads().refresh([window.slot41]);
-        if (window.slot42)  googletag.pubads().refresh([window.slot42]);
-        if (window.slot421) googletag.pubads().refresh([window.slot421]);
-        if (window.slot5)   googletag.pubads().refresh([window.slot5]);
-        if (window.slot6)   googletag.pubads().refresh([window.slot6]);
-        if (window.slot61)  googletag.pubads().refresh([window.slot61]);
+      // Repite para cada slot, si tienes más
+      if (window.slot14) googletag.pubads().refresh([window.slot14]);
+      if (window.slot141) googletag.pubads().refresh([window.slot141]);
+      if (window.slot2) googletag.pubads().refresh([window.slot2]);
+      if (window.slot3) googletag.pubads().refresh([window.slot3]);
+      if (window.slot31) googletag.pubads().refresh([window.slot31]);
+      if (window.slot32) googletag.pubads().refresh([window.slot32]);
+      if (window.slot321) googletag.pubads().refresh([window.slot321]);
+      if (window.slot4) googletag.pubads().refresh([window.slot4]);
+      if (window.slot41) googletag.pubads().refresh([window.slot41]);
+      if (window.slot42) googletag.pubads().refresh([window.slot42]);
+      if (window.slot421) googletag.pubads().refresh([window.slot421]);
+      if (window.slot5) googletag.pubads().refresh([window.slot5]);
+      if (window.slot6) googletag.pubads().refresh([window.slot6]);
+      if (window.slot61) googletag.pubads().refresh([window.slot61]);
+      if (window.slot201) googletag.pubads().refresh([window.slot201]);
+      if (window.slot202) googletag.pubads().refresh([window.slot202]);
+      if (window.slot203) googletag.pubads().refresh([window.slot203]);
+      if (window.slot204) googletag.pubads().refresh([window.slot204]);
+      if (window.slot205) googletag.pubads().refresh([window.slot205]);
+      // O simplemente: googletag.pubads().refresh();
+      console.log('Banners refrescados post navegación');
     } else {
-        safeRefreshSlots();
+      safeRefreshSlots(); // Intenta de nuevo después de un breve retraso);
     }
-}
+  }
+
+
+  
 
 document.addEventListener('astro:before-preparation', () => {
     document.querySelector('main').classList.add('loading');
