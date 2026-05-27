@@ -3,6 +3,25 @@ function initGPT() {
     googletag.destroySlots();
     window._adFallbackStates = {};
 
+    // Safe fallback function: evita excepción si la función real no está disponible
+    if (typeof window.adFallback !== 'function') {
+      window.adFallback = function(slots, containerId) {
+        try {
+          console.warn('[GPT] adFallback stub called for', slots, containerId);
+          // marca el estado para depuración
+          window._adFallbackStates = window._adFallbackStates || {};
+          slots.forEach(function(s){ window._adFallbackStates[s] = window._adFallbackStates[s] || {called:0}; window._adFallbackStates[s].called++; });
+          // Inserta un placeholder simple solo si existe el contenedor de fallback
+          if (containerId && document.getElementById(containerId)) {
+            var c = document.getElementById(containerId);
+            c.innerHTML = '<div class="ad-fallback" style="background:#f3f3f3;color:#222;padding:8px;border:1px solid #ddd;text-align:center;font-size:14px;">Publicidad</div>';
+          }
+        } catch (e) {
+          console.error('[GPT] adFallback stub error', e);
+        }
+      };
+    }
+
     // Responsive mappings — addSize([viewport_w, viewport_h], [ad_w, ad_h])
     var mappingBillboard   = googletag.sizeMapping().addSize([768, 0], [970, 250]).addSize([0, 0], [320, 50]).build();
     var mappingLeader      = googletag.sizeMapping().addSize([768, 0], [728,  90]).addSize([0, 0], [320, 50]).build();
@@ -24,20 +43,28 @@ function initGPT() {
     googletag.pubads().setTargeting("test", "responsive");
     googletag.enableServices();
 
+    // Debug: habilitar con ?google_console=1
+    var __g_debug = (function() { try { return new URLSearchParams(window.location.search).has('google_console'); } catch(e){return false;} })();
+
     // Solo llamar display() si el div existe en el DOM de esta página
     ['ad-slot3','ad-slot4','ad-slot32','ad-slot42','ad-slot6','ad-slot2','ad-slot5','ad-slot14',
      'ad-slot201','ad-slot202','ad-slot203','ad-slot204','ad-slot205','ad-slot-videonota'].forEach(function(id) {
-      if (document.getElementById(id)) googletag.display(id);
+      var exists = !!document.getElementById(id);
+      if (__g_debug) console.log('[GPT DEBUG] display check for', id, 'exists=', exists);
+      if (exists) {
+        googletag.display(id);
+        if (__g_debug) console.log('[GPT DEBUG] googletag.display called for', id);
+      }
     });
 
     // Registrar fallbacks GPT → AdSense
-    if (document.getElementById('ad-slot3'))  adFallback(['ad-slot3'],  'ad-slot3-adsense');
-    if (document.getElementById('ad-slot4'))  adFallback(['ad-slot4'],  'ad-slot4-adsense');
-    if (document.getElementById('ad-slot32')) adFallback(['ad-slot32'], 'ad-slot32-adsense');
-    if (document.getElementById('ad-slot42')) adFallback(['ad-slot42'], 'ad-slot42-adsense');
-    if (document.getElementById('ad-slot6'))  adFallback(['ad-slot6'],  'ad-slot6-adsense');
-    if (document.getElementById('ad-slot2'))  adFallback(['ad-slot2'],  'ad-slot2-adsense');
-    if (document.getElementById('ad-slot5'))  adFallback(['ad-slot5'],  'ad-slot5-adsense');
+    if (document.getElementById('ad-slot3'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot3'); adFallback(['ad-slot3'],  'ad-slot3-adsense'); }
+    if (document.getElementById('ad-slot4'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot4'); adFallback(['ad-slot4'],  'ad-slot4-adsense'); }
+    if (document.getElementById('ad-slot32')) { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot32'); adFallback(['ad-slot32'], 'ad-slot32-adsense'); }
+    if (document.getElementById('ad-slot42')) { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot42'); adFallback(['ad-slot42'], 'ad-slot42-adsense'); }
+    if (document.getElementById('ad-slot6'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot6'); adFallback(['ad-slot6'],  'ad-slot6-adsense'); }
+    if (document.getElementById('ad-slot2'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot2'); adFallback(['ad-slot2'],  'ad-slot2-adsense'); }
+    if (document.getElementById('ad-slot5'))  { if(__g_debug) console.log('[GPT DEBUG] registering fallback ad-slot5'); adFallback(['ad-slot5'],  'ad-slot5-adsense'); }
   });
 }
 
