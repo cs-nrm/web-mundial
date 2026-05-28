@@ -94,26 +94,18 @@ function initGPT() {
     var mapping5   = googletag.sizeMapping().addSize([0, 0], [300, 600]).build();
     var mapping6   = googletag.sizeMapping().addSize([768, 0], [970,  90]).addSize([0, 0], [320,  50]).build();
     var mapping14  = googletag.sizeMapping().addSize([768, 0], [600, 800]).addSize([0, 0], [320, 480]).build();
-    var mapping201 = googletag.sizeMapping().addSize([0, 0], [300, 250]).build();
-    var mapping202 = googletag.sizeMapping().addSize([0, 0], [300, 250]).build();
-    var mapping203 = googletag.sizeMapping().addSize([0, 0], [300, 250]).build();
-    var mapping204 = googletag.sizeMapping().addSize([0, 0], [300, 250]).build();
-    var mapping205 = googletag.sizeMapping().addSize([0, 0], [300, 250]).build();
+
     var mappingVideoNota = googletag.sizeMapping().addSize([0, 0], [400, 311]).build();
 
 
-    window.slot2  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [300, 250], 'ad-slot2').defineSizeMapping(mapping2).addService(googletag.pubads());
+    window.slot2  = googletag.defineSlot("/21799830913/Mundial-Enfoque/Box", [300, 250], 'ad-slot2').defineSizeMapping(mapping2).addService(googletag.pubads());
     window.slot3  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[970, 250], [320, 50]], 'ad-slot3').defineSizeMapping(mapping3).addService(googletag.pubads());
     window.slot32 = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[728, 90], [320, 50]], 'ad-slot32').defineSizeMapping(mapping32).addService(googletag.pubads());
     window.slot4  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[728, 90], [320, 50]], 'ad-slot4').defineSizeMapping(mapping4).addService(googletag.pubads());
     window.slot5  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [300, 600], 'ad-slot5').defineSizeMapping(mapping5).addService(googletag.pubads());
     window.slot6  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[970, 90], [320, 50]], 'ad-slot6').defineSizeMapping(mapping6).addService(googletag.pubads());
     window.slot14 = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[600, 800], [320, 480]], 'ad-slot14').defineSizeMapping(mapping14).addService(googletag.pubads());
-    window.slot201 = googletag.defineSlot("/21799830913/Mundial-Enfoque/Box", [300, 250], 'ad-slot201').defineSizeMapping(mapping201).addService(googletag.pubads());
-    window.slot202 = googletag.defineSlot("/21799830913/Mundial-Enfoque/Box2", [300, 250], 'ad-slot202').defineSizeMapping(mapping202).addService(googletag.pubads());
-    window.slot203 = googletag.defineSlot("/21799830913/Mundial-Enfoque/Box3", [300, 250], 'ad-slot203').defineSizeMapping(mapping203).addService(googletag.pubads());
-    window.slot204 = googletag.defineSlot("/21799830913/Mundial-Enfoque/Box4", [300, 250], 'ad-slot204').defineSizeMapping(mapping204).addService(googletag.pubads());
-    window.slot205 = googletag.defineSlot("/21799830913/Mundial-Enfoque/Box5", [300, 250], 'ad-slot205').defineSizeMapping(mapping205).addService(googletag.pubads());
+
     if (document.getElementById('ad-slot-videonota')) {
       window.slotVideoNota = googletag.defineSlot("/21799830913/Mundial-Enfoque", [400, 311], 'ad-slot-videonota').defineSizeMapping(mappingVideoNota).addService(googletag.pubads());
     }
@@ -128,11 +120,6 @@ function initGPT() {
     if (document.getElementById('ad-slot5'))   googletag.display('ad-slot5');
     if (document.getElementById('ad-slot6'))   googletag.display('ad-slot6');
     if (document.getElementById('ad-slot14'))  googletag.display('ad-slot14');
-    if (document.getElementById('ad-slot201')) googletag.display('ad-slot201');
-    if (document.getElementById('ad-slot202')) googletag.display('ad-slot202');
-    if (document.getElementById('ad-slot203')) googletag.display('ad-slot203');
-    if (document.getElementById('ad-slot204')) googletag.display('ad-slot204');
-    if (document.getElementById('ad-slot205')) googletag.display('ad-slot205');
     if (document.getElementById('ad-slot-videonota')) googletag.display('ad-slot-videonota');
 
     // once slots have been requested, set up fallbacks for billboards and leaders
@@ -165,11 +152,6 @@ function safeRefreshSlots() {
     if (window.slot4)  googletag.pubads().refresh([window.slot4]);
     if (window.slot5)  googletag.pubads().refresh([window.slot5]);
     if (window.slot6)  googletag.pubads().refresh([window.slot6]);
-    if (window.slot201) googletag.pubads().refresh([window.slot201]);
-    if (window.slot202) googletag.pubads().refresh([window.slot202]);
-    if (window.slot203) googletag.pubads().refresh([window.slot203]);
-    if (window.slot204) googletag.pubads().refresh([window.slot204]);
-    if (window.slot205) googletag.pubads().refresh([window.slot205]);
     console.log('Banners refrescados post navegación');
   } else {
     setTimeout(safeRefreshSlots, 400);
