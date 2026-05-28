@@ -1,11 +1,3 @@
-  /* publicidad: reinicializa slots tras el DOM swap de Astro View Transitions */
-  if (window.googletag && googletag.apiReady) {
-    initGPT();
-  } else {
-    window.googletag = window.googletag || { cmd: [] };
-    googletag.cmd.push(function() { initGPT(); });
-  }
-
 
 // ===== [ADS] adFallback, initAdFallbackListener, initGPT, safeRefreshSlots =====
 // Estado global, se resetea en cada initGPT() para que la navegación funcione correctamente
@@ -206,7 +198,6 @@ document.addEventListener('astro:after-swap', () => {
 
 document.addEventListener('astro:page-load', () => {
     initGPT();
-    safeRefreshSlots();
 
     document.querySelector('main').classList.remove('loading');
     document.querySelector('.preloader').classList.remove('showpreloader');
