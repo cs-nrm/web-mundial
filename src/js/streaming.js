@@ -42,14 +42,14 @@ function initGPT() {
     var mappingModal       = googletag.sizeMapping().addSize([600, 0], [600, 800]).addSize([0, 0], [320, 480]).build();
     var mappingVideoNota   = googletag.sizeMapping().addSize([0, 0], [400, 311]).build();
 
-    window.slot3   = googletag.defineSlot("/23349147378/Mundial", [[970, 250], [320, 50]], 'ad-slot3').defineSizeMapping(mappingBillboard).addService(googletag.pubads());
-    window.slot4   = googletag.defineSlot("/23349147378/Mundial", [[728,  90], [320, 50]], 'ad-slot4').defineSizeMapping(mappingLeader).addService(googletag.pubads());
-    window.slot32  = googletag.defineSlot("/23349147378/Mundial", [[728,  90], [320, 50]], 'ad-slot32').defineSizeMapping(mappingLeader).addService(googletag.pubads());
-    window.slot42  = googletag.defineSlot("/23349147378/Mundial", [[728,  90], [320, 50]], 'ad-slot42').defineSizeMapping(mappingLeader).addService(googletag.pubads());
-    window.slot6   = googletag.defineSlot("/23349147378/Mundial", [[970,  90], [320, 50]], 'ad-slot6').defineSizeMapping(mappingSuperLeader).addService(googletag.pubads());
-    window.slot2   = googletag.defineSlot("/23349147378/Mundial", [300, 250],              'ad-slot2').defineSizeMapping(mappingBox).addService(googletag.pubads());
-    window.slot5   = googletag.defineSlot("/23349147378/Mundial", [300, 600],              'ad-slot5').defineSizeMapping(mappingDoubleBox).addService(googletag.pubads());
-    window.slot14  = googletag.defineSlot("/23349147378/Mundial", [[600, 800], [320, 480]],'ad-slot14').defineSizeMapping(mappingModal).addService(googletag.pubads());
+    window.slot3   = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[970, 250], [320, 50]], 'ad-slot3').defineSizeMapping(mappingBillboard).addService(googletag.pubads());
+    window.slot4   = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[728,  90], [320, 50]], 'ad-slot4').defineSizeMapping(mappingLeader).addService(googletag.pubads());
+    window.slot32  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[728,  90], [320, 50]], 'ad-slot32').defineSizeMapping(mappingLeader).addService(googletag.pubads());
+    window.slot42  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[728,  90], [320, 50]], 'ad-slot42').defineSizeMapping(mappingLeader).addService(googletag.pubads());
+    window.slot6   = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[970,  90], [320, 50]], 'ad-slot6').defineSizeMapping(mappingSuperLeader).addService(googletag.pubads());
+    window.slot2   = googletag.defineSlot("/21799830913/Mundial-Enfoque", [300, 250],              'ad-slot2').defineSizeMapping(mappingBox).addService(googletag.pubads());
+    window.slot5   = googletag.defineSlot("/21799830913/Mundial-Enfoque", [300, 600],              'ad-slot5').defineSizeMapping(mappingDoubleBox).addService(googletag.pubads());
+    window.slot14  = googletag.defineSlot("/21799830913/Mundial-Enfoque", [[600, 800], [320, 480]],'ad-slot14').defineSizeMapping(mappingModal).addService(googletag.pubads());
 
     // Log de slots definidos
     console.log('[GPT] Slots registrados:', googletag.pubads().getSlots().map(function(s){return s.getSlotElementId();}));
