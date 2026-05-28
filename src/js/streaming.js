@@ -118,7 +118,8 @@ function initGPT() {
       window.slotVideoNota = googletag.defineSlot("/21799830913/Mundial-Enfoque", [400, 311], 'ad-slot-videonota').defineSizeMapping(mappingVideoNota).addService(googletag.pubads());
     }
 
-    googletag.pubads().setTargeting("test", "responsive");
+    //googletag.pubads().setTargeting("test", "responsive");
+    googletag.setConfig({ targeting: null });
     googletag.enableServices();
     if (document.getElementById('ad-slot2'))   googletag.display('ad-slot2');
     if (document.getElementById('ad-slot3'))   googletag.display('ad-slot3');
@@ -142,24 +143,13 @@ function initGPT() {
         adFallback(['ad-slot4'],  'ad-slot4-adsense');
         adFallback(['ad-slot5'],  'ad-slot5-adsense');
         adFallback(['ad-slot6'],  'ad-slot6-adsense');
-    }*/
+    }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initBillboardFallbacks);
     } else {
         initBillboardFallbacks();
-    }
+    }*/
 
-    googletag.pubads().refresh([window.slot32]);
-    
-    // Limpiar intervalo anterior si existe (por navegación SPA)
-    if (window.slot32RefreshInterval) {
-      clearInterval(window.slot32RefreshInterval);
-    }
-    
-    // Crear intervalo para refresh cada 10 segundos
-    window.slot32RefreshInterval = setInterval(function(){
-      googletag.pubads().refresh([window.slot32]);
-    }, 180000);
   });
 }
 // initGPT() NO se llama aquí — astro:page-load dispara en carga inicial Y en navegaciones,
