@@ -43,7 +43,7 @@ const getPostsByTag = (tag: number, limit: number = 3) => {
                       <div class="content">
                         <h1 class="titulos uppercase goodtime text-center bg-black rounded-xl text-white p-4 my-4 text-base md:text-xl lg:text-3xl font-bold w-fit " set:html={card.title}></h1>
                         <div class="name" set:html={post.title?.rendered}></div>
-                        <div class="hidden lg:block" class="des" set:html={post.excerpt?.rendered || 'Sin descripción'}></div>
+                        <div class="hidden lg:block des" set:html={post.excerpt?.rendered || 'Sin descripción'}></div>
                         {post._logo && (
                           <div class="flex items-center gap-1 creado-por p-1 w-fit my-4">
                             <span class="text-[10px]">Creado por:</span>
