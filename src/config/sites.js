@@ -24,7 +24,7 @@ export const wpSitesConfig = [
 ]
 
 export const wpSiteEnfoqueConfig = {
-  url: 'http://34.61.203.222/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=27867',
+  url: 'http://34.61.203.222/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=27867&tags=29243,29468,29667',
   estacion: 'enfoque',
   logo: `${LOGOS_BASE}/mundial/logo-enfoque2.png`,
 }
