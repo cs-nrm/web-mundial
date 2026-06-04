@@ -23,6 +23,11 @@ export const wpSitesConfig = [
   },
 ]
 
+export const wpSiteAcercaConfig = {
+  url: 'http://34.61.203.222/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=27867&tags=29666',
+  estacion: 'enfoque',
+  logo: `${LOGOS_BASE}/mundial/logo-enfoque2.png`,
+}
 export const wpSiteEnfoqueConfig = {
   url: 'http://34.61.203.222/wp-json/wp/v2/posts?_embed&_fields=date,title,slug,tags,acf,yoast_head_json,excerpt,_links,_embedded&categories=27867&tags=29243,29468,29667',
   estacion: 'enfoque',
@@ -50,7 +55,9 @@ export const wpSiteOyeConfig = [
 
 // Arrays planos para compatibilidad con código existente
 export const wpSites = wpSitesConfig.map(s => s.url)
+export const wpSiteAcercaNoticias = wpSiteAcercaConfig.url
 export const wpSiteEnfoqueNoticias = wpSiteEnfoqueConfig.url
+export const wpSiteGamecastNoticias = wpSiteGamecastConfig.url
 export const wpSiteOyeNoticias = wpSiteOyeConfig.map(s => s.url)
 
 // Mapping of Category Slugs to internal Site Sections

@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import BoxBanner from '../../components/BoxBanner.astro';
-import { wpSiteEnfoqueConfig } from '../../config/sites.js';
+import { wpSiteAcercaConfig } from '../../config/sites.js';
 
 const PER_PAGE = 12;
 const pageParam = Astro.url.searchParams.get('pagina');
@@ -13,7 +13,7 @@ let posts = [];
 let totalPages = 1;
 
 try {
-    const url = `${wpSiteEnfoqueConfig.url}&tags=29666&per_page=${PER_PAGE}&page=${currentPage}`;
+    const url = `${wpSiteAcercaConfig.url}&tags=29666&per_page=${PER_PAGE}&page=${currentPage}`;
     const res = await fetch(url);
     if (res.ok) {
         posts = await res.json();
@@ -65,7 +65,7 @@ const pages = pageRange(currentPage, totalPages);
                             year: 'numeric', month: 'long', day: 'numeric',
                         });
                         return (
-                            <a href={`/noticias/${post.slug}/`} class="group block rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white">
+                            <a href={`/acerca-de/${post.slug}/`} class="group block rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white">
                                 <div class="relative overflow-hidden h-48">
                                     <img
                                         loading="lazy"

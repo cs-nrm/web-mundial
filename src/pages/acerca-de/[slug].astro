@@ -4,14 +4,14 @@ import DoubleBox from "../../components/DoubleBox.astro";
 import BoxBanner from "../../components/BoxBanner.astro";
 import LeaderBoard from "../../components/LeaderBoard.astro";
 import MoreNews from "../../components/MoreNews.astro";
-import { wpSites, wpSiteEnfoqueConfig } from "../../config/sites.js";
+import { wpSites, wpSiteAcercaConfig } from "../../config/sites.js";
 
 const { slug } = Astro.params;
 
 // Busca el post por slug en el sitio Enfoque primero (donde viven los posts de "Acerca de"),
 // y como fallback busca en el resto de los sitios de radio.
 async function findPostBySlug(slug) {
-    const allSites = [wpSiteEnfoqueConfig.url, ...wpSites];
+    const allSites = [wpSiteAcercaConfig.url, ...wpSites];
 
     const requests = allSites.map(async (siteUrl) => {
         try {

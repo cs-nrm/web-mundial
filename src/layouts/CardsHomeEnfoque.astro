@@ -1,8 +1,8 @@
 ---
 import { getArticles } from "../lib/api.js";
-import { wpSiteEnfoqueNoticias } from "../config/sites.js";
+import { wpSiteAcercaNoticias } from "../config/sites.js";
 
-const posts = await getArticles(undefined, { sites: [wpSiteEnfoqueNoticias] });
+const posts = await getArticles(undefined, { sites: [wpSiteAcercaNoticias] });
 
 // Filtrar solo posts con el tag 29666
 const filteredPosts = (posts || []).filter((post) =>
