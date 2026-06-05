@@ -66,7 +66,7 @@ const featuredImages = (filteredPosts || []).map(p =>
               <!-- Secundaria 2 -->
               <div class="relative" data-anim="fade-up">
                 {filteredPosts?.[2] && (
-                <a href={`/noticias/${filteredPosts[2]?.slug}/`}>
+                <a href={`/acerca-de/${filteredPosts[2]?.slug}/`}>
                   <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[2]} alt={filteredPosts[2]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                   <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-3 w-full rounded-b-xl">
                     <h2 class="text-base font-medium" set:html={filteredPosts[2]?.title?.rendered}></h2>
@@ -83,7 +83,7 @@ const featuredImages = (filteredPosts || []).map(p =>
             </div>
             <div class="lg:col-span-2 h-1/2" data-anim="fade-up">
               {filteredPosts?.[3] && (
-              <a href={`/noticias/${filteredPosts[3]?.slug}/`}>
+              <a href={`/acerca-de/${filteredPosts[3]?.slug}/`}>
               <div class="relative h-full">
                 <img loading="lazy" class="aspect-video rounded-xl w-full h-full object-cover" src={featuredImages[3]} alt={filteredPosts[3]?._embedded?.['wp:featuredmedia']?.[0]?.alt_text || "Imagen Noticias"}/>
                 <div class="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full rounded-b-xl">
