@@ -35,7 +35,7 @@ const pais1 = post.acf?.pais1;
 const pais2 = post.acf?.pais2;
 const flag1 = getFlagUrl(pais1, 160);
 const flag2 = getFlagUrl(pais2, 160);
-
+const sede = post.acf?.sede;
 const fecha = post.acf?.fecha
     ? new Date(post.acf.fecha.replace(' ', 'T')).toLocaleDateString('es-MX', {
           weekday: 'long',
@@ -85,6 +85,9 @@ const featuredImage =
                         <span class="font-bold text-lg leading-tight">{pais2}</span>
                     </div>
                 </div>
+                {sede && (
+                    <p class="text-xs text-neutral-400 uppercase tracking-widest" set:html={sede}></p>
+                )}
             </div>
 
             <div class="flex flex-col lg:flex-row gap-8">

@@ -33,6 +33,7 @@ function formatFecha(fecha: string | null | undefined) {
       const flag1 = getFlagUrl(pais1, 80);
       const flag2 = getFlagUrl(pais2, 80);
       const fechaFormateada = formatFecha(fecha);
+      const sede = post.acf?.sede;
 
       return (
         <a href={`/partidos-del-dia/${post.slug}/`} data-anim="fade-up">
@@ -57,6 +58,9 @@ function formatFecha(fecha: string | null | undefined) {
                 <span class="text-sm font-semibold leading-tight">{pais2}</span>
               </div>
             </div>
+            {sede && (
+              <p class="text-xs text-neutral-400 uppercase tracking-widest" set:html={sede}></p>
+            )}
           </div>
         </a>
       );
