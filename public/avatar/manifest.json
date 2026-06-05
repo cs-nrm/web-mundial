@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "descripcion": "Manifiesto de assets para el generador de avatares. Un avatar se compone capa por capa (z_order) eligiendo una pieza de cada categoria.",
   "convencion": {
     "estructura_carpetas": "universal/<categoria>/ contiene piezas disponibles para TODAS las estaciones. <estacion>/<categoria>/ contiene piezas exclusivas de esa estacion. Para que una pieza este disponible en N estaciones especificas (pero no todas), se duplica fisicamente en la carpeta de cada estacion que la usa.",
@@ -32,7 +32,7 @@
       "requerido": true,
       "descripcion": "Fondo de la composicion. Capa mas baja.",
       "extensiones": [
-        "webp"
+        "jpg"
       ]
     },
     "cuerpo-jersey": {
@@ -40,7 +40,7 @@
       "requerido": true,
       "descripcion": "Torso/jersey del avatar. Puede haber jerseys universales y jerseys exclusivos por estacion.",
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "cabello": {
@@ -48,21 +48,21 @@
       "requerido": true,
       "descripcion": "Pelo del avatar.",
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "cejas": {
       "scope": "compartido",
       "requerido": true,
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "ojos": {
       "scope": "compartido",
       "requerido": true,
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "lentes": {
@@ -70,28 +70,28 @@
       "requerido": false,
       "descripcion": "Pieza opcional. Va por encima de los ojos.",
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "boca": {
       "scope": "compartido",
       "requerido": true,
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "bigote": {
       "scope": "compartido",
       "requerido": false,
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "barba": {
       "scope": "compartido",
       "requerido": false,
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "gorra": {
@@ -99,7 +99,7 @@
       "requerido": false,
       "descripcion": "Pieza opcional. Va por encima del cabello.",
       "extensiones": [
-        "webp"
+        "png"
       ]
     },
     "marco": {
@@ -107,91 +107,235 @@
       "requerido": true,
       "descripcion": "Marco/frame con branding de la estacion. Capa mas alta.",
       "extensiones": [
-        "webp"
+        "png"
       ]
     }
   },
   "assets": {
     "universal": {
-      "ojos": [
-        "universal/ojos/ojos-01.webp"
+      "cabello": [
+        "universal/cabello/cabello-01.png",
+        "universal/cabello/cabello-02.png",
+        "universal/cabello/cabello-03.png",
+        "universal/cabello/cabello-04.png",
+        "universal/cabello/cabello-05.png",
+        "universal/cabello/cabello-06.png",
+        "universal/cabello/cabello-07.png",
+        "universal/cabello/cabello-08.png",
+        "universal/cabello/cabello-09.png",
+        "universal/cabello/cabello-10.png",
+        "universal/cabello/cabello-11.png",
+        "universal/cabello/cabello-12.png",
+        "universal/cabello/cabello-13.png",
+        "universal/cabello/cabello-14.png",
+        "universal/cabello/cabello-15.png",
+        "universal/cabello/cabello-16.png",
+        "universal/cabello/cabello-17.png",
+        "universal/cabello/cabello-18.png",
+        "universal/cabello/cabello-19.png",
+        "universal/cabello/cabello-20.png",
+        "universal/cabello/cabello-21.png",
+        "universal/cabello/cabello-22.png",
+        "universal/cabello/cabello-23.png",
+        "universal/cabello/cabello-24.png",
+        "universal/cabello/cabello-25.png",
+        "universal/cabello/cabello-26.png",
+        "universal/cabello/cabello-27.png",
+        "universal/cabello/cabello-28.png",
+        "universal/cabello/cabello-29.png",
+        "universal/cabello/cabello-30.png",
+        "universal/cabello/cabello-31.png",
+        "universal/cabello/cabello-32.png",
+        "universal/cabello/cabello-33.png",
+        "universal/cabello/cabello-34.png",
+        "universal/cabello/cabello-35.png",
+        "universal/cabello/cabello-36.png",
+        "universal/cabello/cabello-37.png",
+        "universal/cabello/cabello-38.png",
+        "universal/cabello/cabello-39.png",
+        "universal/cabello/cabello-40.png",
+        "universal/cabello/cabello-41.png",
+        "universal/cabello/cabello-42.png",
+        "universal/cabello/cabello-43.png",
+        "universal/cabello/cabello-44.png",
+        "universal/cabello/cabello-45.png",
+        "universal/cabello/cabello-46.png",
+        "universal/cabello/cabello-47.png",
+        "universal/cabello/cabello-48.png",
+        "universal/cabello/cabello-49.png",
+        "universal/cabello/cabello-50.png",
+        "universal/cabello/cabello-51.png",
+        "universal/cabello/cabello-52.png",
+        "universal/cabello/cabello-53.png",
+        "universal/cabello/cabello-54.png",
+        "universal/cabello/cabello-55.png",
+        "universal/cabello/cabello-56.png",
+        "universal/cabello/cabello-57.png",
+        "universal/cabello/cabello-58.png"
       ],
       "cejas": [
-        "universal/cejas/cejas-01.webp"
+        "universal/cejas/cejas-01.png",
+        "universal/cejas/cejas-02.png",
+        "universal/cejas/cejas-03.png",
+        "universal/cejas/cejas-04.png",
+        "universal/cejas/cejas-05.png",
+        "universal/cejas/cejas-06.png",
+        "universal/cejas/cejas-07.png",
+        "universal/cejas/cejas-08.png",
+        "universal/cejas/cejas-09.png",
+        "universal/cejas/cejas-10.png",
+        "universal/cejas/cejas-11.png",
+        "universal/cejas/cejas-12.png",
+        "universal/cejas/cejas-13.png",
+        "universal/cejas/cejas-14.png",
+        "universal/cejas/cejas-15.png",
+        "universal/cejas/cejas-16.png",
+        "universal/cejas/cejas-17.png",
+        "universal/cejas/cejas-18.png",
+        "universal/cejas/cejas-19.png"
       ],
-      "cabello": [
-        "universal/cabello/cabello-01.webp"
+      "ojos": [
+        "universal/ojos/ojos-01.png",
+        "universal/ojos/ojos-02.png",
+        "universal/ojos/ojos-03.png",
+        "universal/ojos/ojos-04.png",
+        "universal/ojos/ojos-05.png",
+        "universal/ojos/ojos-06.png",
+        "universal/ojos/ojos-07.png",
+        "universal/ojos/ojos-08.png",
+        "universal/ojos/ojos-09.png",
+        "universal/ojos/ojos-10.png",
+        "universal/ojos/ojos-11.png"
       ],
       "boca": [
-        "universal/boca/boca-01.webp"
+        "universal/boca/boca-01.png",
+        "universal/boca/boca-02.png",
+        "universal/boca/boca-03.png",
+        "universal/boca/boca-04.png",
+        "universal/boca/boca-05.png",
+        "universal/boca/boca-06.png",
+        "universal/boca/boca-07.png",
+        "universal/boca/boca-08.png",
+        "universal/boca/boca-09.png",
+        "universal/boca/boca-10.png",
+        "universal/boca/boca-11.png",
+        "universal/boca/boca-12.png",
+        "universal/boca/boca-13.png",
+        "universal/boca/boca-14.png",
+        "universal/boca/boca-15.png",
+        "universal/boca/boca-16.png",
+        "universal/boca/boca-17.png",
+        "universal/boca/boca-18.png",
+        "universal/boca/boca-19.png",
+        "universal/boca/boca-20.png",
+        "universal/boca/boca-21.png",
+        "universal/boca/boca-22.png"
       ],
       "bigote": [
-        "universal/bigote/bigote-01.webp"
+        "universal/bigote/bigote-01.png",
+        "universal/bigote/bigote-02.png",
+        "universal/bigote/bigote-03.png",
+        "universal/bigote/bigote-04.png",
+        "universal/bigote/bigote-05.png",
+        "universal/bigote/bigote-06.png",
+        "universal/bigote/bigote-07.png",
+        "universal/bigote/bigote-08.png"
       ],
       "barba": [
-        "universal/barba/barba-01.webp",
-        "universal/barba/barba-02.webp",
-        "universal/barba/barba-03.webp"
+        "universal/barba/barba-01.png",
+        "universal/barba/barba-02.png",
+        "universal/barba/barba-03.png",
+        "universal/barba/barba-04.png"
       ],
       "lentes": [
-        "universal/lentes/lentes-01.webp"
+        "universal/lentes/lentes-01.png",
+        "universal/lentes/lentes-02.png",
+        "universal/lentes/lentes-03.png",
+        "universal/lentes/lentes-04.png",
+        "universal/lentes/lentes-05.png",
+        "universal/lentes/lentes-06.png",
+        "universal/lentes/lentes-07.png",
+        "universal/lentes/lentes-08.png",
+        "universal/lentes/lentes-09.png",
+        "universal/lentes/lentes-10.png",
+        "universal/lentes/lentes-11.png",
+        "universal/lentes/lentes-12.png",
+        "universal/lentes/lentes-13.png",
+        "universal/lentes/lentes-14.png",
+        "universal/lentes/lentes-15.png",
+        "universal/lentes/lentes-16.png",
+        "universal/lentes/lentes-17.png",
+        "universal/lentes/lentes-18.png",
+        "universal/lentes/lentes-19.png"
       ],
       "gorra": [
-        "universal/gorras/gorra-01.webp"
+        "universal/gorras/gorra-01.png",
+        "universal/gorras/gorra-02.png",
+        "universal/gorras/gorra-03.png",
+        "universal/gorras/gorra-04.png",
+        "universal/gorras/gorra-05.png",
+        "universal/gorras/gorra-06.png",
+        "universal/gorras/gorra-07.png",
+        "universal/gorras/gorra-08.png"
       ],
       "cuerpo-jersey": [
-        "universal/cuerpo-jersey/jersey-01.webp",
-        "universal/cuerpo-jersey/jersey-02.webp",
-        "universal/cuerpo-jersey/jersey-03.webp",
-        "universal/cuerpo-jersey/jersey-04.webp",
-        "universal/cuerpo-jersey/jersey-05.webp",
-        "universal/cuerpo-jersey/jersey-06.webp",
-        "universal/cuerpo-jersey/jersey-07.webp",
-        "universal/cuerpo-jersey/jersey-08.webp",
-        "universal/cuerpo-jersey/jersey-09.webp",
-        "universal/cuerpo-jersey/jersey-10.webp",
-        "universal/cuerpo-jersey/jersey-11.webp",
-        "universal/cuerpo-jersey/jersey-12.webp"
+        "universal/cuerpo-jersey/jersey-01.png",
+        "universal/cuerpo-jersey/jersey-02.png",
+        "universal/cuerpo-jersey/jersey-03.png",
+        "universal/cuerpo-jersey/jersey-04.png",
+        "universal/cuerpo-jersey/jersey-05.png",
+        "universal/cuerpo-jersey/jersey-06.png",
+        "universal/cuerpo-jersey/jersey-07.png",
+        "universal/cuerpo-jersey/jersey-08.png",
+        "universal/cuerpo-jersey/jersey-09.png",
+        "universal/cuerpo-jersey/jersey-10.png",
+        "universal/cuerpo-jersey/jersey-11.png",
+        "universal/cuerpo-jersey/jersey-12.png"
       ]
     },
     "beat": {
       "marco": [
-        "beat/marcos/marco-01.webp"
+        "beat/marcos/marco-01.png"
       ],
       "fondo": [
-        "beat/fondos/fondo-01.webp",
-        "beat/fondos/fondo-02.webp",
-        "beat/fondos/fondo-03.webp",
-        "beat/fondos/fondo-04.webp",
-        "beat/fondos/fondo-05.webp"
+        "beat/fondos/fondo-01.jpg",
+        "beat/fondos/fondo-02.jpg",
+        "beat/fondos/fondo-03.jpg",
+        "beat/fondos/fondo-04.jpg",
+        "beat/fondos/fondo-05.jpg",
+        "beat/fondos/fondo-06.jpg"
       ],
       "cuerpo-jersey": [
-        "beat/cuerpo-jersey/jersey-14.webp"
+        "beat/cuerpo-jersey/jersey-14.png"
       ]
     },
     "oye": {
       "marco": [
-        "oye/marcos/marco-01.webp"
+        "oye/marcos/marco-01.png"
       ],
       "fondo": [],
       "cuerpo-jersey": [
-        "oye/cuerpo-jersey/jersey-14.webp"
+        "oye/cuerpo-jersey/jersey-14.png"
       ]
     },
     "sabrosita": {
       "marco": [
-        "sabrosita/marcos/marco-01.webp"
+        "sabrosita/marcos/marco-01.png"
       ],
-      "fondo": [],
-      "cuerpo-jersey": []
+      "fondo": [
+        "sabrosita/fondos/fondo-01.jpg"
+      ],
+      "cuerpo-jersey": [
+        "sabrosita/cuerpo-jersey/jersey-14.png"
+      ]
     },
     "stereocien": {
       "marco": [
-        "stereocien/marcos/marco-01.webp"
+        "stereocien/marcos/marco-01.png"
       ],
       "fondo": [],
       "cuerpo-jersey": [
-        "stereocien/cuerpo-jersey/jersey-13.webp"
+        "stereocien/cuerpo-jersey/jersey-13.png"
       ]
     }
   },
@@ -200,9 +344,9 @@
     "codigo": "function piezasDisponibles(categoria, estacion) {\n  const scope = manifest.categorias[categoria].scope;\n  if (scope === 'por_estacion') {\n    return manifest.assets[estacion][categoria] || [];\n  }\n  // scope === 'compartido': combinar universal + exclusivos de la estacion\n  const universales = manifest.assets.universal[categoria] || [];\n  const exclusivas = (manifest.assets[estacion] && manifest.assets[estacion][categoria]) || [];\n  return [...universales, ...exclusivas];\n}"
   },
   "notas": [
-    "Las estaciones oye, sabrosita y stereocien aun no tienen fondos. Cuando se agreguen, mover los archivos a <estacion>/fondos/ y actualizar el array correspondiente.",
-    "Sabrosita aun no tiene jerseys exclusivos. Si surge alguno, agregar la carpeta sabrosita/cuerpo-jersey/ y la entrada en assets.",
-    "Las extensiones por categoria estan definidas en 'categorias.<cat>.extensiones'. Mantener consistencia.",
-    "El jersey-14 esta fisicamente duplicado entre beat/ y oye/ porque ambas estaciones lo usan. Si en el futuro hay muchos casos asi, considerar migrar a un modelo declarativo con campo 'compatible_con' en lugar de duplicar archivos."
+    "Las estaciones oye y stereocien aun no tienen fondos. Cuando se agreguen, mover los archivos a <estacion>/fondos/ y actualizar el array correspondiente.",
+    "El archivo universal/cejas/avatar-final.png es un artefacto de prueba y no se incluye como asset de la categoria cejas.",
+    "El jersey-14 esta fisicamente duplicado entre beat/ y oye/ porque ambas estaciones lo usan. Si en el futuro hay muchos casos asi, considerar migrar a un modelo declarativo con campo 'compatible_con' en lugar de duplicar archivos.",
+    "Las extensiones por categoria estan definidas en 'categorias.<cat>.extensiones'. Mantener consistencia."
   ]
 }

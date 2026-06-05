@@ -3,6 +3,9 @@ import Layout from '../../layouts/Layout.astro'
 import { createSupabaseServerClient } from '../../lib/supabase'
 import manifest from '../../../public/avatar/manifest.json'
 
+// Sin caché — siempre refrescar desde DB al entrar al editor
+Astro.response.headers.set('Cache-Control', 'no-store')
+
 const { user, hasGenerales, estacion_favorita } = Astro.locals
 
 if (!user) return Astro.redirect('/auth/login?redirect=/perfil/avatar')
@@ -69,6 +72,8 @@ const categoriasRequeridas = Object.fromEntries(
   zOrder.map(c => [c, (manifest.categorias as any)[c]?.requerido ?? true])
 )
 
+const AVATAR_BASE_URL = 'https://storage.googleapis.com/nrm-web/mundial/avatar'
+
 const clientData = {
   zOrder,
   piezas: piezasPorCategoria,
@@ -76,6 +81,7 @@ const clientData = {
   savedConfig: (profile as any)?.avatar_config ?? null,
   labels: LABELS,
   descs: CAT_DESCS,
+  baseUrl: AVATAR_BASE_URL,
 }
 
 const STATION_COLORS: Record<string, string> = {
@@ -85,87 +91,83 @@ const accent = STATION_COLORS[estacion] ?? '#EA262A'
 const hasAvatar = !!(profile as any)?.avatar_url
 ---
 
-<Layout title="Crea tu avatar">
-<main class="av" style={`--ac: ${accent}; --ac-dim: ${accent}22; --ac-glow: ${accent}44`}>
+<Layout title="Crea tu avatar" noWrapper={true}>
+<div class="av" style={`--ac: ${accent}; --ac-dim: ${accent}22; --ac-glow: ${accent}55`}>
 
-  <!-- Top nav -->
+  <!-- Nav -->
   <div class="av-nav">
     <a href="/perfil" class="av-back">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-      Perfil
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
-    <span class="av-nav-title spartan">Crea tu avatar</span>
     <div class="av-nav-actions">
-      <button id="btn-dl" class="av-nav-btn">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Descargar
+      <button id="btn-dl" class="av-btn-icon" title="Descargar">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
       </button>
-      <button id="btn-save" class="av-nav-btn av-nav-btn-primary">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <button id="btn-save" class="av-btn-save">
         <span id="btn-save-text">{hasAvatar ? 'Actualizar' : 'Guardar'}</span>
       </button>
     </div>
   </div>
 
-  <!-- Workspace: 3 paneles -->
+  <!-- Tabs de categoría -->
+  <div class="av-tabs-wrap">
+    <div class="av-tabs" id="av-tabs">
+      {zOrder.map((cat) => (
+        <button class="av-tab" data-cat={cat} type="button">
+          <span class="av-tab-icon" set:html={ICONS[cat]} />
+          <span class="av-tab-label">{LABELS[cat]}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- Workspace: preview 20% + picker 80% -->
   <div class="av-workspace">
 
-    <!-- Panel 1: Preview de la estampa -->
-    <aside class="av-preview">
-      <div class="av-card-wrap">
-        <canvas id="av-canvas" width="600" height="900"></canvas>
-        <div id="av-loader" class="av-loader">
-          <div class="av-spinner"></div>
+    <!-- Preview -->
+    <div class="av-preview">
+      <div class="av-card-outer">
+        <div class="av-card-inner">
+          <canvas id="av-canvas" width="600" height="900"></canvas>
+          <div id="av-loader" class="av-loader">
+            <div class="av-spinner"></div>
+          </div>
         </div>
       </div>
       <div id="av-msg" class="av-msg" hidden></div>
-    </aside>
+    </div>
 
-    <!-- Panel 2: Barra de iconos de categorías -->
-    <nav class="av-sidebar" id="av-sidebar">
-      {zOrder.map((cat) => (
-        <button class="av-icon-btn" data-cat={cat} title={LABELS[cat]}>
-          <span class="av-icon" set:html={ICONS[cat]} />
-          <span class="av-icon-label">{LABELS[cat]}</span>
-        </button>
-      ))}
-    </nav>
-
-    <!-- Panel 3: Picker de piezas -->
-    <section class="av-picker">
-      <div class="av-picker-header">
-        <h2 id="av-cat-name" class="av-picker-title spartan"></h2>
-        <p id="av-cat-desc" class="av-picker-desc"></p>
-      </div>
+    <!-- Grid de piezas -->
+    <div class="av-panel">
       <div class="av-grid" id="av-grid"></div>
-    </section>
+    </div>
 
   </div>
 
-</main>
+</div>
 </Layout>
 
 <script define:vars={{ clientData }}>
-  const { zOrder, piezas, requerido, savedConfig, labels, descs } = clientData
+  const { zOrder, piezas, requerido, savedConfig, labels, descs, baseUrl } = clientData
 
-  const canvas  = document.getElementById('av-canvas')
-  const ctx     = canvas.getContext('2d')
-  const loader  = document.getElementById('av-loader')
-  const sidebar = document.getElementById('av-sidebar')
-  const grid    = document.getElementById('av-grid')
-  const catName = document.getElementById('av-cat-name')
-  const catDesc = document.getElementById('av-cat-desc')
-  const msg     = document.getElementById('av-msg')
-  const btnSave = document.getElementById('btn-save')
-  const btnDl   = document.getElementById('btn-dl')
-  const saveText= document.getElementById('btn-save-text')
+  function init() {
+  const canvas   = document.getElementById('av-canvas')
+  if (!canvas) return                          // guard: DOM no listo
+  const ctx      = canvas.getContext('2d')
+  const loader   = document.getElementById('av-loader')
+  const tabs     = document.getElementById('av-tabs')
+  const grid     = document.getElementById('av-grid')
+  const msg      = document.getElementById('av-msg')
+  const btnSave  = document.getElementById('btn-save')
+  const btnDl    = document.getElementById('btn-dl')
+  const saveText = document.getElementById('btn-save-text')
 
   // Inicializar selecciones
   const sel = {}
   for (const cat of zOrder) {
-    const avail    = piezas[cat] ?? []
-    const isReq    = requerido[cat] ?? true
-    const saved    = savedConfig?.[cat]
+    const avail = piezas[cat] ?? []
+    const isReq = requerido[cat] ?? true
+    const saved = savedConfig?.[cat]
     if (saved !== undefined && (saved === null || avail.includes(saved))) {
       sel[cat] = saved
     } else {
@@ -174,21 +176,35 @@ const hasAvatar = !!(profile as any)?.avatar_url
   }
 
   let activeCat = zOrder[0]
-  let rendering = false
+  let renderVersion = 0  // incrementa con cada render para cancelar renders viejos
 
   // ── Canvas ──────────────────────────────────────────────
   async function render() {
-    if (rendering) return
-    rendering = true
+    const myVersion = ++renderVersion
     loader.removeAttribute('hidden')
+
+    // Snapshot del sel actual para que este render use exactamente estos valores
+    const snapshot = { ...sel }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    for (const cat of zOrder) {
-      if (!sel[cat]) continue
-      try { await drawImg(`/avatar/${sel[cat]}`) } catch {}
+    try {
+      for (const cat of zOrder) {
+        if (myVersion !== renderVersion) return // cancelado por render más nuevo
+        if (!snapshot[cat]) continue
+        try { await drawImg(`${baseUrl}/${snapshot[cat]}`) } catch (e) {
+          console.warn('[avatar] imagen no cargó:', snapshot[cat], e)
+        }
+      }
+    } finally {
+      if (myVersion === renderVersion) {
+        loader.setAttribute('hidden', '')
+      }
     }
-    loader.setAttribute('hidden', '')
-    rendering = false
   }
+
+  // En prod usamos GCS directo (CORS configurado en el bucket).
+  // En dev usamos proxy porque el browser puede tener caché sin CORS headers.
+  const IS_DEV = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
 
   function drawImg(src) {
     return new Promise((ok, fail) => {
@@ -196,62 +212,76 @@ const hasAvatar = !!(profile as any)?.avatar_url
       img.crossOrigin = 'anonymous'
       img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); ok() }
       img.onerror = fail
-      img.src = src
+      img.src = IS_DEV ? `/api/img-proxy?url=${encodeURIComponent(src)}` : src
     })
   }
 
-  // ── Sidebar ──────────────────────────────────────────────
-  function syncSidebar() {
-    sidebar.querySelectorAll('.av-icon-btn').forEach(btn => {
+  // ── Tabs ─────────────────────────────────────────────────
+  function syncTabs() {
+    tabs.querySelectorAll('.av-tab').forEach(btn => {
       const cat = btn.dataset.cat
-      btn.classList.toggle('active', cat === activeCat)
-      btn.classList.toggle('done', sel[cat] !== null && sel[cat] !== undefined)
+      const isActive = cat === activeCat
+      const isDone = sel[cat] !== null && sel[cat] !== undefined
+      btn.classList.toggle('active', isActive)
+      btn.classList.toggle('done', isDone && !isActive)
+      btn.setAttribute('aria-selected', String(isActive))
     })
+    // Scroll tab activo al centro
+    const activeBtn = tabs.querySelector('.av-tab.active')
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    }
   }
 
-  sidebar.querySelectorAll('.av-icon-btn').forEach(btn => {
+  tabs.querySelectorAll('.av-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       activeCat = btn.dataset.cat
-      syncSidebar()
+      syncTabs()
       renderGrid()
     })
   })
 
   // ── Grid ─────────────────────────────────────────────────
+  const CHECK_SVG = `<svg viewBox="0 0 20 20" fill="currentColor" width="11" height="11"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`
+
   function renderGrid() {
     const avail = piezas[activeCat] ?? []
     const isReq = requerido[activeCat] ?? true
     const cur   = sel[activeCat]
 
-    catName.textContent = labels[activeCat] ?? activeCat
-    catDesc.textContent = descs[activeCat] ?? ''
-    grid.innerHTML = ''
+    // Animación de salida/entrada del grid
+    grid.style.opacity = '0'
+    grid.style.transform = 'translateY(6px)'
 
-    if (!isReq) {
-      grid.appendChild(makeNoneBtn(cur === null))
-    }
+    setTimeout(() => {
+      grid.innerHTML = ''
 
-    avail.forEach((path, i) => {
-      const label = `${labels[activeCat] ?? activeCat} ${String(i + 1).padStart(2, '0')}`
-      grid.appendChild(makePieceBtn(path, label, cur === path))
-    })
+      if (!isReq) grid.appendChild(makeNoneBtn(cur === null))
 
-    if (avail.length === 0 && isReq) {
-      const p = document.createElement('p')
-      p.className = 'av-empty'
-      p.textContent = 'Sin piezas disponibles.'
-      grid.appendChild(p)
-    }
+      avail.forEach((path, i) => {
+        const label = `${labels[activeCat] ?? activeCat} ${String(i + 1).padStart(2, '0')}`
+        grid.appendChild(makePieceBtn(path, label, cur === path))
+      })
+
+      if (avail.length === 0 && isReq) {
+        const p = document.createElement('p')
+        p.className = 'av-empty'
+        p.textContent = 'Sin piezas disponibles.'
+        grid.appendChild(p)
+      }
+
+      grid.style.transition = 'opacity 180ms cubic-bezier(0.23,1,0.32,1), transform 180ms cubic-bezier(0.23,1,0.32,1)'
+      grid.style.opacity = '1'
+      grid.style.transform = 'translateY(0)'
+    }, 80)
   }
-
-  const CHECK_SVG = `<svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`
 
   function makeNoneBtn(selected) {
     const btn = document.createElement('button')
     btn.className = `av-piece${selected ? ' selected' : ''}`
     btn.innerHTML = `
       <div class="av-thumb av-thumb-none">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="22" height="22">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </div>
@@ -264,8 +294,8 @@ const hasAvatar = !!(profile as any)?.avatar_url
     const btn = document.createElement('button')
     btn.className = `av-piece${selected ? ' selected' : ''}`
     btn.innerHTML = `
-      <div class="av-thumb">
-        <img src="/avatar/${path}" alt="${label}" loading="lazy" />
+      <div class="av-thumb av-thumb--${activeCat}">
+        <img src="${baseUrl}/${path}" alt="${label}" loading="lazy" ${IS_DEV ? '' : 'crossorigin="anonymous"'} />
       </div>
       ${selected ? `<div class="av-check">${CHECK_SVG}</div>` : ''}`
     btn.onclick = () => pick(path)
@@ -275,7 +305,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
   function pick(path) {
     sel[activeCat] = path
     renderGrid()
-    syncSidebar()
+    syncTabs()
     render()
   }
 
@@ -286,23 +316,34 @@ const hasAvatar = !!(profile as any)?.avatar_url
     msg.setAttribute('hidden', '')
 
     try {
-      const imageData = canvas.toDataURL('image/png')
+      let imageData
+      try {
+        imageData = canvas.toDataURL('image/png')
+      } catch (e) {
+        console.error('[avatar] toDataURL falló (canvas tainted?):', e)
+        throw new Error('canvas_tainted')
+      }
+
       const res = await fetch('/api/perfil/avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageData, config: sel }),
       })
       const data = await res.json()
-      if (!data.ok) throw new Error(data.error)
+      console.log('[avatar] respuesta API:', data)
+      if (!data.ok) throw new Error(data.error ?? 'api_error')
 
       msg.removeAttribute('hidden')
       msg.className = 'av-msg ok'
-      msg.textContent = '¡Avatar guardado! Ya aparece en tu perfil y álbum.'
+      msg.textContent = '¡Estampa guardada!'
       saveText.textContent = 'Actualizar'
-    } catch {
+    } catch (e) {
+      console.error('[avatar] error al guardar:', e)
       msg.removeAttribute('hidden')
       msg.className = 'av-msg err'
-      msg.textContent = 'Error al guardar. Intenta de nuevo.'
+      msg.textContent = e.message === 'canvas_tainted'
+        ? 'Error de permisos de imagen. Recarga la página.'
+        : 'Error al guardar. Intenta de nuevo.'
       saveText.textContent = 'Guardar'
     } finally {
       btnSave.disabled = false
@@ -312,24 +353,44 @@ const hasAvatar = !!(profile as any)?.avatar_url
   // ── Descargar ────────────────────────────────────────────
   btnDl.addEventListener('click', () => {
     const a = document.createElement('a')
-    a.download = 'mi-avatar.png'
+    a.download = 'mi-estampa.png'
     a.href = canvas.toDataURL('image/png')
     a.click()
   })
 
   // ── Init ─────────────────────────────────────────────────
-  syncSidebar()
+  // Ajustar la altura del builder al espacio real disponible en viewport
+  function fitHeight() {
+    const avEl = document.querySelector('.av')
+    if (!avEl) return
+    const top = avEl.getBoundingClientRect().top
+    const h = Math.max(400, window.innerHeight - top)
+    avEl.style.height = h + 'px'
+  }
+  fitHeight()
+  window.addEventListener('resize', fitHeight)
+
+  syncTabs()
   renderGrid()
   render()
+
+  } // fin init()
+
+  // Ejecutar en carga normal Y en cada navegación con View Transitions
+  document.addEventListener('astro:page-load', init)
 </script>
 
-<style>
+<style is:global>
+  /* ── Base ── */
   .av {
-    min-height: 100vh;
-    background: #0f1118;
+    height: 600px; /* fallback, JS lo sobreescribe */
+    max-width: 1280px;
+    margin: 0 auto;
+    background: #0c0e14;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    color: #fff;
   }
 
   /* ── Nav ── */
@@ -337,376 +398,345 @@ const hasAvatar = !!(profile as any)?.avatar_url
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1.25rem;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    gap: 1rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
     flex-shrink: 0;
+    background: #0c0e14;
   }
   .av-back {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    color: rgba(255,255,255,0.35);
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: rgba(255,255,255,0.45);
     text-decoration: none;
-    font-size: 0.78rem;
-    font-family: 'Open Sans', sans-serif;
-    transition: color 0.2s;
-    white-space: nowrap;
+    background: rgba(255,255,255,0.05);
+    transition: background 150ms cubic-bezier(0.23,1,0.32,1), color 150ms cubic-bezier(0.23,1,0.32,1);
+    flex-shrink: 0;
   }
-  .av-back svg { width: 0.9rem; height: 0.9rem; }
-  .av-back:hover { color: rgba(255,255,255,0.7); }
-  .av-nav-title {
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.25);
-    white-space: nowrap;
+  .av-back:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  @media (hover: hover) and (pointer: fine) {
+    .av-back:active { transform: scale(0.95); }
   }
   .av-nav-actions {
     display: flex;
-    gap: 0.5rem;
     align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
-  .av-nav-btn {
+  .av-btn-icon {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.9rem;
-    border-radius: 0.6rem;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.45);
+    transition: background 150ms cubic-bezier(0.23,1,0.32,1), color 150ms cubic-bezier(0.23,1,0.32,1);
+  }
+  .av-btn-icon:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .av-btn-save {
+    height: 36px;
+    padding: 0 1.1rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    background: var(--ac);
+    color: #fff;
     font-family: 'League Spartan', sans-serif;
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     letter-spacing: 0.04em;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
+    transition: filter 150ms cubic-bezier(0.23,1,0.32,1), box-shadow 150ms cubic-bezier(0.23,1,0.32,1);
+    box-shadow: 0 0 20px var(--ac-glow);
     white-space: nowrap;
   }
-  .av-nav-btn svg { width: 0.9rem; height: 0.9rem; flex-shrink: 0; }
-  .av-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-  .av-nav-btn {
-    background: rgba(255,255,255,0.06);
-    color: rgba(255,255,255,0.5);
-    border: 1px solid rgba(255,255,255,0.09);
-  }
-  .av-nav-btn:hover:not(:disabled) {
-    background: rgba(255,255,255,0.1);
-    color: white;
-  }
-  .av-nav-btn-primary {
-    background: var(--ac) !important;
-    color: white !important;
-    border-color: transparent !important;
-    box-shadow: 0 0 16px var(--ac-glow);
-  }
-  .av-nav-btn-primary:hover:not(:disabled) {
-    filter: brightness(1.1);
-    box-shadow: 0 0 24px var(--ac-glow);
-  }
+  .av-btn-save:hover:not(:disabled) { filter: brightness(1.1); }
+  .av-btn-save:active:not(:disabled) { transform: scale(0.97); }
+  .av-btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* ── Workspace: 3 columnas ── */
+  /* ── Tabs ── */
+  .av-tabs-wrap {
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: #0f1118;
+    min-height: 44px;
+  }
+  .av-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem 0.875rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    padding-left: 0.875rem;
+  }
+  .av-tabs::-webkit-scrollbar { display: none; }
+
+  .av-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    font-family: 'League Spartan', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: color 150ms cubic-bezier(0.23,1,0.32,1),
+                background 150ms cubic-bezier(0.23,1,0.32,1),
+                border-color 150ms cubic-bezier(0.23,1,0.32,1);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .av-tab-icon { display: flex; width: 14px; height: 14px; flex-shrink: 0; }
+  .av-tab-icon svg { width: 14px; height: 14px; }
+  .av-tab-label { line-height: 1; }
+  .av-tab:hover { color: rgba(255,255,255,0.65); }
+  .av-tab.done::after {
+    content: '';
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 5px rgba(16,185,129,0.7);
+  }
+  .av-tab.active {
+    background: var(--ac-dim);
+    border-color: var(--ac);
+    color: var(--ac);
+    box-shadow: 0 0 12px var(--ac-glow);
+  }
+  .av-tab.active::after { display: none; }
+
+  /* ── Workspace: preview 20% + picker 80% ── */
   .av-workspace {
     flex: 1;
-    display: flex;
     min-height: 0;
+    display: flex;
     overflow: hidden;
   }
 
-  /* Panel 1: Preview */
+  /* Preview — columna izquierda */
   .av-preview {
+    width: 20%;
+    min-width: 120px;
+    max-width: 200px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 1.5rem 1.25rem;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 0.75rem;
+    padding-top: 1.25rem;
     border-right: 1px solid rgba(255,255,255,0.05);
-    background: #11141d;
+    background: #0c0e14;
     overflow-y: auto;
-    flex-shrink: 0;
   }
 
-  .av-card-wrap {
+  .av-card-outer {
+    width: 100%;
+    padding: 4px;
+    border-radius: 1.2rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 0 0 1px var(--ac-dim), 0 0 28px var(--ac-glow), 0 8px 32px rgba(0,0,0,0.7);
+  }
+  .av-card-inner {
     position: relative;
-    width: 180px;
+    width: 100%;
     aspect-ratio: 2 / 3;
-    border-radius: 1.5rem;
+    border-radius: calc(1.2rem - 4px);
     overflow: hidden;
-    border: 1.5px solid var(--ac);
-    background: linear-gradient(to bottom, #1e293b, #0f172a);
-    box-shadow: 0 0 0 1px var(--ac-dim), 0 0 28px var(--ac-glow), 0 8px 40px rgba(0,0,0,0.7);
-    flex-shrink: 0;
+    background: #0a0c12;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.06);
   }
-
-  @media (min-width: 1024px) {
-    .av-card-wrap { width: 210px; }
-  }
-
-  .av-card-wrap canvas {
+  .av-card-inner canvas {
     width: 100%;
     height: 100%;
     display: block;
   }
+
   .av-loader {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(10,12,18,0.6);
-    backdrop-filter: blur(2px);
+    background: rgba(8,10,16,0.65);
   }
   .av-loader[hidden] { display: none; }
   .av-spinner {
-    width: 1.75rem; height: 1.75rem;
-    border: 2px solid rgba(255,255,255,0.08);
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid rgba(255,255,255,0.06);
     border-top-color: var(--ac);
     border-radius: 50%;
-    animation: spin 0.65s linear infinite;
+    animation: spin 0.6s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .av-msg {
-    width: 100%;
-    max-width: 200px;
-    padding: 0.55rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.72rem;
+    font-size: 0.65rem;
     font-family: 'Open Sans', sans-serif;
     text-align: center;
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
     line-height: 1.4;
+    width: 100%;
   }
   .av-msg[hidden] { display: none; }
-  .av-msg.ok  { background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.18); }
-  .av-msg.err { background: rgba(239,68,68,0.08); color: #fca5a5; border: 1px solid rgba(239,68,68,0.18); }
+  .av-msg.ok  { background: rgba(16,185,129,0.12); color: #6ee7b7; }
+  .av-msg.err { background: rgba(239,68,68,0.1); color: #fca5a5; }
 
-  /* Panel 2: Sidebar de iconos */
-  .av-sidebar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 1.25rem 0;
-    border-right: 1px solid rgba(255,255,255,0.05);
-    background: #11141d;
-    overflow-y: auto;
-    overflow-x: hidden;
-    flex-shrink: 0;
-    width: 96px;
-    scrollbar-width: none;
-  }
-  .av-sidebar::-webkit-scrollbar { display: none; }
-
-  .av-icon-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0;
-    border-radius: 0;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    color: rgba(255,255,255,0.28);
-    transition: color 0.15s;
-    width: 100%;
-    position: relative;
-  }
-  .av-icon-btn:hover { color: rgba(255,255,255,0.65); }
-  .av-icon-btn:hover .av-icon { background: rgba(255,255,255,0.07); }
-  .av-icon-btn.active { color: var(--ac); }
-  .av-icon-btn.active .av-icon {
-    background: var(--ac-dim);
-    box-shadow: 0 0 14px var(--ac-glow);
-  }
-  .av-icon-btn.done .av-icon::after {
-    content: '';
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 6px rgba(16,185,129,0.6);
-  }
-  .av-icon-btn.active.done .av-icon::after { display: none; }
-
-  .av-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 0.75rem;
-    background: transparent;
-    transition: background 0.15s, box-shadow 0.15s;
-    position: relative;
-  }
-  .av-icon svg { width: 24px; height: 24px; }
-  .av-icon-label {
-    font-family: 'League Spartan', sans-serif;
-    font-size: 0.5rem;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    line-height: 1;
-  }
-
-  /* Panel 3: Picker de piezas */
-  .av-picker {
+  /* Panel de piezas — columna derecha */
+  .av-panel {
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    padding: 1.5rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+    padding: 1rem;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.06) transparent;
   }
-  .av-picker::-webkit-scrollbar { width: 3px; }
-  .av-picker::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
+  .av-panel::-webkit-scrollbar { width: 3px; }
+  .av-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 2px; }
 
-  .av-picker-title {
-    font-size: 1rem;
-    font-weight: 800;
-    color: rgba(255,255,255,0.9);
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    line-height: 1;
-    margin-bottom: 0.2rem;
-  }
-  .av-picker-desc {
-    font-size: 0.72rem;
-    color: rgba(255,255,255,0.25);
-    font-family: 'Open Sans', sans-serif;
-    line-height: 1.4;
-  }
-
-  /* Grid de piezas */
   .av-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.65rem;
+    gap: 0.5rem;
+    will-change: opacity, transform;
   }
-  @media (min-width: 640px) {
-    .av-grid { grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+  @media (min-width: 500px) {
+    .av-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (min-width: 700px) {
+    .av-grid { grid-template-columns: repeat(5, 1fr); }
+  }
+  @media (min-width: 900px) {
+    .av-grid { grid-template-columns: repeat(6, 1fr); }
+  }
+  @media (min-width: 1200px) {
+    .av-grid { grid-template-columns: repeat(7, 1fr); }
   }
 
   .av-piece {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: #1e232d;
-    border: 2px solid transparent;
-    border-radius: 1rem;
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid transparent;
+    border-radius: 0.75rem;
     padding: 0.25rem;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background 150ms cubic-bezier(0.23,1,0.32,1),
+                border-color 150ms cubic-bezier(0.23,1,0.32,1),
+                transform 150ms cubic-bezier(0.23,1,0.32,1);
     position: relative;
   }
-  .av-piece:hover {
-    background: #2b303b;
-    border-color: rgba(255,255,255,0.1);
+  @media (hover: hover) and (pointer: fine) {
+    .av-piece:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.1);
+    }
   }
+  .av-piece:active { transform: scale(0.95); }
   .av-piece.selected {
     background: var(--ac-dim);
     border-color: var(--ac);
-    box-shadow: 0 0 16px var(--ac-glow);
+    box-shadow: 0 0 14px var(--ac-glow);
   }
 
   .av-check {
     position: absolute;
-    top: 0.3rem;
-    right: 0.3rem;
-    width: 1.25rem;
-    height: 1.25rem;
+    top: 0.25rem; right: 0.25rem;
+    width: 1.1rem; height: 1.1rem;
     background: var(--ac);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #0f111a;
+    color: #0a0c14;
     z-index: 2;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.4);
   }
 
   .av-thumb {
     width: 100%;
     aspect-ratio: 1;
-    border-radius: 0.75rem;
-    background: #0f1118;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.4rem;
+    border-radius: 0.55rem;
+    background: #fff;
     overflow: hidden;
   }
+  /* Imagen: ocupa todo el thumb con crop */
   .av-thumb img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
+    object-position: 50% 30%; /* cara: ~30% desde arriba del canvas */
     display: block;
   }
+  /* Cejas, ojos, lentes, boca — están en la zona media-alta de la cara */
+  .av-thumb--cejas img,
+  .av-thumb--ojos img    { object-position: 50% 32%; }
+  .av-thumb--lentes img  { object-position: 50% 36%; }
+  .av-thumb--boca img    { object-position: 50% 44%; }
+  /* Bigote y barba: un poco más abajo */
+  .av-thumb--bigote img  { object-position: 50% 46%; }
+  .av-thumb--barba img   { object-position: 50% 48%; }
+  /* Cabello: arriba del todo */
+  .av-thumb--cabello img { object-position: 50% 22%; }
+  /* Gorra: arriba también */
+  .av-thumb--gorra img   { object-position: 50% 18%; }
+  /* Jersey: zona del pecho */
+  .av-thumb--cuerpo-jersey img { object-position: 50% 62%; }
+  /* Fondo: mostrar completo */
+  .av-thumb--fondo img {
+    object-fit: cover;
+    object-position: center;
+  }
+  /* Marco: mostrar completo */
+  .av-thumb--marco img {
+    object-fit: contain;
+    object-position: center;
+    background: #f5f5f5;
+  }
   .av-thumb-none {
-    color: rgba(255,255,255,0.18);
+    width: 100%;
     aspect-ratio: 1;
+    border-radius: 0.55rem;
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.2);
   }
 
   .av-empty {
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem 1rem;
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.15);
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.12);
     font-family: 'Open Sans', sans-serif;
   }
 
-  /* ── Mobile ── */
-  @media (max-width: 640px) {
-    .av-workspace {
-      flex-direction: column;
-      overflow: auto;
-    }
-    .av-preview {
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-      border-right: none;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      padding: 1rem;
-      gap: 1rem;
-      overflow: visible;
-      min-height: auto;
-    }
-    .av-card-wrap {
-      width: 110px;
-      flex-shrink: 0;
-    }
-    .av-msg { max-width: none; font-size: 0.68rem; }
-    .av-sidebar {
-      flex-direction: row;
-      width: 100%;
-      height: auto;
-      overflow-x: auto;
-      overflow-y: hidden;
-      border-right: none;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      padding: 0.5rem 0.75rem;
-      gap: 0.5rem;
-      justify-content: flex-start;
-    }
-    .av-icon-btn {
-      width: auto;
-      flex-shrink: 0;
-    }
-    .av-icon {
-      width: 40px;
-      height: 40px;
-    }
-    .av-picker { padding: 1rem 0.875rem; gap: 0.875rem; }
-    .av-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  @media (prefers-reduced-motion: reduce) {
+    .av-grid, .av-piece { transition: none !important; }
   }
 </style>
