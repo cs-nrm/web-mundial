@@ -16,15 +16,15 @@
   "z_order": [
     "fondo",
     "cuerpo-jersey",
-    "cabello",
-    "cejas",
-    "ojos",
-    "lentes",
+    "marco",
     "boca",
-    "bigote",
     "barba",
-    "gorra",
-    "marco"
+    "bigote",
+    "cabello",
+    "ojos",
+    "cejas",
+    "lentes",
+    "gorra"
   ],
   "categorias": {
     "fondo": {

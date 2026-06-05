@@ -1,9 +1,16 @@
 import type { APIRoute } from 'astro'
 import { verifyEmergencyToken, isEmergencyConfigured } from '../../../lib/emergency-auth'
+import { rateLimit, getClientIp } from '../../../lib/rate-limit'
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   if (!isEmergencyConfigured()) {
     return redirect('/auth/emergency?error=no_configurado')
+  }
+
+  // Anti fuerza bruta del secret: máx 5 intentos por IP cada 15 min
+  const rl = rateLimit(`emergency:${getClientIp(request)}`, 5, 15 * 60_000)
+  if (!rl.allowed) {
+    return redirect('/auth/emergency?error=demasiados_intentos')
   }
 
   const form = await request.formData()

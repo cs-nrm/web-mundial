@@ -1,13 +1,23 @@
 import type { APIRoute } from 'astro'
 import { createSupabaseServerClient } from '../../../lib/supabase'
+import { rateLimit } from '../../../lib/rate-limit'
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const supabase = createSupabaseServerClient(request, cookies)
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session) {
+  if (!user) {
     return new Response(JSON.stringify({ error: 'No autenticado' }), {
       status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Anti fuerza bruta de códigos: máx 20 intentos por usuario cada 10 min
+  const rl = rateLimit(`redimir:${user.id}`, 20, 10 * 60_000)
+  if (!rl.allowed) {
+    return new Response(JSON.stringify({ error: `Demasiados intentos. Espera ${rl.retryAfter}s.` }), {
+      status: 429,
       headers: { 'Content-Type': 'application/json' },
     })
   }

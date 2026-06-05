@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro'
 import { createSupabaseServerClient } from '../../../lib/supabase'
+import { rateLimit, getClientIp } from '../../../lib/rate-limit'
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const form = await request.formData()
@@ -7,8 +8,14 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const password = form.get('password') as string
   const redirectAfter = (form.get('redirect') as string) || '/'
 
+  // Máx 8 intentos por IP cada 5 minutos
+  const rl = rateLimit(`signin:${getClientIp(request)}`, 8, 5 * 60_000)
+  if (!rl.allowed) {
+    return redirect(`/auth/login?error=demasiados_intentos&redirect=${encodeURIComponent(redirectAfter)}`)
+  }
+
   if (!email || !password) {
-    return redirect(`/auth/login?error=campos_requeridos&redirect=${encodeURIComponent(redirectAfter)}`)  
+    return redirect(`/auth/login?error=campos_requeridos&redirect=${encodeURIComponent(redirectAfter)}`)
   }
 
   const supabase = createSupabaseServerClient(request, cookies)

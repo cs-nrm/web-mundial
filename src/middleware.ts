@@ -8,15 +8,22 @@ import type { UserRole } from './lib/perfil'
 export const onRequest = defineMiddleware(async (context, next) => {
   const supabase = createSupabaseServerClient(context.request, context.cookies)
 
+  // getUser() valida el token contra el servidor de Auth (getSession solo decodifica
+  // la cookie localmente y puede aceptar tokens revocados/manipulados).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // session se mantiene para compatibilidad, pero la fuente de verdad es `user`
   const {
     data: { session },
-  } = await supabase.auth.getSession()
+  } = user ? await supabase.auth.getSession() : { data: { session: null } }
 
   context.locals.session = session
-  context.locals.user = session?.user ?? null
+  context.locals.user = user
 
-  if (session?.user) {
-    const ctx = await getUserContext(supabase, session.user.id)
+  if (user) {
+    const ctx = await getUserContext(supabase, user.id)
     context.locals.hasGenerales = ctx.hasGenerales
     context.locals.role = ctx.role
     context.locals.estacion_favorita = ctx.estacion_favorita
