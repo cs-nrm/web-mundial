@@ -18,10 +18,11 @@ const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ??
 // Avatar
 const { data: profile } = await supabase
   .from('profiles')
-  .select('avatar_url')
+  .select('avatar_url, avatar_face_url')
   .eq('id', user.id)
   .maybeSingle()
 const avatarUrl: string | null = profile?.avatar_url ?? null
+const avatarFaceUrl: string | null = profile?.avatar_face_url ?? avatarUrl
 
 // Álbumes activos: superadmin ve todos, usuario normal solo el de su estación
 let albumsQuery = supabase
@@ -96,7 +97,7 @@ const { count: playlistCount } = await supabase
   .from('playlists').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
 ---
 
-<Layout title="Mi perfil">
+<Layout title="Mi perfil" noWrapper={true}>
   <div class="perfil-page">
 
     <!-- Header -->
@@ -105,7 +106,7 @@ const { count: playlistCount } = await supabase
 
         <a href="/perfil/avatar" class="perfil-avatar" title={avatarUrl ? 'Editar avatar' : 'Crear avatar'}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} class="perfil-avatar-img" />
+            <img src={avatarFaceUrl} alt={displayName} class="perfil-avatar-img" />
           ) : (
             <div class="perfil-avatar-empty">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:2rem;height:2rem;color:rgba(255,255,255,0.3)">
@@ -219,15 +220,16 @@ const { count: playlistCount } = await supabase
     gap: 0;
   }
 
-  /* Avatar */
+  /* Avatar — headshot (solo cara, sin fondo ni marco) */
   .perfil-avatar {
     flex-shrink: 0;
     display: block;
-    width: 150px;
-    height: 100px;
-    border-radius: 0.875rem;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
     overflow: hidden;
-    border: 2px solid rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.12);
+    background: radial-gradient(circle at 50% 35%, rgba(255,255,255,0.14), rgba(255,255,255,0.03) 70%);
     text-decoration: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     box-shadow: 0 6px 24px rgba(0,0,0,0.5);
@@ -236,7 +238,13 @@ const { count: playlistCount } = await supabase
     border-color: rgba(255,255,255,0.35);
     box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.08);
   }
-  .perfil-avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .perfil-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 18%;
+    display: block;
+  }
   .perfil-avatar-empty {
     width: 100%; height: 100%;
     background: rgba(255,255,255,0.04);
@@ -251,7 +259,7 @@ const { count: playlistCount } = await supabase
 
   /* Divisor */
   .perfil-divider {
-    width: 1px; height: 70px;
+    width: 1px; height: 90px;
     background: rgba(255,255,255,0.1);
     margin: 0 2rem; flex-shrink: 0;
   }

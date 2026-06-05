@@ -164,14 +164,23 @@ const hasAvatar = !!(profile as any)?.avatar_url
 
   // Inicializar selecciones
   const sel = {}
+  const isNewUser = !savedConfig  // sin config guardada = usuario nuevo
+
   for (const cat of zOrder) {
     const avail = piezas[cat] ?? []
-    const isReq = requerido[cat] ?? true
     const saved = savedConfig?.[cat]
-    if (saved !== undefined && (saved === null || avail.includes(saved))) {
-      sel[cat] = saved
+
+    if (!isNewUser) {
+      // Usuario con config guardada: restaurar exactamente lo que tenía
+      if (saved !== undefined && (saved === null || avail.includes(saved))) {
+        sel[cat] = saved
+      } else {
+        // La pieza guardada ya no existe en el manifest → dejar null
+        sel[cat] = null
+      }
     } else {
-      sel[cat] = isReq ? (avail[0] ?? null) : null
+      // Usuario nuevo: todo vacío
+      sel[cat] = null
     }
   }
 
@@ -206,14 +215,44 @@ const hasAvatar = !!(profile as any)?.avatar_url
   // En dev usamos proxy porque el browser puede tener caché sin CORS headers.
   const IS_DEV = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
 
-  function drawImg(src) {
+  function loadImg(src) {
     return new Promise((ok, fail) => {
       const img = new Image()
       img.crossOrigin = 'anonymous'
-      img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); ok() }
+      img.onload = () => ok(img)
       img.onerror = fail
       img.src = IS_DEV ? `/api/img-proxy?url=${encodeURIComponent(src)}` : src
     })
+  }
+
+  async function drawImg(src) {
+    const img = await loadImg(src)
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+  }
+
+  // ── Headshot: solo el personaje (sin fondo ni marco), recortado a la cara ──
+  // Región de la cara dentro del canvas 600×900. Ajustable.
+  const FACE_CROP = { sx: 155, sy: 135, size: 310 }
+
+  async function buildFaceData() {
+    const fc = document.createElement('canvas')
+    fc.width = 500
+    fc.height = 500
+    const fctx = fc.getContext('2d')
+    const { sx, sy, size } = FACE_CROP
+
+    for (const cat of zOrder) {
+      if (cat === 'fondo' || cat === 'marco') continue  // sin fondo ni marco
+      if (!sel[cat]) continue
+      try {
+        const img = await loadImg(`${baseUrl}/${sel[cat]}`)
+        // Recorta la región de la cara del layer y la escala al canvas 500×500
+        fctx.drawImage(img, sx, sy, size, size, 0, 0, fc.width, fc.height)
+      } catch (e) {
+        console.warn('[avatar] headshot: layer no cargó:', sel[cat], e)
+      }
+    }
+    return fc.toDataURL('image/png')
   }
 
   // ── Tabs ─────────────────────────────────────────────────
@@ -316,9 +355,10 @@ const hasAvatar = !!(profile as any)?.avatar_url
     msg.setAttribute('hidden', '')
 
     try {
-      let imageData
+      let imageData, faceData
       try {
         imageData = canvas.toDataURL('image/png')
+        faceData = await buildFaceData()
       } catch (e) {
         console.error('[avatar] toDataURL falló (canvas tainted?):', e)
         throw new Error('canvas_tainted')
@@ -327,7 +367,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
       const res = await fetch('/api/perfil/avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageData, config: sel }),
+        body: JSON.stringify({ imageData, faceData, config: sel }),
       })
       const data = await res.json()
       console.log('[avatar] respuesta API:', data)
@@ -376,21 +416,24 @@ const hasAvatar = !!(profile as any)?.avatar_url
 
   } // fin init()
 
-  // Ejecutar en carga normal Y en cada navegación con View Transitions
-  document.addEventListener('astro:page-load', init)
+  // define:vars hace el script inline → se re-ejecuta solo en cada navegación.
+  // Llamar init() directo evita acumular listeners duplicados con astro:page-load.
+  init()
 </script>
 
 <style is:global>
   /* ── Base ── */
   .av {
+    /* full-bleed: el fondo va de borde a borde */
     height: 600px; /* fallback, JS lo sobreescribe */
-    max-width: 1280px;
-    margin: 0 auto;
+    width: 100%;
     background: #0c0e14;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: #fff;
+    /* padding lateral que centra el contenido en 1280px y crece en pantallas anchas */
+    --gutter: max(1rem, calc((100% - 1280px) / 2));
   }
 
   /* ── Nav ── */
@@ -398,7 +441,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem var(--gutter);
     border-bottom: 1px solid rgba(255,255,255,0.05);
     flex-shrink: 0;
     background: #0c0e14;
@@ -473,11 +516,10 @@ const hasAvatar = !!(profile as any)?.avatar_url
     gap: 0.25rem;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 0.5rem 0.875rem;
+    padding: 0.5rem var(--gutter);
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     margin: 0;
-    padding-left: 0.875rem;
   }
   .av-tabs::-webkit-scrollbar { display: none; }
 
@@ -530,30 +572,31 @@ const hasAvatar = !!(profile as any)?.avatar_url
     min-height: 0;
     display: flex;
     overflow: hidden;
+    padding-inline: var(--gutter);
   }
 
-  /* Preview — columna izquierda */
+  /* Preview — columna izquierda, ancho = 1 carta del álbum */
   .av-preview {
-    width: 20%;
-    min-width: 120px;
-    max-width: 200px;
+    width: 300px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     gap: 0.75rem;
-    padding: 1rem 0.75rem;
-    padding-top: 1.25rem;
+    padding: 1rem 1.25rem 1rem 0;
     border-right: 1px solid rgba(255,255,255,0.05);
     background: #0c0e14;
     overflow-y: auto;
   }
+  @media (max-width: 640px) {
+    .av-preview { width: 180px; }
+  }
 
   .av-card-outer {
     width: 100%;
-    padding: 4px;
-    border-radius: 1.2rem;
+    padding: 3px;
+    border-radius: 0.5rem;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.07);
     box-shadow: 0 0 0 1px var(--ac-dim), 0 0 28px var(--ac-glow), 0 8px 32px rgba(0,0,0,0.7);
@@ -562,7 +605,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
     position: relative;
     width: 100%;
     aspect-ratio: 2 / 3;
-    border-radius: calc(1.2rem - 4px);
+    border-radius: calc(0.5rem - 3px);
     overflow: hidden;
     background: #0a0c12;
     box-shadow: inset 0 1px 1px rgba(255,255,255,0.06);
@@ -610,7 +653,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    padding: 1rem;
+    padding: 1rem 0 1rem 1.25rem;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.06) transparent;
   }

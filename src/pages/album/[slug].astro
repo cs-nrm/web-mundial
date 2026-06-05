@@ -21,7 +21,7 @@ const [{ data: album }, { data: profile }] = await Promise.all([
     .maybeSingle(),
   supabase
     .from('profiles')
-    .select('avatar_url')
+    .select('avatar_url, avatar_face_url')
     .eq('id', user.id)
     .maybeSingle(),
 ])
@@ -71,9 +71,10 @@ const headerText = album.color_texto_header ?? '#ffffff'
 const bodyText = album.color_texto_body ?? '#ffffff'
 const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Participante'
 const avatarUrl: string | null = profile?.avatar_url ?? null
+const avatarFaceUrl: string | null = profile?.avatar_face_url ?? avatarUrl
 ---
 
-<Layout title={`${album.name} — Mi Álbum`}>
+<Layout title={`${album.name} — Mi Álbum`} noWrapper={true}>
   <main class="album-page" style={`--accent: ${accentColor}; --accent2: ${accent2Color}; --accent-glow: ${accentColor}80; --accent-dim: ${accentColor}26; --text-on-accent: ${textColor}; --hero-bg: ${heroColor}; --body-bg: ${bodyColor}; --card-bg: ${cardBg}; --card-text: ${cardText}; --header-text: ${headerText}; --body-text: ${bodyText};`}>
 
     <!-- Hero -->
@@ -86,7 +87,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
           <!-- Avatar del usuario -->
           <a href="/perfil/avatar" class="hero-avatar" title="Editar avatar">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} class="hero-avatar-img" />
+              <img src={avatarFaceUrl} alt={displayName} class="hero-avatar-img" />
             ) : (
               <div class="hero-avatar-empty">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:2rem;height:2rem;color:rgba(255,255,255,0.25)">
@@ -407,15 +408,16 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
     margin-bottom: 2.5rem;
   }
 
-  /* Avatar */
+  /* Avatar — headshot (solo cara, sin fondo ni marco) */
   .hero-avatar {
     flex-shrink: 0;
     display: block;
-    width: 150px;
-    height: 100px;
-    border-radius: 0.875rem;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
     overflow: hidden;
-    border: 2px solid rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.12);
+    background: radial-gradient(circle at 50% 35%, var(--accent-dim), rgba(255,255,255,0.03) 70%);
     text-decoration: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     box-shadow: 0 6px 24px rgba(0,0,0,0.5);
@@ -427,6 +429,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   .hero-avatar-img {
     width: 100%; height: 100%;
     object-fit: cover;
+    object-position: center 18%;
     display: block;
   }
   .hero-avatar-empty {
@@ -440,7 +443,7 @@ const avatarUrl: string | null = profile?.avatar_url ?? null
   /* Divisor vertical */
   .hero-divider {
     width: 1px;
-    height: 70px;
+    height: 90px;
     background: rgba(255,255,255,0.1);
     margin: 0 2rem;
     flex-shrink: 0;

@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
   }
 
   try {
-    const { imageData, config } = await request.json()
+    const { imageData, faceData, config } = await request.json()
 
     if (!imageData || !imageData.startsWith('data:image/png;base64,')) {
       return new Response(JSON.stringify({ error: 'Imagen inválida' }), {
@@ -22,21 +22,33 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
       })
     }
 
-    const base64 = imageData.replace(/^data:image\/png;base64,/, '')
-    const buffer = Buffer.from(base64, 'base64')
-
     const avatarsDir = join(process.cwd(), 'public', 'avatars')
     await mkdir(avatarsDir, { recursive: true })
 
+    // Imagen completa (carta con fondo + marco)
+    const fullBuffer = Buffer.from(imageData.replace(/^data:image\/png;base64,/, ''), 'base64')
     const filename = `${user.id}.png`
-    await writeFile(join(avatarsDir, filename), buffer)
+    await writeFile(join(avatarsDir, filename), fullBuffer)
+
+    const updateData: Record<string, any> = {
+      avatar_url: `/avatars/${filename}`,
+      avatar_config: config,
+    }
+
+    // Headshot (solo cara, fondo transparente) — opcional
+    if (faceData && faceData.startsWith('data:image/png;base64,')) {
+      const faceBuffer = Buffer.from(faceData.replace(/^data:image\/png;base64,/, ''), 'base64')
+      const faceFilename = `${user.id}-face.png`
+      await writeFile(join(avatarsDir, faceFilename), faceBuffer)
+      updateData.avatar_face_url = `/avatars/${faceFilename}`
+    }
 
     const avatarUrl = `/avatars/${filename}?v=${Date.now()}`
 
     const supabase = createSupabaseServerClient(request, cookies)
     const { error } = await supabase
       .from('profiles')
-      .update({ avatar_url: `/avatars/${filename}`, avatar_config: config })
+      .update(updateData)
       .eq('id', user.id)
 
     if (error) throw error
