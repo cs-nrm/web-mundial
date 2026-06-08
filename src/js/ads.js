@@ -42,7 +42,6 @@ function initGPT() {
     if (document.getElementById('ad-slot-videonota'))
       window.slotVideoNota = googletag.defineSlot('/21799830913/Mundial-Enfoque', [400, 311], 'ad-slot-videonota').defineSizeMapping(mappingVideoNota).addService(googletag.pubads());
 
-    googletag.pubads().enableSingleRequest();
     googletag.pubads().setTargeting('test', 'responsive');
     googletag.enableServices();
 
