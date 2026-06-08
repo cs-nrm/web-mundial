@@ -104,7 +104,7 @@ const { count: playlistCount } = await supabase
   <div class="perfil-page">
 
     <!-- Header -->
-    <div class="perfil-header">
+    <div class="perfil-header" id="perfil-start">
       <div class="perfil-header-inner">
 
         <a href="/perfil/avatar" class="perfil-avatar" title={avatarUrl ? 'Editar avatar' : 'Crear avatar'}>
@@ -178,18 +178,12 @@ const { count: playlistCount } = await supabase
         <div class="promo-grid">
 
           <a href="/perfil/avatar" class="promo-card">
-            <span class={`promo-badge ${avatarUrl ? 'badge-active' : 'badge-pending'}`}>
-              {avatarUrl ? 'Activo' : 'Pendiente'}
-            </span>
             <h3 class="promo-name spartan">Avatar</h3>
             <p class="promo-desc">{avatarUrl ? 'Editar personaje' : 'Crear personaje'}</p>
             <span class="promo-link">Ver →</span>
           </a>
 
-          <a href="/perfil/playlist" class="promo-card" style="background:#320E41;border-color:rgba(255,255,255,0.1)">
-            <span class={`promo-badge ${(playlistCount ?? 0) > 0 ? 'badge-active' : 'badge-pending'}`}>
-              {(playlistCount ?? 0) > 0 ? 'Activo' : 'Pendiente'}
-            </span>
+          <a href="/perfil/playlist" class="promo-card">
             <h3 class="promo-name spartan">Crear Playlist</h3>
             <p class="promo-desc">
               {(playlistCount ?? 0) > 0 ? `${playlistCount} playlist${playlistCount === 1 ? '' : 's'}` : 'Arma tu soundtrack'}
@@ -203,6 +197,14 @@ const { count: playlistCount } = await supabase
     </div>
   </div>
 </Layout>
+
+<script is:inline>
+  // Scroll suave al inicio del perfil al cargar la página
+  window.addEventListener('load', function () {
+    var el = document.getElementById('perfil-start')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+</script>
 
 <style>
   .perfil-page {
@@ -436,8 +438,6 @@ const { count: playlistCount } = await supabase
     font-family: 'Open Sans', sans-serif; align-self: flex-start;
     margin-bottom: 0.25rem;
   }
-  .badge-active  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
-  .badge-pending { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.55); }
   .promo-name { font-size: 1rem; font-weight: 700; color: white; }
   .promo-desc {
     font-size: 0.8rem; color: rgba(255,255,255,0.65);

@@ -42,7 +42,7 @@ function initGPT() {
     if (document.getElementById('ad-slot-videonota'))
       window.slotVideoNota = googletag.defineSlot('/21799830913/Mundial-Enfoque', [400, 311], 'ad-slot-videonota').defineSizeMapping(mappingVideoNota).addService(googletag.pubads());
 
-    googletag.pubads().setTargeting('test', 'responsive');
+    googletag.setConfig({ targeting: { test: 'responsive' } });
     googletag.enableServices();
 
     // display() solo en slots presentes
