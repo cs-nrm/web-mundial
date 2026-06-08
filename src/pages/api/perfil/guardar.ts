@@ -7,34 +7,36 @@ export const POST: APIRoute = async ({ request, cookies, redirect, locals }) => 
   }
 
   const form = await request.formData()
-  const cp                = (form.get('cp') as string)?.trim()
-  const fecha_nac         = (form.get('fecha_nac') as string)?.trim()
-  const genero            = (form.get('genero') as string)?.trim()
-  const estacion_favorita = (form.get('estacion_favorita') as string)?.trim()
-  const escucha_enfoque   = form.get('escucha_enfoque') === 'si'
-  const medio_escucha_raw = (form.get('medio_escucha') as string)?.trim()
-  const medio_otro        = (form.get('medio_otro') as string)?.trim()
-  const acepto            = form.get('acepto_aviso') === 'on'
+  const cp                 = (form.get('cp') as string)?.trim()
+  const fecha_nac          = (form.get('fecha_nac') as string)?.trim()
+  const genero             = (form.get('genero') as string)?.trim()
+  const estacion_favorita  = (form.get('estacion_favorita') as string)?.trim()
+  const estaciones_escucha = form.getAll('estaciones_escucha').map(v => String(v).trim()).filter(Boolean)
+  const escucha_enfoque    = form.get('escucha_enfoque') === 'si'
+  const medio_escucha_raw  = (form.get('medio_escucha') as string)?.trim()
+  const medio_otro         = (form.get('medio_otro') as string)?.trim()
+  const acepto             = form.get('acepto_aviso') === 'on'
 
   const medio_escucha = medio_escucha_raw === 'otro' ? (medio_otro || 'otro') : medio_escucha_raw
 
-  if (!cp || !fecha_nac || !genero || !estacion_favorita || !medio_escucha || !acepto) {
+  if (!cp || !fecha_nac || !genero || !estacion_favorita || estaciones_escucha.length === 0 || !medio_escucha || !acepto) {
     return new Response(JSON.stringify({ error: 'Campos incompletos' }), { status: 400 })
   }
 
   const supabase = createSupabaseServerClient(request, cookies)
 
   const { error } = await supabase.from('user_generales').upsert({
-    user_id:            locals.user.id,
+    user_id:             locals.user.id,
     cp,
     fecha_nac,
     genero,
     estacion_favorita,
+    estaciones_escucha,
     escucha_enfoque,
     medio_escucha,
-    acepto_aviso:       true,
-    fecha_aviso:        new Date().toISOString(),
-    completed_at:       new Date().toISOString(),
+    acepto_aviso:        true,
+    fecha_aviso:         new Date().toISOString(),
+    completed_at:        new Date().toISOString(),
   }, { onConflict: 'user_id' })
 
   if (error) {

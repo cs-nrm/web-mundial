@@ -111,10 +111,9 @@ const anios = Array.from({ length: 59 }, (_, i) => 2008 - i) // 2008..1950
             </div>
           </div>
 
-          <!-- Estación favorita -->
+          <!-- Álbum: estación favorita (single select) -->
           <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-900 mb-0.5">Estación que más escuchas</label>
-            <p class="text-xs text-gray-400 mb-2">Álbum a coleccionar</p>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">¿Con qué estación quieres hacer tu Álbum?</label>
             <div class="grid grid-cols-2 gap-2">
               {[
                 { value: 'oye', label: 'Oye' },
@@ -128,6 +127,26 @@ const anios = Array.from({ length: 59 }, (_, i) => 2008 - i) // 2008..1950
                 </label>
               ))}
             </div>
+          </div>
+
+          <!-- Estaciones que escucha (multi-select) -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-900 mb-0.5">¿Qué estación(es) escuchas?</label>
+            <p class="text-xs text-gray-400 mb-2">Puedes elegir más de una.</p>
+            <div class="grid grid-cols-2 gap-2" id="estaciones-escucha-wrap">
+              {[
+                { value: 'oye', label: 'Oye' },
+                { value: 'beat', label: 'Beat' },
+                { value: 'stereocien', label: 'Stereo Cien' },
+                { value: 'sabrosita', label: 'Sabrosita' },
+              ].map(({ value, label }) => (
+                <label class="radio-card">
+                  <input type="checkbox" name="estaciones_escucha" value={value} class="sr-only peer" />
+                  <span class="radio-label peer-checked:active">{label}</span>
+                </label>
+              ))}
+            </div>
+            <p id="estaciones-error" class="hidden mt-1.5 text-xs text-red-600">Selecciona al menos una estación.</p>
           </div>
 
           <!-- Enfoque Noticias -->
@@ -212,6 +231,17 @@ const anios = Array.from({ length: 59 }, (_, i) => 2008 - i) // 2008..1950
     }
     errFecha.classList.add('hidden')
     document.getElementById('fecha_nac_hidden').value = anio + '-' + mes + '-' + dia
+
+    // Validar al menos una estación escuchada
+    var checkboxes = document.querySelectorAll('input[name="estaciones_escucha"]:checked')
+    var errEstaciones = document.getElementById('estaciones-error')
+    if (checkboxes.length === 0) {
+      e.preventDefault()
+      errEstaciones.classList.remove('hidden')
+      document.getElementById('estaciones-escucha-wrap').scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    errEstaciones.classList.add('hidden')
   })
 
   // Mostrar/ocultar campo "otro"
