@@ -55,9 +55,15 @@ if (cardIds.length > 0) {
   collectedSet = new Set((userCards ?? []).map((uc: any) => uc.card_id))
 }
 
+const avatarUrl: string | null = profile?.avatar_url ?? null
+const avatarFaceUrl: string | null = profile?.avatar_face_url ?? avatarUrl
+const hasAvatar = !!avatarUrl
+
+// La carta #01 es el avatar del usuario (cuenta en el total).
+// album.total_cards debe incluir esa carta; el fallback suma +1 por el avatar.
 const cardsLoaded = (cards ?? []).length
-const total = album.total_cards ?? cardsLoaded
-const collected = collectedSet.size
+const total = album.total_cards ?? (cardsLoaded + 1)
+const collected = collectedSet.size + (hasAvatar ? 1 : 0)
 const pct = total > 0 ? Math.round((collected / total) * 100) : 0
 
 const accentColor = album.color_acento ?? '#ff6b35'
@@ -70,8 +76,6 @@ const cardText = album.color_texto_card ?? '#ffffff'
 const headerText = album.color_texto_header ?? '#ffffff'
 const bodyText = album.color_texto_body ?? '#ffffff'
 const displayName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'Participante'
-const avatarUrl: string | null = profile?.avatar_url ?? null
-const avatarFaceUrl: string | null = profile?.avatar_face_url ?? avatarUrl
 ---
 
 <Layout title={`${album.name} — Mi Álbum`} noWrapper={true}>
@@ -175,22 +179,37 @@ const avatarFaceUrl: string | null = profile?.avatar_face_url ?? avatarUrl
       <div class="figuritas-grid" id="figuritas-grid"
         data-collected={collected} data-total={total}>
 
-        {/* Estampa especial: avatar del usuario */}
-        {avatarUrl && (
+        {/* Carta #01: avatar del usuario (cuenta en el total) */}
+        {avatarUrl ? (
           <div
             class="figurita-card obtenida avatar-card"
             data-card-id="avatar"
             data-name="Mi Avatar"
             data-image={avatarUrl}
-            data-num="#00"
+            data-num="#01"
           >
             <img src={avatarUrl} alt="Mi Avatar" class="card-img avatar-card-img" />
             <div class="card-footer">
-              <span class="card-num spartan">#00</span>
+              <span class="card-num spartan">#01</span>
               <span class="card-sep">|</span>
               <span class="card-name spartan">Mi Avatar</span>
             </div>
           </div>
+        ) : (
+          <a href="/perfil/avatar" class="figurita-card bloqueada avatar-card-cta" data-num="#01">
+            <div class="card-locked">
+              <svg class="lock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span class="locked-label">Crea tu avatar</span>
+            </div>
+            <div class="card-footer">
+              <span class="card-num spartan">#01</span>
+              <span class="card-sep">|</span>
+              <span class="card-name spartan">Mi Avatar</span>
+            </div>
+          </a>
         )}
 
         {(cards ?? []).map((card: any) => {
@@ -819,6 +838,24 @@ const avatarFaceUrl: string | null = profile?.avatar_face_url ?? avatarUrl
   .avatar-card-img {
     object-position: top center;
   }
+
+  /* Carta #01 sin avatar: CTA para crearlo */
+  .avatar-card-cta {
+    cursor: pointer;
+    text-decoration: none;
+    border-color: var(--accent) !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .avatar-card-cta:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 28px var(--accent-glow), 0 6px 24px rgba(0,0,0,0.5);
+  }
+  .avatar-card-cta .locked-label {
+    color: var(--accent);
+    opacity: 0.9;
+    font-weight: 700;
+  }
+  .avatar-card-cta .lock-icon { opacity: 0.6; }
 
   /* Modal */
   .card-modal {

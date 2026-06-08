@@ -13,7 +13,7 @@ const errorMessages: Record<string, string> = {
 }
 const errorMsg = errorParam ? (errorMessages[errorParam] ?? errorMessages.error) : null
 ---
-<Layout title="Crear cuenta">
+<Layout title="Crear cuenta" noindex={true}>
   <div class="min-h-screen flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
 

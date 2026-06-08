@@ -13,6 +13,7 @@ export interface Props {
   description?: string;
   fullscreen?: boolean;
   noWrapper?: boolean;
+  noindex?: boolean;
   tags?: {
     title?: string;
     description?: string;
@@ -25,7 +26,7 @@ export interface Props {
   };
 }
 
-const { title, img, tags, description, fullscreen, noWrapper } = Astro.props as Props;
+const { title, img, tags, description, fullscreen, noWrapper, noindex } = Astro.props as Props;
 const canonicalURL = Astro.site ? new URL(Astro.url.pathname, Astro.site) : Astro.url;
 
 const metaTitle = tags?.title ?? title ?? SITE_TITLE;
@@ -43,15 +44,21 @@ const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImag
 <html lang="es" data-has-generales={String(hasGenerales)} data-authenticated={String(!!user)}>
   <head>
     <BaseHead title={SITE_TITLE} seccion={metaTitle} description={metaDesc} />
+    {noindex
+      ? <meta name="robots" content="noindex, nofollow" />
+      : <meta name="robots" content="index, follow" />
+    }
     <link rel="canonical" href={canonicalURL} class="yoast-seo-meta-tag" />
     <meta property="og:locale" content={ogLocale} class="yoast-seo-meta-tag" />
     <meta property="og:type" content={ogType} class="yoast-seo-meta-tag" />
     <meta property="og:title" content={metaTitle} class="yoast-seo-meta-tag" />
     <meta property="og:description" content={metaDesc} class="yoast-seo-meta-tag" />
     <meta property="og:url" content={canonicalURL} class="yoast-seo-meta-tag" />
-    <meta property="og:site_name" content="Fiesta Futbolera" class="yoast-seo-meta-tag" />
+    <meta property="og:site_name" content={SITE_TITLE} class="yoast-seo-meta-tag" />
     <meta property="og:image" content={ogImageAbs} class="yoast-seo-meta-tag" />
-    <meta name="author" content="Fiesta Futbolera" class="yoast-seo-meta-tag" />
+    <meta property="og:image:width" content="1200" class="yoast-seo-meta-tag" />
+    <meta property="og:image:height" content="630" class="yoast-seo-meta-tag" />
+    <meta name="author" content={SITE_TITLE} class="yoast-seo-meta-tag" />
     <meta name="twitter:card" content="summary_large_image" class="yoast-seo-meta-tag" />
     <meta name="twitter:title" content={metaTitle} class="yoast-seo-meta-tag" />
     <meta name="twitter:description" content={metaDesc} class="yoast-seo-meta-tag" />

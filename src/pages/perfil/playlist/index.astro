@@ -13,7 +13,7 @@ const { data: playlists } = await supabase
   .eq('user_id', user.id)
   .order('created_at')
 ---
-<Layout title="Mis Playlists">
+<Layout title="Mis Playlists" noindex={true}>
   <div class="min-h-screen py-12 px-4">
     <div class="max-w-2xl mx-auto">
 

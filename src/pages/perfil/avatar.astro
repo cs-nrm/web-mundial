@@ -82,6 +82,7 @@ const clientData = {
   labels: LABELS,
   descs: CAT_DESCS,
   baseUrl: AVATAR_BASE_URL,
+  hadAvatar: !!(profile as any)?.avatar_url,
 }
 
 const STATION_COLORS: Record<string, string> = {
@@ -91,7 +92,7 @@ const accent = STATION_COLORS[estacion] ?? '#EA262A'
 const hasAvatar = !!(profile as any)?.avatar_url
 ---
 
-<Layout title="Crea tu avatar" noWrapper={true}>
+<Layout title="Crea tu avatar" noWrapper={true} noindex={true}>
 <div class="av" style={`--ac: ${accent}; --ac-dim: ${accent}22; --ac-glow: ${accent}55`}>
 
   <!-- Nav -->
@@ -134,7 +135,6 @@ const hasAvatar = !!(profile as any)?.avatar_url
           </div>
         </div>
       </div>
-      <div id="av-msg" class="av-msg" hidden></div>
     </div>
 
     <!-- Grid de piezas -->
@@ -144,11 +144,15 @@ const hasAvatar = !!(profile as any)?.avatar_url
 
   </div>
 
+  <!-- Toast de feedback -->
+  <div id="av-toast" class="av-toast" role="status" aria-live="polite"></div>
+
 </div>
 </Layout>
 
 <script define:vars={{ clientData }}>
-  const { zOrder, piezas, requerido, savedConfig, labels, descs, baseUrl } = clientData
+  const { zOrder, piezas, requerido, savedConfig, labels, descs, baseUrl, hadAvatar } = clientData
+  let yaTeniaAvatar = hadAvatar  // se vuelve true tras el primer guardado en esta sesión
 
   function init() {
   const canvas   = document.getElementById('av-canvas')
@@ -157,7 +161,6 @@ const hasAvatar = !!(profile as any)?.avatar_url
   const loader   = document.getElementById('av-loader')
   const tabs     = document.getElementById('av-tabs')
   const grid     = document.getElementById('av-grid')
-  const msg      = document.getElementById('av-msg')
   const btnSave  = document.getElementById('btn-save')
   const btnDl    = document.getElementById('btn-dl')
   const saveText = document.getElementById('btn-save-text')
@@ -352,7 +355,6 @@ const hasAvatar = !!(profile as any)?.avatar_url
   btnSave.addEventListener('click', async () => {
     btnSave.disabled = true
     saveText.textContent = 'Guardando...'
-    msg.setAttribute('hidden', '')
 
     try {
       let imageData, faceData
@@ -373,22 +375,54 @@ const hasAvatar = !!(profile as any)?.avatar_url
       console.log('[avatar] respuesta API:', data)
       if (!data.ok) throw new Error(data.error ?? 'api_error')
 
-      msg.removeAttribute('hidden')
-      msg.className = 'av-msg ok'
-      msg.textContent = '¡Estampa guardada!'
+      if (!yaTeniaAvatar) {
+        showToast('ok', '🎉 Tu carta <strong>#01</strong> del álbum se ha desbloqueado.', '/album', 'Ver álbum')
+      } else {
+        showToast('ok', '¡Avatar actualizado!', '/album', 'Ver en mi álbum')
+      }
+      yaTeniaAvatar = true
       saveText.textContent = 'Actualizar'
     } catch (e) {
       console.error('[avatar] error al guardar:', e)
-      msg.removeAttribute('hidden')
-      msg.className = 'av-msg err'
-      msg.textContent = e.message === 'canvas_tainted'
+      const errMsg = e.message === 'canvas_tainted'
         ? 'Error de permisos de imagen. Recarga la página.'
         : 'Error al guardar. Intenta de nuevo.'
+      showToast('err', errMsg)
       saveText.textContent = 'Guardar'
     } finally {
       btnSave.disabled = false
     }
   })
+
+  // ── Toast ────────────────────────────────────────────────
+  let toastTimer = null
+  function showToast(type, html, linkHref, linkText) {
+    const toast = document.getElementById('av-toast')
+    if (!toast) return
+    clearTimeout(toastTimer)
+
+    const link = (linkHref && linkText)
+      ? `<a href="${linkHref}" class="av-toast-link">${linkText} →</a>`
+      : ''
+    toast.className = `av-toast av-toast--${type}`
+    toast.innerHTML = `
+      <div class="av-toast-icon">${type === 'ok' ? '✓' : '!'}</div>
+      <div class="av-toast-body"><span>${html}</span>${link}</div>
+      <button class="av-toast-close" aria-label="Cerrar">&times;</button>`
+
+    toast.querySelector('.av-toast-close')?.addEventListener('click', hideToast)
+
+    // Forzar reflow para que la animación de entrada dispare
+    void toast.offsetWidth
+    toast.classList.add('show')
+
+    // Auto-dismiss: más tiempo si hay link para alcanzar a hacer click
+    toastTimer = setTimeout(hideToast, linkHref ? 7000 : 4000)
+  }
+  function hideToast() {
+    const toast = document.getElementById('av-toast')
+    if (toast) toast.classList.remove('show')
+  }
 
   // ── Descargar ────────────────────────────────────────────
   btnDl.addEventListener('click', () => {
@@ -635,18 +669,81 @@ const hasAvatar = !!(profile as any)?.avatar_url
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .av-msg {
-    font-size: 0.65rem;
+  /* ── Toast ── */
+  .av-toast {
+    position: fixed;
+    bottom: 5rem;
+    left: 50%;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    max-width: min(92vw, 420px);
+    padding: 0.9rem 1.1rem;
+    border-radius: 0.9rem;
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 16px 50px rgba(0,0,0,0.45), 0 0 0 4px rgba(255,255,255,0.04);
+    color: #14171f;
     font-family: 'Open Sans', sans-serif;
-    text-align: center;
-    padding: 0.35rem 0.6rem;
-    border-radius: 999px;
+    font-size: 0.84rem;
+    font-weight: 500;
     line-height: 1.4;
-    width: 100%;
+    /* Estado oculto: arranca abajo, transparente y un pelín encogido */
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 280ms cubic-bezier(0.23,1,0.32,1),
+                transform 280ms cubic-bezier(0.23,1,0.32,1);
   }
-  .av-msg[hidden] { display: none; }
-  .av-msg.ok  { background: rgba(16,185,129,0.12); color: #6ee7b7; }
-  .av-msg.err { background: rgba(239,68,68,0.1); color: #fca5a5; }
+  .av-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  .av-toast-icon {
+    flex-shrink: 0;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+  }
+  .av-toast--ok  { border-top: 3px solid #10b981; }
+  .av-toast--ok .av-toast-icon  { background: #10b981; color: #fff; }
+  .av-toast--err { border-top: 3px solid #ef4444; }
+  .av-toast--err .av-toast-icon { background: #ef4444; color: #fff; }
+  .av-toast-body { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+  .av-toast-body strong { color: #10b981; font-weight: 800; }
+  .av-toast-link {
+    color: #0a66ff;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 0.82rem;
+    width: fit-content;
+    transition: opacity 150ms ease;
+  }
+  .av-toast-link:hover { opacity: 0.7; }
+  .av-toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: rgba(0,0,0,0.3);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0 0 0.25rem;
+    transition: color 150ms ease;
+  }
+  .av-toast-close:hover { color: #14171f; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .av-toast { transition: opacity 200ms ease; transform: translateX(-50%); }
+    .av-toast.show { transform: translateX(-50%); }
+  }
 
   /* Panel de piezas — columna derecha */
   .av-panel {

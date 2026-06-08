@@ -53,10 +53,13 @@ if (albums && albums.length > 0) {
     supabase.from('user_cards').select('card_id, cards!inner(album_id)').eq('user_id', user.id),
   ])
 
+  const hasAvatar = !!avatarUrl
   for (const album of albums as any[]) {
-    const obtenidas = (userCards ?? []).filter((uc: any) => (uc.cards as any)?.album_id === album.id).length
+    // La carta #01 (avatar) cuenta en cada álbum
+    const realObtenidas = (userCards ?? []).filter((uc: any) => (uc.cards as any)?.album_id === album.id).length
     const cardsLoaded = (allCards ?? []).filter((c: any) => c.album_id === album.id).length
-    const total = album.total_cards ?? cardsLoaded
+    const obtenidas = realObtenidas + (hasAvatar ? 1 : 0)
+    const total = album.total_cards ?? (cardsLoaded + 1)
     const pct = total > 0 ? Math.round((obtenidas / total) * 100) : 0
     albumsProgress.push({
       id: album.id,
@@ -97,7 +100,7 @@ const { count: playlistCount } = await supabase
   .from('playlists').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
 ---
 
-<Layout title="Mi perfil" noWrapper={true}>
+<Layout title="Mi perfil" noWrapper={true} noindex={true}>
   <div class="perfil-page">
 
     <!-- Header -->
