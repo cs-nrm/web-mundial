@@ -15,8 +15,7 @@ export const GET: APIRoute = async ({ url }) => {
 
   if (!creative?.href) return new Response(null, { status: 404 })
 
-  // Registrar click sin bloquear la redirección
-  supabase.from('ad_clicks').insert({
+  await supabase.from('ad_clicks').insert({
     creative_id: creative.id,
     client_id: creative.client_id,
     slot_type: url.searchParams.get('slot') ?? null,

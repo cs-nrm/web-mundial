@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!client_id || !slot_type || !type) {
     return new Response(JSON.stringify({ error: 'Faltan campos requeridos' }), { status: 400 })
   }
-  if (!['leader', 'box'].includes(slot_type)) {
+  if (!['leaderboard', 'leaderexpandible', 'boxbanner', 'superleader', 'doublebox'].includes(slot_type)) {
     return new Response(JSON.stringify({ error: 'slot_type inválido' }), { status: 400 })
   }
   if (!['image', 'html'].includes(type)) {

@@ -4,14 +4,14 @@
 (function () {
   // Mapeo de div → tipo de slot
   const SLOT_TYPES = {
-    'ad-slot2':         'box',
-    'ad-slot3':         'leader',
-    'ad-slot32':        'leader',
-    'ad-slot4':         'leader',
-    'ad-slot5':         'box',
-    'ad-slot6':         'leader',
-    'ad-slot14':        'leader',
-    'ad-slot-videonota':'leader',
+    'ad-slot2':          'boxbanner',
+    'ad-slot3':          'leaderboard',
+    'ad-slot32':         'leaderboard',
+    'ad-slot4':          'leaderboard',
+    'ad-slot5':          'doublebox',
+    'ad-slot6':          'leaderboard',
+    'ad-slot14':         'superleader',
+    'ad-slot-videonota': 'leaderboard',
   }
 
   let _clients = null // cache por sesión

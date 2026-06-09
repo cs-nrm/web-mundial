@@ -24,8 +24,17 @@ const { data: creatives } = await supabase
   .eq('client_id', id!)
   .order('created_at', { ascending: true })
 
-const leaders = (creatives ?? []).filter(c => c.slot_type === 'leader')
-const boxes   = (creatives ?? []).filter(c => c.slot_type === 'box')
+const SLOT_LABELS: Record<string, { label: string; size: string }> = {
+  leaderboard:     { label: 'LeaderBoard',     size: '728×90' },
+  leaderexpandible:{ label: 'LeaderExpandible', size: '728×90' },
+  boxbanner:       { label: 'BoxBanner',        size: '300×250' },
+  superleader:     { label: 'SuperLeader',      size: '970×90' },
+  doublebox:       { label: 'DoubleBox',        size: '300×600' },
+}
+const slotOrder = ['leaderboard', 'leaderexpandible', 'boxbanner', 'superleader', 'doublebox']
+const creativesBySlot = Object.fromEntries(
+  slotOrder.map(s => [s, (creatives ?? []).filter(c => c.slot_type === s)])
+)
 ---
 
 <AdminLayout title={`Publicidad — ${client.name}`}>
@@ -38,66 +47,42 @@ const boxes   = (creatives ?? []).filter(c => c.slot_type === 'box')
     </div>
   </div>
 
-  <!-- LEADER -->
-  <section class="slot-section">
-    <div class="slot-header">
-      <h3>Leader <span class="slot-size">728×90 / 320×50</span></h3>
-      <button class="btn-add" data-slot="leader">+ Agregar</button>
-    </div>
-    <div class="creatives-grid" id="grid-leader">
-      {leaders.map(c => (
-        <div class="creative-card" data-id={c.id}>
-          {c.type === 'image' ? (
-            <div class="creative-preview">
-              <img src={c.src} alt={c.alt ?? ''} />
-            </div>
-          ) : (
-            <div class="creative-preview html-preview">
-              <span>HTML</span>
-            </div>
-          )}
-          <div class="creative-meta">
-            <span class="creative-type">{c.type === 'image' ? '🖼 Imagen' : '🖥 HTML'}</span>
-            {c.href && <a href={c.href} target="_blank" class="creative-href" title={c.href}>↗ destino</a>}
-          </div>
-          <button class="btn-delete" data-id={c.id}>Eliminar</button>
+  {slotOrder.map(slotKey => {
+    const { label, size } = SLOT_LABELS[slotKey]
+    const list = creativesBySlot[slotKey]
+    return (
+      <section class="slot-section">
+        <div class="slot-header">
+          <h3>{label} <span class="slot-size">{size}</span></h3>
+          <button class="btn-add" data-slot={slotKey}>+ Agregar</button>
         </div>
-      ))}
-      {!leaders.length && <p class="empty-msg">Sin creatividades para Leader</p>}
-    </div>
-  </section>
-
-  <!-- BOX -->
-  <section class="slot-section">
-    <div class="slot-header">
-      <h3>Box <span class="slot-size">300×250 / 300×600</span></h3>
-      <button class="btn-add" data-slot="box">+ Agregar</button>
-    </div>
-    <div class="creatives-grid" id="grid-box">
-      {boxes.map(c => (
-        <div class="creative-card" data-id={c.id}>
-          {c.type === 'image' ? (
-            <div class="creative-preview">
-              <img src={c.src} alt={c.alt ?? ''} />
+        <div class="creatives-grid">
+          {list.map(c => (
+            <div class="creative-card">
+              {c.type === 'image' ? (
+                <div class="creative-preview">
+                  <img src={c.src} alt={c.alt ?? ''} />
+                </div>
+              ) : (
+                <div class="creative-preview html-preview">
+                  <span>HTML</span>
+                </div>
+              )}
+              <div class="creative-meta">
+                <span class="creative-type">{c.type === 'image' ? '🖼 Imagen' : '🖥 HTML'}</span>
+                {c.href && <a href={c.href} target="_blank" class="creative-href" title={c.href}>↗ destino</a>}
+              </div>
+              <button class="btn-delete" data-id={c.id}>Eliminar</button>
             </div>
-          ) : (
-            <div class="creative-preview html-preview">
-              <span>HTML</span>
-            </div>
-          )}
-          <div class="creative-meta">
-            <span class="creative-type">{c.type === 'image' ? '🖼 Imagen' : '🖥 HTML'}</span>
-            {c.href && <a href={c.href} target="_blank" class="creative-href" title={c.href}>↗ destino</a>}
-          </div>
-          <button class="btn-delete" data-id={c.id}>Eliminar</button>
+          ))}
+          {!list.length && <p class="empty-msg">Sin creatividades para {label}</p>}
         </div>
-      ))}
-      {!boxes.length && <p class="empty-msg">Sin creatividades para Box</p>}
-    </div>
-  </section>
+      </section>
+    )
+  })}
 
   <!-- Modal agregar creatividad -->
-  <div id="modal-add" hidden style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;">
+  <div id="modal-add" hidden style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;">
     <div style="background:white;border-radius:10px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
       <h3 style="margin-bottom:1rem;font-size:1rem;" id="modal-title">Agregar creatividad</h3>
 

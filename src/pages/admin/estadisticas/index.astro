@@ -191,6 +191,59 @@ if (tab === 'playlist') {
   playlistData = { totalPlaylists, totalAgregadas, playlistsUnicas, diasData, topSongs, porEstacion, maxBar }
 }
 
+// ─── TAB: PUBLICIDAD ──────────────────────────────────────────────────────────
+let pubData: any = {}
+
+if (tab === 'publicidad') {
+  const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  const [{ data: clients }, { data: imps }, { data: clks }] = await Promise.all([
+    supabase.from('ad_clients').select('id, name, active').order('created_at'),
+    supabase.from('ad_impressions').select('client_id, slot_type, created_at').gte('created_at', since30),
+    supabase.from('ad_clicks').select('client_id, slot_type, created_at').gte('created_at', since30),
+  ])
+
+  const impTotal = (imps ?? []).length
+  const clkTotal = (clks ?? []).length
+
+  // Por cliente
+  const perClient = (clients ?? []).map(c => {
+    const ci = (imps ?? []).filter(r => r.client_id === c.id).length
+    const cc = (clks ?? []).filter(r => r.client_id === c.id).length
+    return { ...c, impressions: ci, clicks: cc, ctr: ci > 0 ? ((cc / ci) * 100).toFixed(1) + '%' : '—' }
+  }).sort((a, b) => b.impressions - a.impressions)
+
+  // Por slot_type
+  const slotMap: Record<string, { impressions: number; clicks: number }> = {}
+  for (const r of (imps ?? [])) {
+    const k = r.slot_type ?? 'desconocido'
+    if (!slotMap[k]) slotMap[k] = { impressions: 0, clicks: 0 }
+    slotMap[k].impressions++
+  }
+  for (const r of (clks ?? [])) {
+    const k = r.slot_type ?? 'desconocido'
+    if (!slotMap[k]) slotMap[k] = { impressions: 0, clicks: 0 }
+    slotMap[k].clicks++
+  }
+  const perSlot = Object.entries(slotMap).sort((a, b) => b[1].impressions - a[1].impressions)
+
+  // Impresiones por día (últimos 30 días)
+  const desde = new Date(); desde.setDate(desde.getDate() - 29); desde.setHours(0,0,0,0)
+  const diaMap: Record<string, number> = {}
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(desde); d.setDate(d.getDate() + i)
+    diaMap[d.toISOString().slice(0, 10)] = 0
+  }
+  for (const r of (imps ?? [])) {
+    const dia = r.created_at?.slice(0, 10)
+    if (dia && diaMap[dia] !== undefined) diaMap[dia]++
+  }
+  const diasData = Object.entries(diaMap)
+  const maxBar = Math.max(...diasData.map(([, v]) => v), 1)
+
+  pubData = { impTotal, clkTotal, ctr: impTotal > 0 ? ((clkTotal / impTotal) * 100).toFixed(1) + '%' : '—', perClient, perSlot, diasData, maxBar }
+}
+
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
   const d = new Date(iso)
@@ -209,6 +262,7 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
     <a href={tabUrl('playlist')} class={`tab-btn ${tab === 'playlist' ? 'active' : ''}`}>Playlist</a>
     <a href={tabUrl('avatar')} class={`tab-btn ${tab === 'avatar' ? 'active' : ''}`}>Avatar</a>
     <a href="?tab=progreso" class={`tab-btn ${tab === 'progreso' ? 'active' : ''}`}>Progreso</a>
+    <a href="?tab=publicidad" class={`tab-btn ${tab === 'publicidad' ? 'active' : ''}`}>Publicidad</a>
   </div>
 
   {tab !== 'avatar' && (
@@ -442,6 +496,82 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
       <p style="font-size:3rem;margin-bottom:1rem;">🎨</p>
       <h2 style="color:#374151;margin-bottom:0.5rem;">Estadísticas de Avatar</h2>
       <p style="color:#9ca3af;font-size:0.9rem;">Disponible cuando el sistema de avatares esté activo.<br/>Se mostrarán: jerseys más usados, partes más seleccionadas, etc.</p>
+    </div>
+  )}
+
+  <!-- ═══ TAB PUBLICIDAD ══════════════════════════════════════════════════════ -->
+  {tab === 'publicidad' && (
+    <div>
+      <div class="stats-row">
+        <div class="stat-card"><div><p class="stat-val">{pubData.impTotal ?? 0}</p><p class="stat-lbl">Impresiones (30d)</p></div></div>
+        <div class="stat-card"><div><p class="stat-val">{pubData.clkTotal ?? 0}</p><p class="stat-lbl">Clicks (30d)</p></div></div>
+        <div class="stat-card"><div><p class="stat-val">{pubData.ctr ?? '—'}</p><p class="stat-lbl">CTR global</p></div></div>
+      </div>
+
+      <div class="panel">
+        <h2>Impresiones últimos 30 días</h2>
+        {(pubData.diasData ?? []).every(([,v]: any) => v === 0) ? (
+          <p class="empty">Sin actividad en este período.</p>
+        ) : (
+          <div class="bar-chart">
+            {(pubData.diasData ?? []).map(([dia, count]: any) => (
+              <div class="bar-col">
+                <span class="bar-count">{count > 0 ? count : ''}</span>
+                <div class="bar-fill" style={`height: ${(count / (pubData.maxBar ?? 1)) * 100}%`}></div>
+                <span class="bar-label">{dia.slice(5)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-hdr"><h2>Por cliente</h2><button class="btn-csv" data-filename="ads-por-cliente">⬇ CSV</button></div>
+          {!(pubData.perClient ?? []).length ? (
+            <p class="empty">Sin datos.</p>
+          ) : (
+            <table class="mini-table">
+              <thead><tr><th>Cliente</th><th>Estado</th><th>Impresiones</th><th>Clicks</th><th>CTR</th></tr></thead>
+              <tbody>
+                {(pubData.perClient ?? []).map((c: any) => (
+                  <tr>
+                    <td class="user-name">{c.name}</td>
+                    <td><span class={`pct-badge ${c.active ? 'pct-full' : 'pct-low'}`}>{c.active ? 'Activo' : 'Pausado'}</span></td>
+                    <td class="count">{c.impressions}</td>
+                    <td class="count">{c.clicks}</td>
+                    <td style="font-weight:600;">{c.ctr}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div class="panel">
+          <div class="panel-hdr"><h2>Por slot</h2><button class="btn-csv" data-filename="ads-por-slot">⬇ CSV</button></div>
+          {!(pubData.perSlot ?? []).length ? (
+            <p class="empty">Sin datos.</p>
+          ) : (
+            <table class="mini-table">
+              <thead><tr><th>Slot</th><th>Impresiones</th><th>Clicks</th><th>CTR</th></tr></thead>
+              <tbody>
+                {(pubData.perSlot ?? []).map(([slot, d]: any) => {
+                  const ctr = d.impressions > 0 ? ((d.clicks / d.impressions) * 100).toFixed(1) + '%' : '—'
+                  return (
+                    <tr>
+                      <td class="user-name">{slot}</td>
+                      <td class="count">{d.impressions}</td>
+                      <td class="count">{d.clicks}</td>
+                      <td style="font-weight:600;">{ctr}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   )}
 
