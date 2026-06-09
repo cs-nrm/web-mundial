@@ -30,7 +30,7 @@ function initGPT() {
     if (document.getElementById('ad-slot-videonota'))
       window.slotVideoNota = googletag.defineSlot('/21799830913/Mundial/Leader', [[400, 311]], 'ad-slot-videonota').addService(googletag.pubads());
 
-    googletag.setConfig({ targeting: { test: 'responsive' } });
+    googletag.pubads().setTargeting('test', 'responsive');
     googletag.enableServices();
 
     if (document.getElementById('ad-slot2'))          googletag.display('ad-slot2');
