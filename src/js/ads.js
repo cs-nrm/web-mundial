@@ -22,7 +22,7 @@ function initGPT() {
       window.slot2 = googletag.defineSlot('/21799830913/Mundial-Enfoque/Box', [300, 250], 'ad-slot2').defineSizeMapping(mapping2).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot3'))
-      window.slot3 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [[970, 250], [320, 50]], 'ad-slot3').defineSizeMapping(mapping3).addService(googletag.pubads());
+      window.slot3 = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [[970, 250], [320, 50]], 'ad-slot3').defineSizeMapping(mapping3).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot32'))
       window.slot32 = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [[728, 90], [320, 50]], 'ad-slot32').defineSizeMapping(mapping32).addService(googletag.pubads());
@@ -31,16 +31,16 @@ function initGPT() {
       window.slot4 = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [[728, 90], [320, 50]], 'ad-slot4').defineSizeMapping(mapping4).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot5'))
-      window.slot5 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [300, 600], 'ad-slot5').defineSizeMapping(mapping5).addService(googletag.pubads());
+      window.slot5 = googletag.defineSlot('/21799830913/Mundial-Enfoque/Box', [300, 600], 'ad-slot5').defineSizeMapping(mapping5).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot6'))
-      window.slot6 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [[970, 90], [320, 50]], 'ad-slot6').defineSizeMapping(mapping6).addService(googletag.pubads());
+      window.slot6 = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [[970, 90], [320, 50]], 'ad-slot6').defineSizeMapping(mapping6).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot14'))
-      window.slot14 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [[600, 800], [320, 480]], 'ad-slot14').defineSizeMapping(mapping14).addService(googletag.pubads());
+      window.slot14 = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [[600, 800], [320, 480]], 'ad-slot14').defineSizeMapping(mapping14).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot-videonota'))
-      window.slotVideoNota = googletag.defineSlot('/21799830913/Mundial-Enfoque', [400, 311], 'ad-slot-videonota').defineSizeMapping(mappingVideoNota).addService(googletag.pubads());
+      window.slotVideoNota = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [400, 311], 'ad-slot-videonota').defineSizeMapping(mappingVideoNota).addService(googletag.pubads());
 
     googletag.setConfig({ targeting: { test: 'responsive' } });
     googletag.enableServices();
