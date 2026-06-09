@@ -187,6 +187,16 @@ const hasAvatar = !!(profile as any)?.avatar_url
     }
   }
 
+  // Auto-seleccionar piezas únicas — aplica a todos los usuarios.
+  // Si una categoría tiene exactamente 1 opción y no hay nada seleccionado,
+  // se elige automáticamente (cubre fondo/marco con una sola pieza por estación).
+  for (const cat of zOrder) {
+    if (sel[cat] === null) {
+      const avail = piezas[cat] ?? []
+      if (avail.length === 1) sel[cat] = avail[0]
+    }
+  }
+
   let activeCat = zOrder[0]
   let renderVersion = 0  // incrementa con cada render para cancelar renders viejos
 

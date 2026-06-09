@@ -45,7 +45,7 @@
     },
     "cabello": {
       "scope": "compartido",
-      "requerido": true,
+      "requerido": false,
       "descripcion": "Pelo del avatar.",
       "extensiones": [
         "png"
