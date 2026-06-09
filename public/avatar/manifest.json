@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "descripcion": "Manifiesto de assets para el generador de avatares. Un avatar se compone capa por capa (z_order) eligiendo una pieza de cada categoria.",
   "convencion": {
     "estructura_carpetas": "universal/<categoria>/ contiene piezas disponibles para TODAS las estaciones. <estacion>/<categoria>/ contiene piezas exclusivas de esa estacion. Para que una pieza este disponible en N estaciones especificas (pero no todas), se duplica fisicamente en la carpeta de cada estacion que la usa.",
@@ -16,15 +16,15 @@
   "z_order": [
     "fondo",
     "cuerpo-jersey",
-    "marco",
-    "boca",
-    "barba",
-    "bigote",
     "cabello",
-    "ojos",
     "cejas",
+    "ojos",
     "lentes",
-    "gorra"
+    "boca",
+    "bigote",
+    "barba",
+    "gorra",
+    "marco"
   ],
   "categorias": {
     "fondo": {
@@ -36,9 +36,9 @@
       ]
     },
     "cuerpo-jersey": {
-      "scope": "compartido",
+      "scope": "por_estacion",
       "requerido": true,
-      "descripcion": "Torso/jersey del avatar. Puede haber jerseys universales y jerseys exclusivos por estacion.",
+      "descripcion": "Torso/jersey del avatar. Exclusivo por estacion.",
       "extensiones": [
         "png"
       ]
@@ -277,20 +277,6 @@
         "universal/gorras/gorra-06.png",
         "universal/gorras/gorra-07.png",
         "universal/gorras/gorra-08.png"
-      ],
-      "cuerpo-jersey": [
-        "universal/cuerpo-jersey/jersey-01.png",
-        "universal/cuerpo-jersey/jersey-02.png",
-        "universal/cuerpo-jersey/jersey-03.png",
-        "universal/cuerpo-jersey/jersey-04.png",
-        "universal/cuerpo-jersey/jersey-05.png",
-        "universal/cuerpo-jersey/jersey-06.png",
-        "universal/cuerpo-jersey/jersey-07.png",
-        "universal/cuerpo-jersey/jersey-08.png",
-        "universal/cuerpo-jersey/jersey-09.png",
-        "universal/cuerpo-jersey/jersey-10.png",
-        "universal/cuerpo-jersey/jersey-11.png",
-        "universal/cuerpo-jersey/jersey-12.png"
       ]
     },
     "beat": {
@@ -298,11 +284,6 @@
         "beat/marcos/marco-01.png"
       ],
       "fondo": [
-        "beat/fondos/fondo-01.jpg",
-        "beat/fondos/fondo-02.jpg",
-        "beat/fondos/fondo-03.jpg",
-        "beat/fondos/fondo-04.jpg",
-        "beat/fondos/fondo-05.jpg",
         "beat/fondos/fondo-06.jpg"
       ],
       "cuerpo-jersey": [
@@ -313,7 +294,9 @@
       "marco": [
         "oye/marcos/marco-01.png"
       ],
-      "fondo": [],
+      "fondo": [
+        "oye/fondos/fondo-06.jpg"
+      ],
       "cuerpo-jersey": [
         "oye/cuerpo-jersey/jersey-14.png"
       ]
@@ -333,7 +316,12 @@
       "marco": [
         "stereocien/marcos/marco-01.png"
       ],
-      "fondo": [],
+      "fondo": [
+        "stereocien/fondos/fondo-01.jpg",
+        "stereocien/fondos/fondo-02.jpg",
+        "stereocien/fondos/fondo-03.jpg",
+        "stereocien/fondos/fondo-04.jpg"
+      ],
       "cuerpo-jersey": [
         "stereocien/cuerpo-jersey/jersey-13.png"
       ]
@@ -344,9 +332,8 @@
     "codigo": "function piezasDisponibles(categoria, estacion) {\n  const scope = manifest.categorias[categoria].scope;\n  if (scope === 'por_estacion') {\n    return manifest.assets[estacion][categoria] || [];\n  }\n  // scope === 'compartido': combinar universal + exclusivos de la estacion\n  const universales = manifest.assets.universal[categoria] || [];\n  const exclusivas = (manifest.assets[estacion] && manifest.assets[estacion][categoria]) || [];\n  return [...universales, ...exclusivas];\n}"
   },
   "notas": [
-    "Las estaciones oye y stereocien aun no tienen fondos. Cuando se agreguen, mover los archivos a <estacion>/fondos/ y actualizar el array correspondiente.",
     "El archivo universal/cejas/avatar-final.png es un artefacto de prueba y no se incluye como asset de la categoria cejas.",
-    "El jersey-14 esta fisicamente duplicado entre beat/ y oye/ porque ambas estaciones lo usan. Si en el futuro hay muchos casos asi, considerar migrar a un modelo declarativo con campo 'compatible_con' en lugar de duplicar archivos.",
+    "El jersey-14 esta fisicamente duplicado entre beat/, oye/ y sabrosita/ porque las tres estaciones lo usan.",
     "Las extensiones por categoria estan definidas en 'categorias.<cat>.extensiones'. Mantener consistencia."
   ]
 }
