@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import BoxBanner from '../../components/BoxBanner.astro';
 import { getArticles } from '../../lib/api.js';
 import { wpSitesConfig } from '../../config/sites.js';
+import LeaderExpandible from "../../components/LeaderExpandible.astro";
 
 const PER_PAGE = 12;
 const pageParam = Astro.url.searchParams.get('pagina');
@@ -81,7 +82,7 @@ const getCategoria = (p: any) => p._embedded?.['wp:term']?.[1]?.[0]?.name ?? p._
 <Layout title="Jugadores a Seguir — La Fiesta del Fútbol">
     <section class="w-full py-6">
         <div class="container mx-auto px-4">
-
+            <LeaderExpandible />
             <h1 class="titulos rojo uppercase goodtime text-center my-6 text-2xl lg:text-3xl font-bold">
                 Un Mundial Más Fácil
             </h1>

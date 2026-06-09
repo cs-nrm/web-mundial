@@ -4,6 +4,7 @@ import MoreNews from '../../components/MoreNews.astro'
 import { getArticles } from '../../lib/api.js'
 import { wpSiteGamecastConfig } from '../../config/sites.js'
 import { getFlagUrl } from '../../lib/flags.js'
+import LeaderExpandible from "../../components/LeaderExpandible.astro";
 
 const posts = await getArticles(undefined, { sites: [wpSiteGamecastConfig.url] })
 
@@ -23,6 +24,7 @@ function formatFecha(fecha: string | null | undefined) {
 
 <Layout title="Gamecast · La Fiesta del Fútbol">
   <div class="container my-12 mx-auto px-4 md:px-12">
+    <LeaderExpandible />
     <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold">
       Partidos del día
     </h1>

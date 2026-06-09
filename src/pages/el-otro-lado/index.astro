@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import BoxBanner from '../../components/BoxBanner.astro';
 import { wpSitesConfig } from '../../config/sites.js';
+import LeaderExpandible from "../../components/LeaderExpandible.astro";
 
 const PER_PAGE = 6; // por sitio — se mezclan y ordenan por fecha
 
@@ -69,7 +70,7 @@ const pages = pageRange(currentPage, totalPages);
 <Layout title="el-otro-lado — La Fiesta del Fútbol">
     <section class="w-full py-6">
         <div class="container mx-auto px-4">
-
+            <LeaderExpandible />
             <h1 class="titulos rojo uppercase goodtime text-center my-6 text-2xl lg:text-3xl font-bold">
                 El Otro Lado
             </h1>

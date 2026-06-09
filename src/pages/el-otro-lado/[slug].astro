@@ -4,6 +4,7 @@ import BoxBanner from "../../components/BoxBanner.astro";
 import MoreNews from "../../components/MoreNews.astro";
 import { wpSitesConfig } from "../../config/sites.js";
 import DoubleBox from "../../components/DoubleBox.astro";
+import LeaderExpandible from "../../components/LeaderExpandible.astro";
 
 const { slug } = Astro.params;
 
@@ -67,7 +68,7 @@ const featuredImage =
 >
     <section class="w-full py-4 poppins" id="content-w-video">
         <div class="container my-12 mx-auto px-4 md:px-12">
-
+            <LeaderExpandible />
             <div class="my-4">
                 <h1 class="font-bold text-black text-3xl md:text-4xl mb-4"
                     set:html={post.title.rendered} />
