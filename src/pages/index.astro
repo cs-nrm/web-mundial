@@ -12,13 +12,13 @@ import CardsHomeOtroMundial from "../layouts/CardsHomeOtromundial.astro";
 import CardsHomeMundialfacil from "../layouts/CardsHomeMundialfacil.astro";
 import CardsHomeNoticias from "../layouts/CardsHomeNoticias.astro";
 import LeaderBoard from "../components/LeaderBoard.astro";
+import LeaderExpandible from "../components/LeaderExpandible.astro";
 import SuperLeader from "../components/SuperLeader.astro";
 import BillBoard from "../components/BillBoard.astro";
 import Modal from "../components/Modal.astro";
 import CardsHomeTres from "../layouts/CardsHomeTres.astro";
 import CardsHomeGamecast from "../layouts/CardsHomeGamecast.astro";
 import ConteoRegresivo from "../components/ConteoRegresivo.astro";
-import LeaderExpandible from "../components/LeaderExpandible.astro";
 
 
 const posts = await getArticlesEnfoque();
@@ -30,21 +30,21 @@ if (posts.length > 0) {
 
 <Layout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <main id="home" class="">
-    <LeaderExpandible />
+    <LeaderBoard />
     <section><ConteoRegresivo /></section>
     <section><CardsHomeEnfoque posts={posts} /></section>
-    <LeaderBoard />
+    <LeaderExpandible />
     <section><CardsHomeTres posts={posts} /></section>
 
     <section><CardsHomeGamecast /></section>
     <!--section><CardsHomeOtroMundial /></section>
     <section><CardsHomeMundialfacil /></section-->
-
+    <SuperLeader />
 
 
     <section><CardsHomeOtroMundial /></section>
     <section><CardsHomeMundialfacil /></section>
-    <BillBoard />
+    <!--BillBoard /-->
 
     <!--section>
       <WidgetSorteo />

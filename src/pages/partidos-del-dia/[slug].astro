@@ -5,7 +5,7 @@ import MoreNews from "../../components/MoreNews.astro";
 import DoubleBox from "../../components/DoubleBox.astro";
 import { wpSiteGamecastConfig } from "../../config/sites.js";
 import { getFlagUrl } from "../../lib/flags.js";
-import LeaderExpandible from "../../components/LeaderExpandible.astro";
+import LeaderBoard from "../../components/LeaderBoard.astro";
 
 const { slug } = Astro.params;
 
@@ -63,7 +63,7 @@ const featuredImage =
 >
     <section class="w-full py-4 poppins" id="content-gamecast">
         <div class="container my-12 mx-auto px-4 md:px-12">
-            <LeaderExpandible />
+            <LeaderBoard />
             <!-- Cabecera del partido -->
             <div class="bg-black text-white rounded-2xl p-6 mb-8 flex flex-col items-center gap-4">
                 {fecha && (

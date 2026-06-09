@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import BoxBanner from '../../components/BoxBanner.astro';
 import { wpSiteEnfoqueConfig } from '../../config/sites.js';
-import LeaderExpandible from "../../components/LeaderExpandible.astro";
+import LeaderBoard from "../../components/LeaderBoard.astro";
 
 const PER_PAGE = 12;
 const pageParam = Astro.url.searchParams.get('pagina');
@@ -51,7 +51,7 @@ const pages = pageRange(currentPage, totalPages);
 <Layout title="Historia de los Mundiales — La Fiesta del Fútbol">
     <section class="w-full py-6">
         <div class="container mx-auto px-4">
-            <LeaderExpandible />
+            <LeaderBoard />
             <h1 class="titulos rojo uppercase goodtime text-center my-6 text-2xl lg:text-3xl font-bold">
                 Historia de los Mundiales
             </h1>
