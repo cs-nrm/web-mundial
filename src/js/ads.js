@@ -19,16 +19,16 @@ function initGPT() {
 
     // Solo definir el slot si el div existe en esta página
     if (document.getElementById('ad-slot2'))
-      window.slot2 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [300, 250], 'ad-slot2').defineSizeMapping(mapping2).addService(googletag.pubads());
+      window.slot2 = googletag.defineSlot('/21799830913/Mundial-Enfoque/Box', [300, 250], 'ad-slot2').defineSizeMapping(mapping2).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot3'))
       window.slot3 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [[970, 250], [320, 50]], 'ad-slot3').defineSizeMapping(mapping3).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot32'))
-      window.slot32 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [[728, 90], [320, 50]], 'ad-slot32').defineSizeMapping(mapping32).addService(googletag.pubads());
+      window.slot32 = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [[728, 90], [320, 50]], 'ad-slot32').defineSizeMapping(mapping32).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot4'))
-      window.slot4 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [[728, 90], [320, 50]], 'ad-slot4').defineSizeMapping(mapping4).addService(googletag.pubads());
+      window.slot4 = googletag.defineSlot('/21799830913/Mundial-Enfoque/leader', [[728, 90], [320, 50]], 'ad-slot4').defineSizeMapping(mapping4).addService(googletag.pubads());
 
     if (document.getElementById('ad-slot5'))
       window.slot5 = googletag.defineSlot('/21799830913/Mundial-Enfoque', [300, 600], 'ad-slot5').defineSizeMapping(mapping5).addService(googletag.pubads());
