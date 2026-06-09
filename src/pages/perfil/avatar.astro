@@ -386,7 +386,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
       console.error('[avatar] error al guardar:', e)
       const errMsg = e.message === 'canvas_tainted'
         ? 'Error de permisos de imagen. Recarga la página.'
-        : 'Error al guardar. Intenta de nuevo.'
+        : (e.message && e.message !== 'api_error' ? e.message : 'Error al guardar. Intenta de nuevo.')
       showToast('err', errMsg)
       saveText.textContent = 'Guardar'
     } finally {
