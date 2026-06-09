@@ -169,7 +169,7 @@ document.querySelectorAll('.btn-add').forEach(btn => {
   btn.addEventListener('click', () => {
     document.getElementById('modal-slot').value = btn.dataset.slot
     document.getElementById('modal-title').textContent = `Agregar ${btn.dataset.slot === 'leader' ? 'Leader' : 'Box'}`
-    modal.removeAttribute('hidden')
+    modal.removeAttribute('hidden'); modal.style.display = 'flex'
     uploadedUrl = ''
     document.getElementById('file-input').value = ''
     document.getElementById('upload-preview').style.display = 'none'
@@ -181,7 +181,7 @@ document.querySelectorAll('.btn-add').forEach(btn => {
   })
 })
 
-document.getElementById('modal-cancel').onclick = () => modal.setAttribute('hidden', '')
+document.getElementById('modal-cancel').onclick = () => { modal.setAttribute('hidden', ''); modal.style.display = 'none' }
 
 // Upload imagen
 document.getElementById('file-input').addEventListener('change', async (e) => {

@@ -100,8 +100,8 @@ for (const c of clicks ?? []) clkCount[c.client_id] = (clkCount[c.client_id] ?? 
 <script>
 // Nuevo cliente
 const modal = document.getElementById('modal-nuevo')!
-document.getElementById('btn-nuevo')!.onclick = () => modal.removeAttribute('hidden')
-document.getElementById('btn-cancelar')!.onclick = () => modal.setAttribute('hidden', '')
+document.getElementById('btn-nuevo')!.onclick = () => { modal.removeAttribute('hidden'); modal.style.display = 'flex' }
+document.getElementById('btn-cancelar')!.onclick = () => { modal.setAttribute('hidden', ''); modal.style.display = 'none' }
 
 document.getElementById('btn-guardar')!.onclick = async () => {
   const name = (document.getElementById('nuevo-nombre') as HTMLInputElement).value.trim()
