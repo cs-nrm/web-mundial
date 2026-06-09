@@ -85,6 +85,13 @@ const isActive = (href: string) =>
         </>
       )}
 
+      {can(['superadmin','admin']) && (
+        <>
+          <div class="nav-section">Publicidad</div>
+          <a href="/admin/ads" class={`nav-item ${isActive('/admin/ads') ? 'active' : ''}`}>Anuncios</a>
+        </>
+      )}
+
       {can(['superadmin','admin','estadistica']) && (
         <>
           <div class="nav-section">Reportes</div>

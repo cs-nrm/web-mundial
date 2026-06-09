@@ -1,0 +1,155 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
+
+const { role } = Astro.locals
+if (!canAccess(role as UserRole, MANAGE_ROLES)) return Astro.redirect('/admin')
+
+const supabase = createSupabaseAdminClient()
+
+const { data: clients } = await supabase
+  .from('ad_clients')
+  .select('id, name, active, created_at')
+  .order('created_at', { ascending: true })
+
+// Impresiones últimos 7 días por cliente
+const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+const { data: impressions } = await supabase
+  .from('ad_impressions')
+  .select('client_id')
+  .gte('created_at', since)
+
+const { data: clicks } = await supabase
+  .from('ad_clicks')
+  .select('client_id')
+  .gte('created_at', since)
+
+const impCount: Record<string, number> = {}
+const clkCount: Record<string, number> = {}
+for (const i of impressions ?? []) impCount[i.client_id] = (impCount[i.client_id] ?? 0) + 1
+for (const c of clicks ?? []) clkCount[c.client_id] = (clkCount[c.client_id] ?? 0) + 1
+---
+
+<AdminLayout title="Publicidad">
+
+  <div class="toolbar">
+    <h2 class="section-title">Clientes activos</h2>
+    <button id="btn-nuevo" class="btn-primary">+ Nuevo cliente</button>
+  </div>
+
+  <!-- Modal nuevo cliente -->
+  <div id="modal-nuevo" hidden style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:white;border-radius:8px;padding:1.5rem;width:100%;max-width:400px;">
+      <h3 style="margin-bottom:1rem;font-size:1rem;">Nuevo cliente</h3>
+      <input id="nuevo-nombre" type="text" placeholder="Nombre del anunciante" style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.9rem;margin-bottom:1rem;" />
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+        <button id="btn-cancelar" class="btn-secondary">Cancelar</button>
+        <button id="btn-guardar" class="btn-primary">Guardar</button>
+      </div>
+      <p id="nuevo-error" style="color:#dc2626;font-size:0.8rem;margin-top:0.5rem;display:none;"></p>
+    </div>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <th style="text-align:center;">Impresiones 7d</th>
+        <th style="text-align:center;">Clicks 7d</th>
+        <th style="text-align:center;">CTR</th>
+        <th style="text-align:center;">Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {(clients ?? []).map(c => {
+        const imp = impCount[c.id] ?? 0
+        const clk = clkCount[c.id] ?? 0
+        const ctr = imp > 0 ? ((clk / imp) * 100).toFixed(1) + '%' : '—'
+        return (
+          <tr>
+            <td style="font-weight:600;">{c.name}</td>
+            <td style="text-align:center;">{imp.toLocaleString('es-MX')}</td>
+            <td style="text-align:center;">{clk.toLocaleString('es-MX')}</td>
+            <td style="text-align:center;">{ctr}</td>
+            <td style="text-align:center;">
+              <button
+                class={`toggle-btn ${c.active ? 'toggle-on' : 'toggle-off'}`}
+                data-id={c.id}
+                data-active={String(c.active)}
+              >
+                {c.active ? 'Activo' : 'Pausado'}
+              </button>
+            </td>
+            <td style="text-align:right;">
+              <a href={`/admin/ads/${c.id}`} class="btn-edit">Creatividades →</a>
+            </td>
+          </tr>
+        )
+      })}
+      {!(clients?.length) && (
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:#6b7280;">Sin clientes aún</td></tr>
+      )}
+    </tbody>
+  </table>
+
+</AdminLayout>
+
+<script>
+// Nuevo cliente
+const modal = document.getElementById('modal-nuevo')!
+document.getElementById('btn-nuevo')!.onclick = () => modal.removeAttribute('hidden')
+document.getElementById('btn-cancelar')!.onclick = () => modal.setAttribute('hidden', '')
+
+document.getElementById('btn-guardar')!.onclick = async () => {
+  const name = (document.getElementById('nuevo-nombre') as HTMLInputElement).value.trim()
+  const errEl = document.getElementById('nuevo-error')!
+  if (!name) { errEl.textContent = 'El nombre es requerido'; errEl.style.display = 'block'; return }
+  errEl.style.display = 'none'
+
+  const res = await fetch('/api/admin/ads/clients', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+  if (res.ok) {
+    location.reload()
+  } else {
+    const { error } = await res.json()
+    errEl.textContent = error ?? 'Error al guardar'
+    errEl.style.display = 'block'
+  }
+}
+
+// Toggle activo/pausado
+document.querySelectorAll<HTMLButtonElement>('.toggle-btn').forEach(btn => {
+  btn.onclick = async () => {
+    const id = btn.dataset.id!
+    const current = btn.dataset.active === 'true'
+    const res = await fetch(`/api/admin/ads/clients/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: !current }),
+    })
+    if (res.ok) location.reload()
+  }
+})
+</script>
+
+<style>
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+.section-title { font-size:1.1rem; font-weight:700; }
+.btn-primary { background:var(--rojo); color:white; border:none; padding:0.5rem 1rem; border-radius:6px; font-size:0.875rem; font-weight:600; cursor:pointer; }
+.btn-primary:hover { opacity:0.9; }
+.btn-secondary { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; padding:0.5rem 1rem; border-radius:6px; font-size:0.875rem; cursor:pointer; }
+.btn-edit { font-size:0.8rem; color:var(--rojo); font-weight:600; text-decoration:none; }
+.data-table { width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.data-table th { background:#f9fafb; padding:0.75rem 1rem; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#6b7280; text-align:left; border-bottom:1px solid #e5e7eb; }
+.data-table td { padding:0.85rem 1rem; border-bottom:1px solid #f3f4f6; font-size:0.9rem; }
+.data-table tr:last-child td { border-bottom:none; }
+.toggle-btn { padding:0.3rem 0.75rem; border-radius:999px; font-size:0.78rem; font-weight:600; border:none; cursor:pointer; }
+.toggle-on { background:#dcfce7; color:#16a34a; }
+.toggle-off { background:#f3f4f6; color:#6b7280; }
+</style>

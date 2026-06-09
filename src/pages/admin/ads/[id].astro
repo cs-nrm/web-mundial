@@ -1,0 +1,293 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
+
+const { role } = Astro.locals
+if (!canAccess(role as UserRole, MANAGE_ROLES)) return Astro.redirect('/admin')
+
+const { id } = Astro.params
+const supabase = createSupabaseAdminClient()
+
+const { data: client } = await supabase
+  .from('ad_clients')
+  .select('id, name, active')
+  .eq('id', id!)
+  .single()
+
+if (!client) return Astro.redirect('/admin/ads')
+
+const { data: creatives } = await supabase
+  .from('ad_creatives')
+  .select('*')
+  .eq('client_id', id!)
+  .order('created_at', { ascending: true })
+
+const leaders = (creatives ?? []).filter(c => c.slot_type === 'leader')
+const boxes   = (creatives ?? []).filter(c => c.slot_type === 'box')
+---
+
+<AdminLayout title={`Publicidad — ${client.name}`}>
+
+  <div class="toolbar">
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <a href="/admin/ads" class="back-link">← Clientes</a>
+      <h2 class="section-title">{client.name}</h2>
+      <span class={`badge ${client.active ? 'badge-on' : 'badge-off'}`}>{client.active ? 'Activo' : 'Pausado'}</span>
+    </div>
+  </div>
+
+  <!-- LEADER -->
+  <section class="slot-section">
+    <div class="slot-header">
+      <h3>Leader <span class="slot-size">728×90 / 320×50</span></h3>
+      <button class="btn-add" data-slot="leader">+ Agregar</button>
+    </div>
+    <div class="creatives-grid" id="grid-leader">
+      {leaders.map(c => (
+        <div class="creative-card" data-id={c.id}>
+          {c.type === 'image' ? (
+            <div class="creative-preview">
+              <img src={c.src} alt={c.alt ?? ''} />
+            </div>
+          ) : (
+            <div class="creative-preview html-preview">
+              <span>HTML</span>
+            </div>
+          )}
+          <div class="creative-meta">
+            <span class="creative-type">{c.type === 'image' ? '🖼 Imagen' : '🖥 HTML'}</span>
+            {c.href && <a href={c.href} target="_blank" class="creative-href" title={c.href}>↗ destino</a>}
+          </div>
+          <button class="btn-delete" data-id={c.id}>Eliminar</button>
+        </div>
+      ))}
+      {!leaders.length && <p class="empty-msg">Sin creatividades para Leader</p>}
+    </div>
+  </section>
+
+  <!-- BOX -->
+  <section class="slot-section">
+    <div class="slot-header">
+      <h3>Box <span class="slot-size">300×250 / 300×600</span></h3>
+      <button class="btn-add" data-slot="box">+ Agregar</button>
+    </div>
+    <div class="creatives-grid" id="grid-box">
+      {boxes.map(c => (
+        <div class="creative-card" data-id={c.id}>
+          {c.type === 'image' ? (
+            <div class="creative-preview">
+              <img src={c.src} alt={c.alt ?? ''} />
+            </div>
+          ) : (
+            <div class="creative-preview html-preview">
+              <span>HTML</span>
+            </div>
+          )}
+          <div class="creative-meta">
+            <span class="creative-type">{c.type === 'image' ? '🖼 Imagen' : '🖥 HTML'}</span>
+            {c.href && <a href={c.href} target="_blank" class="creative-href" title={c.href}>↗ destino</a>}
+          </div>
+          <button class="btn-delete" data-id={c.id}>Eliminar</button>
+        </div>
+      ))}
+      {!boxes.length && <p class="empty-msg">Sin creatividades para Box</p>}
+    </div>
+  </section>
+
+  <!-- Modal agregar creatividad -->
+  <div id="modal-add" hidden style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:white;border-radius:10px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+      <h3 style="margin-bottom:1rem;font-size:1rem;" id="modal-title">Agregar creatividad</h3>
+
+      <input type="hidden" id="modal-slot" />
+
+      <!-- Tabs tipo -->
+      <div class="tabs" style="margin-bottom:1rem;">
+        <button class="tab active" data-tab="image">Imagen</button>
+        <button class="tab" data-tab="html">HTML</button>
+      </div>
+
+      <!-- Imagen -->
+      <div id="tab-image">
+        <div class="field">
+          <label>Imagen (jpg/png/webp, máx 5MB)</label>
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif" />
+          <div id="upload-preview" style="margin-top:0.5rem;display:none;">
+            <img id="preview-img" style="max-width:100%;max-height:160px;border-radius:6px;" />
+          </div>
+          <p id="upload-status" style="font-size:0.8rem;color:#6b7280;margin-top:0.3rem;"></p>
+        </div>
+        <div class="field">
+          <label>URL destino (clic en el banner)</label>
+          <input type="url" id="img-href" placeholder="https://..." />
+        </div>
+        <div class="field">
+          <label>Texto alternativo (opcional)</label>
+          <input type="text" id="img-alt" placeholder="Descripción del anuncio" />
+        </div>
+      </div>
+
+      <!-- HTML -->
+      <div id="tab-html" hidden>
+        <div class="field">
+          <label>Código HTML del tercero</label>
+          <textarea id="html-code" rows="8" placeholder="<script>...</script> o <iframe...></iframe>"></textarea>
+        </div>
+      </div>
+
+      <p id="modal-error" style="color:#dc2626;font-size:0.8rem;margin-bottom:0.75rem;display:none;"></p>
+
+      <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
+        <button id="modal-cancel" class="btn-secondary">Cancelar</button>
+        <button id="modal-save" class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+</AdminLayout>
+
+<script define:vars={{ clientId: client.id }}>
+const modal = document.getElementById('modal-add')
+let activeTab = 'image'
+let uploadedUrl = ''
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    activeTab = tab.dataset.tab
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+    tab.classList.add('active')
+    document.getElementById('tab-image').hidden = activeTab !== 'image'
+    document.getElementById('tab-html').hidden = activeTab !== 'html'
+  })
+})
+
+// Botones abrir modal
+document.querySelectorAll('.btn-add').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('modal-slot').value = btn.dataset.slot
+    document.getElementById('modal-title').textContent = `Agregar ${btn.dataset.slot === 'leader' ? 'Leader' : 'Box'}`
+    modal.removeAttribute('hidden')
+    uploadedUrl = ''
+    document.getElementById('file-input').value = ''
+    document.getElementById('upload-preview').style.display = 'none'
+    document.getElementById('upload-status').textContent = ''
+    document.getElementById('img-href').value = ''
+    document.getElementById('img-alt').value = ''
+    document.getElementById('html-code').value = ''
+    document.getElementById('modal-error').style.display = 'none'
+  })
+})
+
+document.getElementById('modal-cancel').onclick = () => modal.setAttribute('hidden', '')
+
+// Upload imagen
+document.getElementById('file-input').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  document.getElementById('upload-status').textContent = 'Subiendo…'
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await fetch('/api/admin/ads/upload', { method: 'POST', body: fd })
+  if (res.ok) {
+    const { url } = await res.json()
+    uploadedUrl = url
+    document.getElementById('preview-img').src = url
+    document.getElementById('upload-preview').style.display = 'block'
+    document.getElementById('upload-status').textContent = 'Imagen lista'
+  } else {
+    const { error } = await res.json()
+    document.getElementById('upload-status').textContent = error ?? 'Error al subir'
+  }
+})
+
+// Guardar creatividad
+document.getElementById('modal-save').onclick = async () => {
+  const errEl = document.getElementById('modal-error')
+  errEl.style.display = 'none'
+  const slot_type = document.getElementById('modal-slot').value
+  const type = activeTab
+
+  let body = { client_id: clientId, slot_type, type }
+
+  if (type === 'image') {
+    if (!uploadedUrl) { errEl.textContent = 'Sube una imagen primero'; errEl.style.display = 'block'; return }
+    body.src = uploadedUrl
+    body.href = document.getElementById('img-href').value.trim()
+    body.alt = document.getElementById('img-alt').value.trim()
+  } else {
+    const code = document.getElementById('html-code').value.trim()
+    if (!code) { errEl.textContent = 'Pega el código HTML'; errEl.style.display = 'block'; return }
+    body.html_code = code
+  }
+
+  const res = await fetch('/api/admin/ads/creatives', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  if (res.ok) {
+    location.reload()
+  } else {
+    const { error } = await res.json()
+    errEl.textContent = error ?? 'Error al guardar'
+    errEl.style.display = 'block'
+  }
+}
+
+// Eliminar creatividad
+document.querySelectorAll('.btn-delete').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!confirm('¿Eliminar esta creatividad?')) return
+    const res = await fetch(`/api/admin/ads/creatives/${btn.dataset.id}`, { method: 'DELETE' })
+    if (res.ok) location.reload()
+  })
+})
+</script>
+
+<style>
+.toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+.back-link { color:#6b7280; font-size:0.85rem; text-decoration:none; }
+.back-link:hover { color:var(--rojo); }
+.section-title { font-size:1.1rem; font-weight:700; }
+.badge { padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; }
+.badge-on { background:#dcfce7; color:#16a34a; }
+.badge-off { background:#f3f4f6; color:#6b7280; }
+
+.slot-section { background:white; border-radius:10px; padding:1.25rem; margin-bottom:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.slot-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.slot-header h3 { font-size:1rem; font-weight:700; }
+.slot-size { font-size:0.75rem; color:#9ca3af; font-weight:400; margin-left:0.4rem; }
+
+.creatives-grid { display:flex; flex-wrap:wrap; gap:1rem; }
+.creative-card { border:1px solid #e5e7eb; border-radius:8px; overflow:hidden; width:220px; }
+.creative-preview { background:#f9fafb; display:flex; align-items:center; justify-content:center; height:90px; }
+.creative-preview img { max-width:100%; max-height:90px; object-fit:contain; }
+.html-preview { flex-direction:column; gap:0.25rem; }
+.html-preview span { font-size:1.5rem; }
+.creative-meta { padding:0.5rem 0.75rem; display:flex; align-items:center; justify-content:space-between; }
+.creative-type { font-size:0.75rem; color:#6b7280; }
+.creative-href { font-size:0.72rem; color:var(--rojo); text-decoration:none; }
+.btn-delete { width:100%; padding:0.4rem; background:#fee2e2; color:#dc2626; border:none; font-size:0.78rem; font-weight:600; cursor:pointer; }
+.btn-delete:hover { background:#fecaca; }
+.empty-msg { color:#9ca3af; font-size:0.85rem; padding:0.5rem 0; }
+
+.btn-add { background:#f3f4f6; border:1px dashed #d1d5db; color:#374151; padding:0.35rem 0.85rem; border-radius:6px; font-size:0.82rem; font-weight:600; cursor:pointer; }
+.btn-add:hover { background:#e5e7eb; }
+.btn-primary { background:var(--rojo); color:white; border:none; padding:0.5rem 1rem; border-radius:6px; font-size:0.875rem; font-weight:600; cursor:pointer; }
+.btn-secondary { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; padding:0.5rem 1rem; border-radius:6px; font-size:0.875rem; cursor:pointer; }
+
+.tabs { display:flex; gap:0.5rem; }
+.tab { padding:0.35rem 0.85rem; border-radius:6px; border:1px solid #d1d5db; background:white; font-size:0.85rem; cursor:pointer; }
+.tab.active { background:var(--rojo); color:white; border-color:var(--rojo); }
+
+.field { margin-bottom:0.85rem; }
+.field label { display:block; font-size:0.82rem; font-weight:600; color:#374151; margin-bottom:0.3rem; }
+.field input[type="text"], .field input[type="url"], .field textarea {
+  width:100%; padding:0.45rem 0.75rem; border:1px solid #d1d5db; border-radius:6px; font-size:0.875rem; font-family:inherit;
+}
+.field textarea { resize:vertical; font-family:monospace; font-size:0.8rem; }
+</style>
