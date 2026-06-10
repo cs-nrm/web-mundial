@@ -254,7 +254,7 @@ const songsAgrupados: SongRow[] = estacionParam === 'todas'
   }
 }
 
-async function pinSong(btn: HTMLButtonElement) {
+(window as any).pinSong = async function(btn: HTMLButtonElement) {
   const id = btn.dataset.id
   const isPinned = btn.dataset.pinned === 'true'
   const newPinned = !isPinned
