@@ -58,7 +58,15 @@ const { data: codes } = await codesQuery
       </select>
     </form>
     {canManage && (
-      <button id="btn-open-gen" class="btn-primary">+ Generar códigos</button>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        {filterAlbum && (
+          <button id="btn-gen-all" class="btn-primary btn-green"
+            data-album={filterAlbum}>
+            ⚡ Generar todos
+          </button>
+        )}
+        <button id="btn-open-gen" class="btn-primary">+ Generar códigos</button>
+      </div>
     )}
   </div>
 
@@ -361,6 +369,34 @@ const { data: codes } = await codesQuery
       }
     })
   })
+
+  // Generar todos los códigos del álbum filtrado
+  document.getElementById('btn-gen-all')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-gen-all') as HTMLButtonElement
+    const albumId = btn.dataset.album
+    const maxUsos = prompt('Usos máximos por código:', '5000')
+    if (maxUsos === null) return
+    if (!confirm(`¿Generar 1 código por cada card activa del álbum con ${maxUsos} usos?`)) return
+
+    btn.disabled = true
+    btn.textContent = 'Generando...'
+
+    const res = await fetch('/api/admin/codigos/generar-album', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ album_id: albumId, max_usos: Number(maxUsos) }),
+    })
+    const data = await res.json()
+
+    if (res.ok) {
+      alert(`✅ ${data.total} código${data.total !== 1 ? 's' : ''} generados correctamente.`)
+      window.location.reload()
+    } else {
+      alert(data.error ?? 'Error al generar')
+      btn.disabled = false
+      btn.textContent = '⚡ Generar todos'
+    }
+  })
 </script>
 
 <style>
@@ -418,6 +454,7 @@ const { data: codes } = await codesQuery
   }
   .btn-primary:hover { opacity: 0.85; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-green { background: #16a34a; }
 
   /* Modal */
   .modal-overlay {
