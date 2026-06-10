@@ -12,8 +12,8 @@ import CardsHomeOtroMundial from "../layouts/CardsHomeOtromundial.astro";
 import CardsHomeMundialfacil from "../layouts/CardsHomeMundialfacil.astro";
 import CardsHomeNoticias from "../layouts/CardsHomeNoticias.astro";
 import LeaderBoard from "../components/LeaderBoard.astro";
-import LeaderExpandible from "../components/LeaderExpandible.astro";
-import SuperLeader from "../components/SuperLeader.astro";
+import Expandible from "../components/Expandible.astro"; 
+import Super from "../components/Super.astro";
 import BillBoard from "../components/BillBoard.astro";
 import Modal from "../components/Modal.astro";
 import CardsHomeTres from "../layouts/CardsHomeTres.astro";
@@ -33,13 +33,13 @@ if (posts.length > 0) {
     <LeaderBoard />
     <section><ConteoRegresivo /></section>
     <section><CardsHomeEnfoque posts={posts} /></section>
-    <LeaderExpandible />
+    <Expandible />
     <section><CardsHomeTres posts={posts} /></section>
 
     <section><CardsHomeGamecast /></section>
     <!--section><CardsHomeOtroMundial /></section>
     <section><CardsHomeMundialfacil /></section-->
-    <SuperLeader />
+    <Super />
 
 
     <section><CardsHomeOtroMundial /></section>
