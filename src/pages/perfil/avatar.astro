@@ -101,11 +101,12 @@ const hasAvatar = !!(profile as any)?.avatar_url
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
     </a>
     <div class="av-nav-actions">
-      <button id="btn-dl" class="av-btn-icon" title="Descargar">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      <button id="btn-dl" class="av-btn-dl">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Descargar
       </button>
       <button id="btn-save" class="av-btn-save">
-        <span id="btn-save-text">{hasAvatar ? 'Actualizar' : 'Guardar'}</span>
+        <span id="btn-save-text">Guardar</span>
       </button>
     </div>
   </div>
@@ -197,7 +198,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
     }
   }
 
-  let activeCat = zOrder[0]
+  let activeCat = 'cabello'
   let renderVersion = 0  // incrementa con cada render para cancelar renders viejos
 
   // ── Canvas ──────────────────────────────────────────────
@@ -391,7 +392,7 @@ const hasAvatar = !!(profile as any)?.avatar_url
         showToast('ok', '¡Avatar actualizado!', '/album', 'Ver en mi álbum')
       }
       yaTeniaAvatar = true
-      saveText.textContent = 'Actualizar'
+      saveText.textContent = 'Guardar'
     } catch (e) {
       console.error('[avatar] error al guardar:', e)
       const errMsg = e.message === 'canvas_tainted'
@@ -513,20 +514,24 @@ const hasAvatar = !!(profile as any)?.avatar_url
     gap: 0.5rem;
     flex-shrink: 0;
   }
-  .av-btn-icon {
+  .av-btn-dl {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 36px;
+    gap: 0.35rem;
     height: 36px;
-    border-radius: 50%;
-    border: none;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1.5px solid rgba(255,255,255,0.15);
     cursor: pointer;
     background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.45);
-    transition: background 150ms cubic-bezier(0.23,1,0.32,1), color 150ms cubic-bezier(0.23,1,0.32,1);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: background 150ms cubic-bezier(0.23,1,0.32,1),
+                color 150ms cubic-bezier(0.23,1,0.32,1),
+                border-color 150ms cubic-bezier(0.23,1,0.32,1);
   }
-  .av-btn-icon:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .av-btn-dl:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
   .av-btn-save {
     height: 36px;
     padding: 0 1.1rem;
@@ -841,14 +846,14 @@ const hasAvatar = !!(profile as any)?.avatar_url
     object-position: 50% 30%; /* cara: ~30% desde arriba del canvas */
     display: block;
   }
-  /* Cejas, ojos, lentes, boca — están en la zona media-alta de la cara */
+  /* Cejas, ojos, lentes, boca — zoom para ver el detalle pequeño */
   .av-thumb--cejas img,
-  .av-thumb--ojos img    { object-position: 50% 32%; }
-  .av-thumb--lentes img  { object-position: 50% 36%; }
-  .av-thumb--boca img    { object-position: 50% 44%; }
+  .av-thumb--ojos img    { object-position: 50% 32%; transform: scale(3.5); transform-origin: 50% 32%; }
+  .av-thumb--lentes img  { object-position: 50% 36%; transform: scale(3);   transform-origin: 50% 36%; }
+  .av-thumb--boca img    { object-position: 50% 44%; transform: scale(3);   transform-origin: 50% 44%; }
   /* Bigote y barba: un poco más abajo */
-  .av-thumb--bigote img  { object-position: 50% 46%; }
-  .av-thumb--barba img   { object-position: 50% 48%; }
+  .av-thumb--bigote img  { object-position: 50% 46%; transform: scale(2.5); transform-origin: 50% 46%; }
+  .av-thumb--barba img   { object-position: 50% 48%; transform: scale(2);   transform-origin: 50% 48%; }
   /* Cabello: arriba del todo */
   .av-thumb--cabello img { object-position: 50% 22%; }
   /* Gorra: arriba también */

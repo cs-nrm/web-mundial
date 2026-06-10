@@ -9,8 +9,7 @@
     'ad-slot4':            'leaderboard',
     'ad-slot-expandible':  'expandible',
     'ad-slot5':            'doublebox',
-    'ad-slot6':            'leaderboard',
-    'ad-slot14':           'super',
+    'ad-slot6':            'super',
     'ad-slot-videonota':   'leaderboard',
   }
 
