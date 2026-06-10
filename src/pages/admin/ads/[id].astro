@@ -25,13 +25,13 @@ const { data: creatives } = await supabase
   .order('created_at', { ascending: true })
 
 const SLOT_LABELS: Record<string, { label: string; size: string }> = {
-  leaderboard:     { label: 'LeaderBoard',     size: '728×90' },
-  leaderexpandible:{ label: 'LeaderExpandible', size: '728×90' },
-  boxbanner:       { label: 'BoxBanner',        size: '300×250' },
-  superleader:     { label: 'SuperLeader',      size: '970×90' },
-  doublebox:       { label: 'DoubleBox',        size: '300×600' },
+  leaderboard: { label: 'LeaderBoard',  size: '728×90' },
+  expandible:  { label: 'Expandible',   size: '728×90' },
+  boxbanner:   { label: 'BoxBanner',    size: '300×250' },
+  super:       { label: 'Super',        size: '970×90' },
+  doublebox:   { label: 'DoubleBox',    size: '300×600' },
 }
-const slotOrder = ['leaderboard', 'leaderexpandible', 'boxbanner', 'superleader', 'doublebox']
+const slotOrder = ['leaderboard', 'expandible', 'boxbanner', 'super', 'doublebox']
 const creativesBySlot = Object.fromEntries(
   slotOrder.map(s => [s, (creatives ?? []).filter(c => c.slot_type === s)])
 )
@@ -72,7 +72,10 @@ const creativesBySlot = Object.fromEntries(
                 <span class="creative-type">{c.type === 'image' ? '🖼 Imagen' : '🖥 HTML'}</span>
                 {c.href && <a href={c.href} target="_blank" class="creative-href" title={c.href}>↗ destino</a>}
               </div>
-              <button class="btn-delete" data-id={c.id}>Eliminar</button>
+              <div class="card-actions">
+                <button class="btn-edit" data-id={c.id} data-type={c.type} data-src={c.src ?? ''} data-href={c.href ?? ''} data-alt={c.alt ?? ''} data-html={c.html_code ?? ''}>Editar</button>
+                <button class="btn-delete" data-id={c.id}>Eliminar</button>
+              </div>
             </div>
           ))}
           {!list.length && <p class="empty-msg">Sin creatividades para {label}</p>}
@@ -137,10 +140,55 @@ const creativesBySlot = Object.fromEntries(
 const modal = document.getElementById('modal-add')
 let activeTab = 'image'
 let uploadedUrl = ''
+let editingId = null  // null = modo agregar, string = modo editar
 
-// Tabs
+function openModal({ slot, title, tab, src, href, alt, html, id }) {
+  editingId = id ?? null
+  activeTab = tab
+
+  document.getElementById('modal-slot').value = slot ?? ''
+  document.getElementById('modal-title').textContent = title
+
+  // Tabs: en edición desactivar cambio de tipo
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab)
+    t.disabled = !!editingId
+    t.style.opacity = editingId ? '0.5' : ''
+    t.style.cursor = editingId ? 'default' : ''
+  })
+  document.getElementById('tab-image').hidden = tab !== 'image'
+  document.getElementById('tab-html').hidden = tab !== 'html'
+
+  // Pre-poblar campos
+  uploadedUrl = src ?? ''
+  document.getElementById('img-href').value = href ?? ''
+  document.getElementById('img-alt').value = alt ?? ''
+  document.getElementById('html-code').value = html ?? ''
+  document.getElementById('file-input').value = ''
+  document.getElementById('upload-status').textContent = ''
+  document.getElementById('modal-error').style.display = 'none'
+
+  if (src) {
+    document.getElementById('preview-img').src = src
+    document.getElementById('upload-preview').style.display = 'block'
+  } else {
+    document.getElementById('upload-preview').style.display = 'none'
+  }
+
+  modal.removeAttribute('hidden')
+  modal.style.display = 'flex'
+}
+
+function closeModal() {
+  modal.setAttribute('hidden', '')
+  modal.style.display = 'none'
+  editingId = null
+}
+
+// Tabs (solo en modo agregar)
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
+    if (editingId) return
     activeTab = tab.dataset.tab
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
     tab.classList.add('active')
@@ -149,24 +197,30 @@ document.querySelectorAll('.tab').forEach(tab => {
   })
 })
 
-// Botones abrir modal
+// Botones agregar
 document.querySelectorAll('.btn-add').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.getElementById('modal-slot').value = btn.dataset.slot
-    document.getElementById('modal-title').textContent = `Agregar ${btn.dataset.slot === 'leader' ? 'Leader' : 'Box'}`
-    modal.removeAttribute('hidden'); modal.style.display = 'flex'
-    uploadedUrl = ''
-    document.getElementById('file-input').value = ''
-    document.getElementById('upload-preview').style.display = 'none'
-    document.getElementById('upload-status').textContent = ''
-    document.getElementById('img-href').value = ''
-    document.getElementById('img-alt').value = ''
-    document.getElementById('html-code').value = ''
-    document.getElementById('modal-error').style.display = 'none'
-  })
+  btn.addEventListener('click', () => openModal({
+    slot: btn.dataset.slot,
+    title: `Agregar creatividad`,
+    tab: 'image',
+  }))
 })
 
-document.getElementById('modal-cancel').onclick = () => { modal.setAttribute('hidden', ''); modal.style.display = 'none' }
+// Botones editar
+document.querySelectorAll('.btn-edit').forEach(btn => {
+  btn.addEventListener('click', () => openModal({
+    id: btn.dataset.id,
+    slot: '',
+    title: `Editar creatividad`,
+    tab: btn.dataset.type,
+    src: btn.dataset.src || null,
+    href: btn.dataset.href,
+    alt: btn.dataset.alt,
+    html: btn.dataset.html,
+  }))
+})
+
+document.getElementById('modal-cancel').onclick = closeModal
 
 // Upload imagen
 document.getElementById('file-input').addEventListener('change', async (e) => {
@@ -188,32 +242,45 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
   }
 })
 
-// Guardar creatividad
+// Guardar
 document.getElementById('modal-save').onclick = async () => {
   const errEl = document.getElementById('modal-error')
   errEl.style.display = 'none'
-  const slot_type = document.getElementById('modal-slot').value
-  const type = activeTab
 
-  let body = { client_id: clientId, slot_type, type }
+  let body = {}
+  let url, method
 
-  if (type === 'image') {
-    if (!uploadedUrl) { errEl.textContent = 'Sube una imagen primero'; errEl.style.display = 'block'; return }
-    body.src = uploadedUrl
-    body.href = document.getElementById('img-href').value.trim()
-    body.alt = document.getElementById('img-alt').value.trim()
+  if (editingId) {
+    // Modo editar — PATCH
+    url = `/api/admin/ads/creatives/${editingId}`
+    method = 'PATCH'
+    if (activeTab === 'image') {
+      if (!uploadedUrl) { errEl.textContent = 'Sube una imagen primero'; errEl.style.display = 'block'; return }
+      body = { src: uploadedUrl, href: document.getElementById('img-href').value.trim(), alt: document.getElementById('img-alt').value.trim() }
+    } else {
+      const code = document.getElementById('html-code').value.trim()
+      if (!code) { errEl.textContent = 'El código HTML no puede estar vacío'; errEl.style.display = 'block'; return }
+      body = { html_code: code }
+    }
   } else {
-    const code = document.getElementById('html-code').value.trim()
-    if (!code) { errEl.textContent = 'Pega el código HTML'; errEl.style.display = 'block'; return }
-    body.html_code = code
+    // Modo agregar — POST
+    url = '/api/admin/ads/creatives'
+    method = 'POST'
+    const slot_type = document.getElementById('modal-slot').value
+    body = { client_id: clientId, slot_type, type: activeTab }
+    if (activeTab === 'image') {
+      if (!uploadedUrl) { errEl.textContent = 'Sube una imagen primero'; errEl.style.display = 'block'; return }
+      body.src = uploadedUrl
+      body.href = document.getElementById('img-href').value.trim()
+      body.alt = document.getElementById('img-alt').value.trim()
+    } else {
+      const code = document.getElementById('html-code').value.trim()
+      if (!code) { errEl.textContent = 'Pega el código HTML'; errEl.style.display = 'block'; return }
+      body.html_code = code
+    }
   }
 
-  const res = await fetch('/api/admin/ads/creatives', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   if (res.ok) {
     location.reload()
   } else {
@@ -223,7 +290,7 @@ document.getElementById('modal-save').onclick = async () => {
   }
 }
 
-// Eliminar creatividad
+// Eliminar
 document.querySelectorAll('.btn-delete').forEach(btn => {
   btn.addEventListener('click', async () => {
     if (!confirm('¿Eliminar esta creatividad?')) return
@@ -256,7 +323,10 @@ document.querySelectorAll('.btn-delete').forEach(btn => {
 .creative-meta { padding:0.5rem 0.75rem; display:flex; align-items:center; justify-content:space-between; }
 .creative-type { font-size:0.75rem; color:#6b7280; }
 .creative-href { font-size:0.72rem; color:var(--rojo); text-decoration:none; }
-.btn-delete { width:100%; padding:0.4rem; background:#fee2e2; color:#dc2626; border:none; font-size:0.78rem; font-weight:600; cursor:pointer; }
+.card-actions { display:flex; }
+.btn-edit { flex:1; padding:0.4rem; background:#f3f4f6; color:#374151; border:none; border-right:1px solid #e5e7eb; font-size:0.78rem; font-weight:600; cursor:pointer; }
+.btn-edit:hover { background:#e5e7eb; }
+.btn-delete { flex:1; padding:0.4rem; background:#fee2e2; color:#dc2626; border:none; font-size:0.78rem; font-weight:600; cursor:pointer; }
 .btn-delete:hover { background:#fecaca; }
 .empty-msg { color:#9ca3af; font-size:0.85rem; padding:0.5rem 0; }
 

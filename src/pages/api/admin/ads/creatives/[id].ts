@@ -8,11 +8,14 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
     return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
   }
 
-  const { active } = await request.json()
+  const body = await request.json()
+  const allowed = ['active', 'html_code', 'src', 'href', 'alt']
+  const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)))
+
   const supabase = createSupabaseAdminClient()
   const { data, error } = await supabase
     .from('ad_creatives')
-    .update({ active })
+    .update(updates)
     .eq('id', params.id!)
     .select()
     .single()
