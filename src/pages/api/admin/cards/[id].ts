@@ -1,14 +1,14 @@
 import type { APIRoute } from 'astro'
-import { createSupabaseServerClient } from '../../../../lib/supabase'
+import { createSupabaseServerClient, createSupabaseAdminClient } from '../../../../lib/supabase'
 import { canAccess, EDITOR_ROLES } from '../../../../lib/admin'
 import type { UserRole } from '../../../../lib/perfil'
 
-export const DELETE: APIRoute = async ({ request, cookies, locals, params }) => {
+export const DELETE: APIRoute = async ({ locals, params }) => {
   if (!canAccess(locals.role as UserRole, EDITOR_ROLES)) {
     return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
   }
 
-  const supabase = createSupabaseServerClient(request, cookies)
+  const supabase = createSupabaseAdminClient()
   const cardId = params.id!
 
   // Borrar registros dependientes antes de borrar la card
