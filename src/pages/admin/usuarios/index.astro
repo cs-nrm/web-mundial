@@ -126,10 +126,15 @@ if (search) {
                 </select>
               </td>
               <td class="muted">{new Date(u.created_at).toLocaleDateString('es-MX')}</td>
-              <td>
+              <td class="actions-cell">
                 <button class="btn-save-role action-link" data-user-id={u.id} disabled>
                   Guardar
                 </button>
+                {u.role !== 'superadmin' && (
+                  <button class="btn-delete-user action-link action-danger" data-user-id={u.id} data-email={u.email}>
+                    Eliminar
+                  </button>
+                )}
               </td>
             </tr>
           ))
@@ -185,6 +190,27 @@ async function enviarInvitacion() {
 </script>
 
 <script>
+  // Eliminar usuario
+  document.querySelectorAll('.btn-delete-user').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLButtonElement
+      const userId = el.dataset.userId!
+      const email = el.dataset.email
+      if (!confirm(`¿Eliminar a ${email}?\n\nEsto borrará su cuenta y perfil de forma permanente.`)) return
+      el.disabled = true
+      el.textContent = 'Eliminando…'
+      const res = await fetch(`/api/admin/usuarios/${userId}`, { method: 'DELETE' })
+      if (res.ok) {
+        el.closest('tr')?.remove()
+      } else {
+        const data = await res.json()
+        alert(data.error ?? 'Error al eliminar')
+        el.disabled = false
+        el.textContent = 'Eliminar'
+      }
+    })
+  })
+
   // Habilitar botón cuando cambia el select
   document.querySelectorAll('.role-select').forEach(select => {
     select.addEventListener('change', () => {
@@ -272,12 +298,15 @@ async function enviarInvitacion() {
   }
   .role-select:focus { border-color: var(--rojo); }
 
+  .actions-cell { display: flex; align-items: center; gap: 1rem; }
   .action-link {
     background: none; border: none; color: var(--rojo);
     font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0;
   }
   .action-link:hover { opacity: 0.7; }
   .action-link:disabled { color: #ccc; cursor: not-allowed; }
+  .action-danger { color: #6b7280; }
+  .action-danger:hover { color: #dc2626; opacity: 1; }
 
   .btn-invitar {
     background: var(--rojo); color: white; border: none;
