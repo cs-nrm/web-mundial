@@ -1,30 +1,165 @@
 ---
-import { SITE_DESCRIPTION } from '../../consts';
-import DoubleBox from '../../components/DoubleBox.astro';
-import BoxBanner from '../../components/BoxBanner.astro';
-import Layout from '../../layouts/Layout.astro';
+import Layout from '../../layouts/Layout.astro'
+import BoxBanner from '../../components/BoxBanner.astro'
+import DoubleBox from '../../components/DoubleBox.astro'
 ---
 
-<Layout title="Aviso de Privacidad" description={SITE_DESCRIPTION}>
-  <div class="container my-12 mx-auto">
-    <h1 class="audiowide neon-verde text-center md:text-left pt-4 font-bold text-4xl md:text-5xl lg:text-4xl xl:text-5xl">Aviso de Privacidad</h1>
-    <div class="flex flex-col lg:flex-row">
-      <div class="sm:min-w-[calc(100%-400px)] lg:mr-10 roboto">
-        <p>En cumplimiento a lo dispuesto por la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (en adelante, la Ley) COMPAÑÍA MEXICANA DE RADIODIFUSIÓN, S.A. DE C.V., (en lo sucesivo “SABROSITA 590”) te informamos nuestra política de privacidad:</p>
-        <p>La persona moral responsable en el tratamiento de tus datos personales es COMPAÑÍA MEXICANA DE RADIODIFUSIÓN, S.A. DE C.V. conocida comercialmente como “SABROSITA 590”, integrante de la Holding de NRM COMUNICACIONES, con domicilio en Prolongación Paseo de la Reforma No 115, Col. Paseo de las Lomas C.P. 01330, Villa Álvaro Obregón, México Distrito Federal.</p>
-        <p>La obtención, uso, divulgación o almacenamiento de tus datos personales, por cualquier medio se utilizaran con FINES COMERCIALES, esto con el objeto de darte a conocer la información de la estación radiodifusora, como son difusión de promociones, concursos, presentación de nuevos productos, solicitudes de evaluación de calidad en el servicio, elaboración de estadísticas, y en general, toda actividad relacionada con la investigación, análisis, verificación y medición  de la audiencia, para mantenernos CONTACTO CONTIGO en caso de que te hagas acreedor a algún premio que se deriven de promociones, trivias o concursos que realice la radiodifusora o bien PARA CONFIRMAR los detalles de registro y contraseña, o  para enviarte nuevas contraseñas si olvidaste  la actual.</p>
-        <p>En los términos previstos por la Ley cualquier titular, o en su caso su representante legal, podrá ejercer el derecho de, ACCEDER a los datos personales a RECTIFICARLOS en caso  de ser inexactos o a CANCELARLOS a fin de que dejemos de hacer uso de los mismos para lo cual hemos designado un departamento de datos personales con el fin de dar trámite a tus solicitudes para el ejercicio de los derechos antes mencionados, por lo anterior ponemos a tu disposición la siguiente dirección de correo electrónico privacidad@nrm.com.mx para ponerte en contacto con nosotros.</p>
-        <p>La cancelación de datos personales dará lugar a un periodo de bloqueo tras el cual se procederá a la supresión del dato, podremos conservarlos exclusivamente para efectos de las responsabilidades nacidas del tratamiento.</p>
-        <p>“SABROSITA 590” no transferirá a terceros tus datos personales, a menos que dicha transferencia sea necesaria para las finalidades propias de la estación, establecidas en el presente aviso, en este contexto si no manifiestas oposición para que tus datos sean transferidos, se entenderá que otorgaste tu consentimiento para ello.</p>
-        <p>Nos reservamos el derecho de efectuar en cualquier momento modificaciones o actualizaciones al presente aviso de privacidad, para la atención de novedades legislativas o jurisprudenciales o políticas internas. Estas modificaciones estarán disponibles a través de esta página de Internet.</p>
-      </div>
-      <div class="bg-zinc-700 p-5 rounded-md sm:min-w-[350px] relative text-center md:text-left">
-        <div class="sticky top-0 left-0 right-0">
-          <BoxBanner />
-          </br>
-          <DoubleBox />
+<Layout title="Aviso de Privacidad — La Fiesta del Fútbol" description="Aviso de privacidad integral de La Fiesta del Fútbol, operada por NRM Comunicaciones.">
+  <section class="w-full py-4 poppins">
+    <div class="container my-12 mx-auto px-4 md:px-12">
+
+      <div class="my-4">
+        <h1 class="font-bold text-black text-3xl md:text-4xl mb-2">Aviso de Privacidad Integral</h1>
+        <div class="roboto flex items-center text-sm uppercase text-zinc-500 border-b border-zinc-300 pb-3 mb-6">
+          <p>Última actualización: junio de 2026</p>
         </div>
       </div>
+
+      <div class="flex flex-col lg:flex-row gap-8">
+        <article class="nota-interna flex-1 text-base leading-relaxed text-gray-800">
+
+          <h2>Identidad y domicilio del responsable</h2>
+          <p>NRM Comunicaciones, S.A. de C.V. (en adelante "NRM"), con domicilio en Prol. P.º de la Reforma 115, Santa Fe, Paseo de las Lomas, Cuajimalpa de Morelos, 01330 Ciudad de México, CDMX, es responsable del tratamiento de los datos personales recabados a través del sitio web "La Fiesta del Fútbol" (el "Sitio"), así como de las aplicaciones, herramientas, dinámicas y servicios relacionados con dicha plataforma.</p>
+          <p>NRM se compromete a proteger la privacidad de los usuarios y a tratar sus datos personales de conformidad con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares y demás disposiciones aplicables.</p>
+
+          <h2>Datos personales que recabamos</h2>
+          <p>Dependiendo de la interacción del usuario con el Sitio, podremos recabar los siguientes datos personales:</p>
+
+          <p><strong>Datos de identificación</strong></p>
+          <ul>
+            <li>Nombre o alias de usuario</li>
+            <li>Correo electrónico</li>
+            <li>Fecha de nacimiento (cuando resulte necesaria para validar elegibilidad en determinadas dinámicas)</li>
+            <li>País o ciudad de residencia (opcional)</li>
+          </ul>
+
+          <p><strong>Datos de acceso y autenticación</strong></p>
+          <ul>
+            <li>Nombre de usuario</li>
+            <li>Contraseñas cifradas</li>
+            <li>Identificadores de sesión</li>
+          </ul>
+
+          <p><strong>Datos de participación</strong></p>
+          <ul>
+            <li>Pronósticos realizados en quinielas</li>
+            <li>Progreso dentro del álbum digital</li>
+            <li>Configuración de avatar</li>
+            <li>Preferencias dentro de playlists</li>
+            <li>Historial de participación en dinámicas</li>
+            <li>Posición en rankings y clasificaciones</li>
+          </ul>
+
+          <p><strong>Datos técnicos</strong></p>
+          <ul>
+            <li>Dirección IP</li>
+            <li>Tipo de dispositivo</li>
+            <li>Sistema operativo</li>
+            <li>Navegador utilizado</li>
+            <li>Identificadores de sesión</li>
+            <li>Cookies y tecnologías similares</li>
+          </ul>
+
+          <p><strong>Datos para entrega de premios</strong></p>
+          <p>Cuando el usuario resulte ganador de una dinámica, promoción o concurso, NRM podrá solicitar información adicional necesaria para verificar identidad, confirmar elegibilidad, contactar al ganador, gestionar la entrega del premio correspondiente y cumplir obligaciones legales o regulatorias aplicables.</p>
+          <p>NRM no recaba datos personales sensibles para la operación ordinaria del Sitio.</p>
+
+          <h2>Finalidades del tratamiento</h2>
+          <p>Los datos personales serán utilizados para las siguientes finalidades primarias:</p>
+          <ul>
+            <li>Crear y administrar cuentas de usuario</li>
+            <li>Permitir el acceso a funcionalidades restringidas</li>
+            <li>Registrar y administrar la participación en quinielas</li>
+            <li>Mantener el progreso del álbum digital</li>
+            <li>Conservar configuraciones de avatar y preferencias personalizadas</li>
+            <li>Identificar a los participantes dentro de rankings y clasificaciones</li>
+            <li>Gestionar concursos, promociones y entrega de premios</li>
+            <li>Prevenir fraudes, accesos no autorizados o actividades indebidas</li>
+            <li>Atender solicitudes, consultas o aclaraciones de los usuarios</li>
+            <li>Garantizar el correcto funcionamiento técnico de la plataforma</li>
+          </ul>
+          <p>Asimismo, podremos utilizar información estadística agregada y anonimizada para analizar tendencias de uso, mejorar la experiencia de usuario, optimizar el desempeño del Sitio y elaborar reportes internos de operación. Dicha información estadística no permite identificar individualmente a los usuarios.</p>
+
+          <h2>Publicación de nombres de usuario</h2>
+          <p>Al participar en quinielas, rankings, álbumes digitales u otras dinámicas comunitarias, el nombre de usuario, alias o nickname elegido por el participante podrá ser visible para otros usuarios dentro de la plataforma con fines exclusivamente operativos y de interacción. Los usuarios son responsables de seleccionar nombres de usuario apropiados y que no incluyan datos personales sensibles.</p>
+
+          <h2>Transferencia de datos</h2>
+          <p>NRM no vende, comercializa ni comparte datos personales con terceros para fines publicitarios o de mercadotecnia. Los datos personales únicamente podrán ser compartidos cuando:</p>
+          <ul>
+            <li>Exista una obligación legal</li>
+            <li>Sea requerido por autoridad competente</li>
+            <li>Sea necesario para la prestación técnica de servicios contratados por NRM para la operación del Sitio</li>
+            <li>Sea necesario para la entrega de premios o incentivos derivados de promociones legalmente autorizadas</li>
+          </ul>
+          <p>En todos los casos se adoptarán medidas razonables para proteger la información de los usuarios.</p>
+
+          <h2>Patrocinadores y alianzas comerciales</h2>
+          <p>El Sitio podrá incluir espacios patrocinados, publicidad, promociones y colaboraciones comerciales. La participación de patrocinadores o anunciantes no implica acceso a las bases de datos de usuarios ni a información personal identificable. NRM no transfiere información personal de los usuarios a patrocinadores con fines comerciales sin consentimiento expreso del titular.</p>
+
+          <h2>Uso de cookies y tecnologías similares</h2>
+          <p>El Sitio utiliza cookies, almacenamiento local y tecnologías similares para:</p>
+          <ul>
+            <li>Mantener sesiones activas</li>
+            <li>Recordar preferencias de usuario</li>
+            <li>Conservar avances y progreso</li>
+            <li>Facilitar procesos de autenticación</li>
+            <li>Mejorar la experiencia de navegación</li>
+            <li>Generar métricas de desempeño y funcionamiento</li>
+          </ul>
+          <p>Estas tecnologías no son utilizadas para comercializar información personal ni para vender datos a terceros. El usuario puede modificar la configuración de su navegador para bloquear o eliminar cookies; sin embargo, algunas funcionalidades podrían verse afectadas.</p>
+
+          <h2>Medidas de seguridad</h2>
+          <p>NRM implementa medidas administrativas, técnicas y físicas razonables para proteger los datos personales contra daño, pérdida, alteración, destrucción, acceso o uso no autorizado. Sin embargo, ningún sistema tecnológico puede garantizar seguridad absoluta, por lo que NRM no puede asegurar que terceros no autorizados logren vulnerar las medidas de protección implementadas.</p>
+
+          <h2>Derechos ARCO</h2>
+          <p>Los titulares de los datos personales podrán ejercer sus derechos de Acceso, Rectificación, Cancelación y Oposición. Asimismo, podrán revocar el consentimiento otorgado para el tratamiento de sus datos personales cuando resulte legalmente procedente.</p>
+          <p>Las solicitudes deberán enviarse al correo electrónico que NRM designe para la atención de privacidad y protección de datos personales.</p>
+
+          <h2>Conservación de la información</h2>
+          <p>Los datos personales serán conservados únicamente durante el tiempo necesario para cumplir las finalidades descritas en el presente Aviso de Privacidad, así como para atender obligaciones legales, regulatorias o de seguridad. Una vez concluido dicho periodo, la información podrá ser eliminada, anonimizada o bloqueada conforme a la legislación aplicable.</p>
+
+          <h2>Menores de edad</h2>
+          <p>El Sitio está dirigido principalmente a personas mayores de 18 años. En caso de que un menor de edad utilice la plataforma, deberá contar con la autorización y supervisión de sus padres o tutores legales. NRM Comunicaciones no recopila deliberadamente datos personales de menores de edad sin la autorización correspondiente y podrá eliminar registros respecto de los cuales existan indicios razonables de incumplimiento de este requisito.</p>
+
+          <h2>Cambios al aviso de privacidad</h2>
+          <p>NRM podrá modificar el presente Aviso de Privacidad en cualquier momento para reflejar cambios normativos, operativos o tecnológicos. Las modificaciones serán publicadas oportunamente dentro del Sitio y entrarán en vigor a partir de su publicación.</p>
+          <p>Cuando los cambios afecten de manera relevante los derechos de los usuarios registrados, NRM podrá comunicar dichas modificaciones mediante correo electrónico o a través de avisos visibles dentro de la plataforma.</p>
+
+          <h2>Contacto</h2>
+          <p>Para cualquier duda relacionada con este Aviso de Privacidad o para ejercer derechos ARCO, los usuarios podrán comunicarse con NRM Comunicaciones a través de los medios de contacto oficiales publicados en <a href="https://nrm.com.mx/" target="_blank" rel="noopener">nrm.com.mx</a>.</p>
+          <p>Asimismo, podrán consultar cualquier actualización de este Aviso de Privacidad dentro de la sección correspondiente del sitio La Fiesta del Fútbol en <a href="https://fiestafutbol.com.mx/aviso-de-privacidad">fiestafutbol.com.mx/aviso-de-privacidad</a>.</p>
+
+        </article>
+
+        <aside class="w-full lg:w-[350px] flex-shrink-0">
+          <div class="bg-white p-5 rounded-xl sticky top-4">
+            <BoxBanner />
+            <div class="my-6 h-px bg-gray-200"></div>
+            <DoubleBox />
+          </div>
+        </aside>
+      </div>
+
     </div>
-  </div>
+  </section>
 </Layout>
+
+<style is:global>
+  .nota-interna p { margin-bottom: 1.25em; }
+  .nota-interna h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #111827;
+    margin-top: 2em;
+    margin-bottom: 0.6em;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .nota-interna ul {
+    list-style-type: disc;
+    padding-left: 1.5em;
+    margin-bottom: 1.25em;
+  }
+  .nota-interna li { margin-bottom: 0.3em; }
+  .nota-interna a { color: #ea262a; text-decoration: underline; }
+</style>
