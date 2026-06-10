@@ -9,10 +9,16 @@ export const DELETE: APIRoute = async ({ request, cookies, locals, params }) => 
   }
 
   const supabase = createSupabaseServerClient(request, cookies)
+  const cardId = params.id!
+
+  // Borrar registros dependientes antes de borrar la card
+  await supabase.from('user_cards').delete().eq('card_id', cardId)
+  await supabase.from('codes').delete().eq('card_id', cardId)
+
   const { error } = await supabase
     .from('cards')
     .delete()
-    .eq('id', params.id!)
+    .eq('id', cardId)
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 400 })

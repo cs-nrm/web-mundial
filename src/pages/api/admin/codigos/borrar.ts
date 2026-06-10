@@ -20,12 +20,10 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
   const supabase = createSupabaseServerClient(request, cookies)
 
-  // Solo borrar códigos que no hayan sido usados (usos_count = 0) para proteger integridad
   const { error } = await supabase
     .from('codes')
     .delete()
     .in('id', ids)
-    .eq('usos_count', 0)
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 400 })
