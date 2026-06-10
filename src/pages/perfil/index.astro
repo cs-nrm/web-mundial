@@ -135,6 +135,66 @@ const { count: playlistCount } = await supabase
     <!-- Contenido -->
     <div class="perfil-content">
 
+      <!-- Instrucciones -->
+      <details class="instrucciones-wrap">
+        <summary class="instrucciones-header spartan">
+          Instrucciones
+          <svg class="instrucciones-chevron" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+          </svg>
+        </summary>
+        <div class="instrucciones-body roboto">
+
+          <div class="inst-paso">
+            <span class="inst-num">1</span>
+            <div>
+              <strong>Crea tu avatar</strong>
+              <p>Tu primera estampa la haces tú mismo. Personaliza tu avatar y queda en tu álbum para siempre.</p>
+            </div>
+          </div>
+
+          <div class="inst-paso">
+            <span class="inst-num">2</span>
+            <div>
+              <strong>Encuentra los códigos</strong>
+              <p>Las estampas no se compran, se ganan. Los códigos aparecen en varios lugares — hay que estar atento:</p>
+              <ul>
+                <li>- Entre las noticias de fiestafutbol.com.mx. Pueden estar dentro de alguna nota (sí, hay que leer).</li>
+                <li>- En el sitio de tu álbum, escondidos en alguna sección. Vale la pena visitarlos seguido.</li>
+                <li>- En los turnos en vivo de tu estación. Si te perdiste el programa, no te preocupes — el código del día se repite en varios turnos.</li>
+                <li>- En activaciones con los patrocinadores.</li>
+                <li>- En algunos eventos presenciales (se avisará en cuáles).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="inst-paso">
+            <span class="inst-num">3</span>
+            <div>
+              <strong>Captura y colecciona</strong>
+              <p>Entra a tu álbum, ingresa el código y desbloquea la estampa. Hay estampas comunes, especiales y legendarias. ¿Puedes completarlo todo?</p>
+            </div>
+          </div>
+
+          <div class="inst-paso">
+            <span class="inst-num">4</span>
+            <div>
+              <strong>¿Te falta un código?</strong>
+              <p>Pídelo a la comunidad, tal vez alguien lo tenga. Ya sea por redes sociales o por los medios oficiales de tu estación.</p>
+            </div>
+          </div>
+
+          <div class="inst-paso">
+            <span class="inst-num">5</span>
+            <div>
+              <strong>Gana</strong>
+              <p>Los primeros en completar su álbum participan por <strong>6 meses de conciertos</strong>. Para reclamar el premio hay que responder una pregunta de fútbol. No es suerte — es conocimiento.</p>
+            </div>
+          </div>
+
+        </div>
+      </details>
+
       <!-- Álbumes -->
       {!isSuperadmin && !estacion_favorita ? (
         <section class="perfil-section">
@@ -207,6 +267,94 @@ const { count: playlistCount } = await supabase
 </script>
 
 <style>
+  /* ---- Instrucciones ---- */
+  .instrucciones-wrap {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid #75ee2f;
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+  }
+
+  .instrucciones-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #1a3a08;
+    background: #75ee2f;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    gap: 0.5rem;
+  }
+  .instrucciones-header::-webkit-details-marker { display: none; }
+  .instrucciones-header:hover { background: #68d929; }
+
+  .instrucciones-chevron {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  details[open] .instrucciones-chevron { transform: rotate(180deg); }
+
+  .instrucciones-body {
+    padding: 0.25rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .inst-paso {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+  }
+
+  .inst-num {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.4);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.1rem;
+  }
+
+  .inst-paso strong {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 0.2rem;
+  }
+
+  .inst-paso p, .inst-paso li {
+    font-size: 0.825rem;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.5;
+  }
+
+  .inst-paso ul {
+    list-style: none;
+    margin-top: 0.4rem;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  /* ---- Perfil ---- */
   .perfil-page {
     min-height: 100vh;
     background: #0f1118;

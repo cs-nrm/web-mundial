@@ -21,12 +21,80 @@ const okMsg = okParam === 'password_actualizada' ? 'Contraseña actualizada. Ya 
   <div class="min-h-screen flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-md">
 
-      <div class="text-center mb-8">
+      <div class="text-center mb-6">
         <h1 class="text-3xl font-bold spartan text-gray-900">¡Bienvenido!</h1>
         <p class="text-gray-500 mt-2">Inicia sesión para participar</p>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-xl p-8">
+      <!-- Instrucciones -->
+      <details class="login-instrucciones">
+        <summary class="login-inst-header spartan">
+          ¿Cómo funciona?
+          <svg class="login-inst-chevron" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+          </svg>
+        </summary>
+        <div class="login-inst-body">
+
+          <div class="login-inst-paso">
+            <span class="login-inst-num">1</span>
+            <div>
+              <strong>Elige tu estación</strong>
+              <p>Beat, Oye, Stereo Cien o Sabrosita. Cada una tiene su propio álbum con talentos y estampas únicas. Elige la tuya y empieza tu colección.</p>
+            </div>
+          </div>
+
+          <div class="login-inst-paso">
+            <span class="login-inst-num">2</span>
+            <div>
+              <strong>Crea tu avatar</strong>
+              <p>Tu primera estampa la haces tú mismo. Personaliza tu avatar y queda en tu álbum para siempre.</p>
+            </div>
+          </div>
+
+          <div class="login-inst-paso">
+            <span class="login-inst-num">3</span>
+            <div>
+              <strong>Encuentra los códigos</strong>
+              <p>Las estampas no se compran, se ganan. Los códigos aparecen en varios lugares — hay que estar atento:</p>
+              <ul>
+                <li>- Entre las noticias de fiestafutbol.com.mx. Pueden estar dentro de alguna nota (sí, hay que leer).</li>
+                <li>- En el sitio de tu álbum, escondidos en alguna sección. Vale la pena visitarlos seguido.</li>
+                <li>- En los turnos en vivo de tu estación. Si te perdiste el programa, no te preocupes — el código del día se repite en varios turnos.</li>
+                <li>- En activaciones con los patrocinadores.</li>
+                <li>- En algunos eventos presenciales (se avisará en cuáles).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="login-inst-paso">
+            <span class="login-inst-num">4</span>
+            <div>
+              <strong>Captura y colecciona</strong>
+              <p>Entra a tu álbum, ingresa el código y desbloquea la estampa. Hay estampas comunes, especiales y legendarias. ¿Puedes completarlo todo?</p>
+            </div>
+          </div>
+
+          <div class="login-inst-paso">
+            <span class="login-inst-num">5</span>
+            <div>
+              <strong>¿Te falta un código?</strong>
+              <p>Pídelo a la comunidad, tal vez alguien lo tenga. Ya sea por redes sociales o por los medios oficiales de tu estación.</p>
+            </div>
+          </div>
+
+          <div class="login-inst-paso">
+            <span class="login-inst-num">6</span>
+            <div>
+              <strong>Gana</strong>
+              <p>Los primeros en completar su álbum participan por <strong>6 meses de conciertos</strong>. Para reclamar el premio hay que responder una pregunta de fútbol. No es suerte — es conocimiento.</p>
+            </div>
+          </div>
+
+        </div>
+      </details>
+
+      <div class="bg-white rounded-2xl shadow-xl p-8 mt-4">
 
         {okMsg && (
           <div class="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 mb-6 text-sm">
@@ -108,6 +176,96 @@ const okMsg = okParam === 'password_actualizada' ? 'Contraseña actualizada. Ya 
         </p>
 
       </div>
+
     </div>
   </div>
 </Layout>
+
+<style>
+  .login-instrucciones {
+    margin-bottom: 1rem;
+    background: white;
+    border-radius: 1rem;
+    border: 1.5px solid #75ee2f;
+    overflow: hidden;
+  }
+
+  .login-inst-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #75ee2f;
+    background: #111;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    gap: 0.5rem;
+  }
+  .login-inst-header::-webkit-details-marker { display: none; }
+  .login-inst-header:hover { background: #1a1a1a; }
+
+  .login-inst-chevron {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  details[open] .login-inst-chevron { transform: rotate(180deg); }
+
+  .login-inst-body {
+    padding: 0.75rem 1.25rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .login-inst-paso {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+  }
+
+  .login-inst-num {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba(117, 238, 47, 0.12);
+    color: #4a9c15;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.1rem;
+  }
+
+  .login-inst-paso strong {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.2rem;
+  }
+
+  .login-inst-paso p,
+  .login-inst-paso li {
+    font-size: 0.825rem;
+    color: #6b7280;
+    line-height: 1.5;
+  }
+
+  .login-inst-paso ul {
+    list-style: none;
+    margin-top: 0.4rem;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+</style>
