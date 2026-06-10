@@ -12,6 +12,12 @@ export const DELETE: APIRoute = async ({ request, cookies, locals, params }) => 
   const cardId = params.id!
 
   // Borrar registros dependientes antes de borrar la card
+  // Primero obtener los códigos para borrar sus user_cards por code_id
+  const { data: codesToDelete } = await supabase.from('codes').select('id').eq('card_id', cardId)
+  const codeIds = (codesToDelete ?? []).map((c: any) => c.id)
+  if (codeIds.length > 0) {
+    await supabase.from('user_cards').delete().in('code_id', codeIds)
+  }
   await supabase.from('user_cards').delete().eq('card_id', cardId)
   await supabase.from('codes').delete().eq('card_id', cardId)
 

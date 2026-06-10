@@ -20,6 +20,8 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
   const supabase = createSupabaseServerClient(request, cookies)
 
+  await supabase.from('user_cards').delete().in('code_id', ids)
+
   const { error } = await supabase
     .from('codes')
     .delete()
