@@ -3,14 +3,15 @@
 
 (function () {
   const SLOT_TYPES = {
-    'ad-slot2':          'boxbanner',
-    'ad-slot3':          'leaderboard',
-    'ad-slot32':         'leaderboard',
-    'ad-slot4':          ['expandible', 'leaderboard'],
-    'ad-slot5':          'doublebox',
-    'ad-slot6':          'leaderboard',
-    'ad-slot14':         'super',
-    'ad-slot-videonota': 'leaderboard',
+    'ad-slot2':            'boxbanner',
+    'ad-slot3':            'leaderboard',
+    'ad-slot32':           'leaderboard',
+    'ad-slot4':            'leaderboard',
+    'ad-slot-expandible':  'expandible',
+    'ad-slot5':            'doublebox',
+    'ad-slot6':            'leaderboard',
+    'ad-slot14':           'super',
+    'ad-slot-videonota':   'leaderboard',
   }
 
   let _clients = null
