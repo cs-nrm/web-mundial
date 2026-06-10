@@ -63,9 +63,12 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     }
   }
 
+  const HEADER_WORDS = ['artista', 'artist', 'autor', 'titulo', 'título', 'title', 'cancion', 'canción', 'song']
+
   const registros = rows
     .map(normalize)
     .filter(r => r.artist && r.title)
+    .filter(r => !HEADER_WORDS.includes(r.artist.toLowerCase()) && !HEADER_WORDS.includes(r.title.toLowerCase()))
 
   if (!registros.length) {
     return new Response(JSON.stringify({ error: 'No se encontraron filas válidas. Verifica que el archivo tenga columnas: artista, titulo' }), { status: 400 })

@@ -34,21 +34,22 @@ const estacionColors: Record<string, string> = {
 }
 
 // En la vista "todas", agrupa por artist+title para mostrar múltiples badges por canción
-type SongEntry = { id: string; estacion: string; activo: boolean }
-type SongRow = { artist: string; title: string; entries: SongEntry[] }
+type SongEntry = { id: string; estacion: string; activo: boolean; pinned: boolean }
+type SongRow = { artist: string; title: string; pinned: boolean; entries: SongEntry[] }
 const songsAgrupados: SongRow[] = estacionParam === 'todas'
   ? Object.values(
       (songs ?? []).reduce((acc: Record<string, SongRow>, s: any) => {
         const key = `${s.artist.toLowerCase()}|${s.title.toLowerCase()}`
-        if (!acc[key]) acc[key] = { artist: s.artist, title: s.title, entries: [] }
-        acc[key].entries.push({ id: s.id, estacion: s.estacion, activo: s.activo })
+        if (!acc[key]) acc[key] = { artist: s.artist, title: s.title, pinned: s.pinned ?? false, entries: [] }
+        acc[key].entries.push({ id: s.id, estacion: s.estacion, activo: s.activo, pinned: s.pinned ?? false })
         return acc
       }, {})
     )
   : (songs ?? []).map((s: any) => ({
       artist: s.artist,
       title: s.title,
-      entries: [{ id: s.id, estacion: s.estacion, activo: s.activo }],
+      pinned: s.pinned ?? false,
+      entries: [{ id: s.id, estacion: s.estacion, activo: s.activo, pinned: s.pinned ?? false }],
     }))
 ---
 <AdminLayout title="Catálogo de Canciones">
@@ -92,12 +93,16 @@ const songsAgrupados: SongRow[] = estacionParam === 'todas'
           <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;color:#374151;">Título</th>
           <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;color:#374151;">Estación</th>
           <th style="padding:0.75rem 1rem;text-align:center;font-weight:600;color:#374151;">Activo</th>
+          <th style="padding:0.75rem 0.75rem;text-align:center;font-weight:600;color:#374151;">Fijar</th>
         </tr>
       </thead>
       <tbody>
         {songsAgrupados.map((row, i) => (
-          <tr style={`border-bottom:1px solid #f3f4f6;${i % 2 === 0 ? '' : 'background:#fafafa'}`}>
-            <td style="padding:0.7rem 1rem;color:#1a1a2e;font-weight:500;">{row.artist}</td>
+          <tr style={`border-bottom:1px solid #f3f4f6;${row.pinned ? 'background:#fffbeb;' : i % 2 === 0 ? '' : 'background:#fafafa'}`}>
+            <td style="padding:0.7rem 1rem;color:#1a1a2e;font-weight:500;">
+              {row.pinned && <span style="font-size:0.7rem;background:#320E41;color:#f8ef22;font-weight:700;padding:0.1rem 0.4rem;border-radius:0.25rem;margin-right:0.4rem;letter-spacing:0.03em;">★</span>}
+              {row.artist}
+            </td>
             <td style="padding:0.7rem 1rem;color:#374151;">{row.title}</td>
             <td style="padding:0.7rem 1rem;">
               <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
@@ -122,6 +127,17 @@ const songsAgrupados: SongRow[] = estacionParam === 'todas'
                   </label>
                 ))}
               </div>
+            </td>
+            <td style="padding:0.7rem 0.75rem;text-align:center;">
+              <button
+                class={`btn-pin${row.pinned ? ' pinned' : ''}`}
+                data-id={row.entries[0].id}
+                data-pinned={row.pinned ? 'true' : 'false'}
+                title={row.pinned ? 'Quitar destacada' : 'Fijar como destacada'}
+                onclick="pinSong(this)"
+              >
+                {row.pinned ? '📌' : '📍'}
+              </button>
             </td>
           </tr>
         ))}
@@ -207,6 +223,15 @@ const songsAgrupados: SongRow[] = estacionParam === 'todas'
   }
   input:checked + .toggle-slider { background:var(--rojo); }
   input:checked + .toggle-slider::before { transform:translateX(18px); }
+
+  .btn-pin {
+    background: none; border: none; font-size: 1.1rem; cursor: pointer;
+    opacity: 0.35; transition: opacity 0.15s, transform 0.15s;
+    padding: 0.1rem;
+  }
+  .btn-pin:hover { opacity: 0.8; transform: scale(1.2); }
+  .btn-pin.pinned { opacity: 1; }
+  .btn-pin:disabled { cursor: not-allowed; }
 </style>
 
 <script>
@@ -226,6 +251,24 @@ const songsAgrupados: SongRow[] = estacionParam === 'todas'
     window.location.href = '/admin/canciones?estacion=todas&p=1'
   } else {
     alert(`Error: ${data.error}`)
+  }
+}
+
+async function pinSong(btn: HTMLButtonElement) {
+  const id = btn.dataset.id
+  const isPinned = btn.dataset.pinned === 'true'
+  const newPinned = !isPinned
+  btn.disabled = true
+  const res = await fetch(`/api/admin/songs/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pinned: newPinned }),
+  })
+  if (res.ok) {
+    window.location.reload()
+  } else {
+    alert('Error al actualizar')
+    btn.disabled = false
   }
 }
 

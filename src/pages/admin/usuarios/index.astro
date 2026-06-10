@@ -15,9 +15,10 @@ const porPagina = 50
 
 const adminClient = createSupabaseAdminClient()
 
-// Traer todos los usuarios de auth (fuente de verdad)
-const { data: authData } = await adminClient.auth.admin.listUsers({ page: pagina, perPage: porPagina })
-const authUsers = authData?.users ?? []
+// Traer TODOS los usuarios de auth de una sola vez, ordenar por más recientes
+const { data: authData } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
+const authUsers = (authData?.users ?? [])
+  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
 // Traer perfiles para cruzar roles y nombres
 const ids = authUsers.map(u => u.id)
@@ -43,6 +44,11 @@ if (search) {
     u.full_name.toLowerCase().includes(search)
   )
 }
+
+const totalUsers = users.length
+const totalPaginas = Math.ceil(totalUsers / porPagina)
+const desde = (pagina - 1) * porPagina
+users = users.slice(desde, desde + porPagina)
 ---
 
 <AdminLayout title="Usuarios">
@@ -93,6 +99,9 @@ if (search) {
   </div>
 
   <div class="table-wrap">
+    <div class="table-meta">
+      <span class="total-count">{totalUsers} usuario{totalUsers !== 1 ? 's' : ''}</span>
+    </div>
     <table class="data-table">
       <thead>
         <tr>
@@ -141,6 +150,18 @@ if (search) {
         )}
       </tbody>
     </table>
+
+    {totalPaginas > 1 && (
+      <div class="pagination">
+        {pagina > 1 && (
+          <a href={`?p=${pagina - 1}${search ? `&q=${encodeURIComponent(search)}` : ''}`} class="page-btn">← Anterior</a>
+        )}
+        <span class="page-info">Página {pagina} de {totalPaginas}</span>
+        {pagina < totalPaginas && (
+          <a href={`?p=${pagina + 1}${search ? `&q=${encodeURIComponent(search)}` : ''}`} class="page-btn">Siguiente →</a>
+        )}
+      </div>
+    )}
   </div>
 </AdminLayout>
 
@@ -307,6 +328,30 @@ async function enviarInvitacion() {
   .action-link:disabled { color: #ccc; cursor: not-allowed; }
   .action-danger { color: #6b7280; }
   .action-danger:hover { color: #dc2626; opacity: 1; }
+
+  .table-meta {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.78rem;
+    color: #9ca3af;
+  }
+  .total-count { font-weight: 600; }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border-top: 1px solid #f0f0f0;
+    font-size: 0.875rem;
+  }
+  .page-btn {
+    color: var(--rojo);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .page-btn:hover { text-decoration: underline; }
+  .page-info { color: #888; flex: 1; text-align: center; }
 
   .btn-invitar {
     background: var(--rojo); color: white; border: none;

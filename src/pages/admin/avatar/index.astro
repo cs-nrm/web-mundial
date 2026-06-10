@@ -1,0 +1,388 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+import manifestRaw from '../../../../public/avatar/manifest.json'
+
+const { role } = Astro.locals
+if (!canAccess(role as UserRole, MANAGE_ROLES)) {
+  return Astro.redirect('/admin')
+}
+
+const manifest = manifestRaw as any
+const AVATAR_BASE_URL = 'https://storage.googleapis.com/nrm-web/mundial/avatar'
+
+const LABELS: Record<string, string> = {
+  fondo: 'Fondo', 'cuerpo-jersey': 'Jersey', cabello: 'Cabello',
+  cejas: 'Cejas', ojos: 'Ojos', lentes: 'Lentes', boca: 'Boca',
+  bigote: 'Bigote', barba: 'Barba', gorra: 'Gorra', marco: 'Marco',
+}
+
+const STATION_LABELS: Record<string, string> = {
+  beat: 'Beat', oye: 'Oye', sabrosita: 'Sabrosita', stereocien: 'Stereo Cien',
+}
+
+// Thumb img styles para zoom correcto según categoría
+const THUMB_IMG_STYLES: Record<string, string> = {
+  cejas:           'object-position:50% 32%;transform:scale(3.5);transform-origin:50% 32%',
+  ojos:            'object-position:50% 32%;transform:scale(3.5);transform-origin:50% 32%',
+  lentes:          'object-position:50% 36%;transform:scale(3);transform-origin:50% 36%',
+  boca:            'object-position:50% 44%;transform:scale(3);transform-origin:50% 44%',
+  bigote:          'object-position:50% 46%;transform:scale(2.5);transform-origin:50% 46%',
+  barba:           'object-position:50% 48%;transform:scale(2);transform-origin:50% 48%',
+  cabello:         'object-position:50% 22%',
+  gorra:           'object-position:50% 18%',
+  'cuerpo-jersey': 'object-position:50% 62%',
+  marco:           'object-fit:contain;object-position:center;background:#f5f5f5',
+  fondo:           'object-fit:cover;object-position:center',
+}
+
+function getPaths(scope: string, cat: string): string[] {
+  if (scope === 'universal') return manifest.assets?.universal?.[cat] ?? []
+  return manifest.assets?.[scope]?.[cat] ?? []
+}
+
+function nextHint(scope: string, cat: string, paths: string[]): string {
+  const folder = scope === 'universal' ? `universal/${cat}` : `${scope}/${cat}`
+  const base   = scope === 'universal' ? cat : cat
+  const nums   = paths.map(p => { const m = p.match(/-(\d+)\.\w+$/); return m ? parseInt(m[1]) : 0 }).filter(n => n > 0)
+  const next   = nums.length ? Math.max(...nums) + 1 : 1
+  const ext    = manifest.categorias[cat]?.extensiones?.[0] ?? 'png'
+  return `${folder}/${base}-${String(next).padStart(2, '0')}.${ext}`
+}
+
+// Construir secciones por categoría
+type Section = { key: string; label: string }
+function sections(cat: string): Section[] {
+  const scope = manifest.categorias[cat]?.scope ?? 'compartido'
+  if (scope === 'por_estacion') {
+    return manifest.estaciones.map((s: string) => ({ key: s, label: STATION_LABELS[s] ?? s }))
+  }
+  return [
+    { key: 'universal', label: 'Universal' },
+    ...manifest.estaciones.map((s: string) => ({ key: s, label: `${STATION_LABELS[s] ?? s} (exclusivos)` })),
+  ]
+}
+---
+
+<AdminLayout title="Avatar — Assets">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="version-badge" id="version-badge">v{manifest.version}</span>
+      <span id="change-indicator" class="change-dot" hidden>● cambios sin guardar</span>
+    </div>
+    <button id="btn-save" class="btn-primary" disabled>Guardar cambios</button>
+  </div>
+
+  <!-- Category tabs -->
+  <div class="cat-tabs-wrap">
+    <div class="cat-tabs">
+      {manifest.z_order.map((cat: string, i: number) => (
+        <button class={`cat-tab${i === 0 ? ' active' : ''}`} data-cat={cat} type="button">
+          {LABELS[cat] ?? cat}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- Panels (server-rendered, show/hide via JS) -->
+  {manifest.z_order.map((cat: string, i: number) => (
+    <div class="cat-panel" data-cat={cat} style={i !== 0 ? 'display:none' : ''}>
+      {sections(cat).map(({ key: scope, label }) => {
+        const paths = getPaths(scope, cat)
+        const hint  = nextHint(scope, cat, paths)
+        const thumbStyle = THUMB_IMG_STYLES[cat] ?? 'object-position:50% 30%'
+        return (
+          <div class="av-section">
+            <div class="section-header">
+              <h3 class="section-title">{label}</h3>
+              <span class="section-count" id={`count-${scope}-${cat}`}>
+                {paths.length} asset{paths.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            <div class="asset-grid" id={`grid-${scope}-${cat}`}>
+              {paths.length === 0 && <p class="empty-msg">Sin assets. Agrega la primera ruta abajo.</p>}
+              {paths.map((path: string) => (
+                <div class="asset-thumb" data-path={path}>
+                  <div class="thumb-inner">
+                    <img src={`${AVATAR_BASE_URL}/${path}`} loading="lazy" style={thumbStyle} alt="" />
+                  </div>
+                  <div class="thumb-path">{path.split('/').pop()}</div>
+                  <button class="btn-delete" data-path={path} data-scope={scope} data-cat={cat} title="Eliminar">×</button>
+                </div>
+              ))}
+            </div>
+
+            <div class="add-row">
+              <input
+                type="text"
+                class="add-input"
+                placeholder={hint}
+                data-scope={scope}
+                data-cat={cat}
+                data-base-url={AVATAR_BASE_URL}
+                data-thumb-style={thumbStyle}
+              />
+              <button class="btn-preview" type="button" data-scope={scope} data-cat={cat}>Vista previa</button>
+              <button class="btn-add-asset" type="button" data-scope={scope} data-cat={cat}>+ Agregar</button>
+            </div>
+            <div class="preview-area" id={`preview-${scope}-${cat}`} style="display:none"></div>
+          </div>
+        )
+      })}
+    </div>
+  ))}
+
+</AdminLayout>
+
+<script define:vars={{ initialManifest: manifest, BASE_URL: AVATAR_BASE_URL }}>
+  var mf = JSON.parse(JSON.stringify(initialManifest))
+  var dirty = false
+
+  function markDirty() {
+    if (dirty) return
+    dirty = true
+    var ind = document.getElementById('change-indicator')
+    if (ind) ind.removeAttribute('hidden')
+    var btn = document.getElementById('btn-save')
+    if (btn) btn.disabled = false
+  }
+
+  function updateCount(scope, cat) {
+    var el = document.getElementById('count-' + scope + '-' + cat)
+    if (!el) return
+    var grid = document.getElementById('grid-' + scope + '-' + cat)
+    var n = grid ? grid.querySelectorAll('.asset-thumb').length : 0
+    el.textContent = n + ' asset' + (n !== 1 ? 's' : '')
+  }
+
+  // ── Tabs ──────────────────────────────────────────────────
+  document.querySelectorAll('.cat-tab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var cat = btn.dataset.cat
+      document.querySelectorAll('.cat-panel').forEach(function(p) {
+        p.style.display = p.dataset.cat === cat ? '' : 'none'
+      })
+      document.querySelectorAll('.cat-tab').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.cat === cat)
+      })
+    })
+  })
+
+  // ── Delete (event delegation) ─────────────────────────────
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-delete')
+    if (!btn) return
+    var path = btn.dataset.path
+    var scope = btn.dataset.scope
+    var cat = btn.dataset.cat
+    if (!confirm('¿Eliminar "' + path + '" del manifest?')) return
+    var target = scope === 'universal' ? mf.assets.universal : mf.assets[scope]
+    if (target && target[cat]) {
+      target[cat] = target[cat].filter(function(p) { return p !== path })
+    }
+    var thumb = btn.closest('.asset-thumb')
+    if (thumb) thumb.remove()
+    updateCount(scope, cat)
+    markDirty()
+  })
+
+  // ── Add asset ─────────────────────────────────────────────
+  document.querySelectorAll('.btn-add-asset').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var scope = btn.dataset.scope
+      var cat = btn.dataset.cat
+      var row = btn.closest('.add-row')
+      var input = row.querySelector('.add-input')
+      var path = input.value.trim()
+      if (!path) { input.focus(); return }
+
+      if (scope === 'universal') {
+        if (!mf.assets.universal) mf.assets.universal = {}
+        if (!mf.assets.universal[cat]) mf.assets.universal[cat] = []
+        if (mf.assets.universal[cat].includes(path)) { alert('Ruta ya existe.'); return }
+        mf.assets.universal[cat].push(path)
+      } else {
+        if (!mf.assets[scope]) mf.assets[scope] = {}
+        if (!mf.assets[scope][cat]) mf.assets[scope][cat] = []
+        if (mf.assets[scope][cat].includes(path)) { alert('Ruta ya existe.'); return }
+        mf.assets[scope][cat].push(path)
+      }
+
+      var grid = document.getElementById('grid-' + scope + '-' + cat)
+      if (!grid) return
+      var emptyMsg = grid.querySelector('.empty-msg')
+      if (emptyMsg) emptyMsg.remove()
+
+      var thumbStyle = input.dataset.thumbStyle || 'object-position:50% 30%'
+      var thumb = document.createElement('div')
+      thumb.className = 'asset-thumb'
+      thumb.dataset.path = path
+      thumb.innerHTML =
+        '<div class="thumb-inner"><img src="' + BASE_URL + '/' + path + '" loading="lazy" style="' + thumbStyle + '" alt="" /></div>' +
+        '<div class="thumb-path">' + path.split('/').pop() + '</div>' +
+        '<button class="btn-delete" data-path="' + path + '" data-scope="' + scope + '" data-cat="' + cat + '" title="Eliminar">\xd7</button>'
+      grid.appendChild(thumb)
+
+      input.value = ''
+      var previewArea = document.getElementById('preview-' + scope + '-' + cat)
+      if (previewArea) previewArea.style.display = 'none'
+      updateCount(scope, cat)
+      markDirty()
+    })
+  })
+
+  // ── Preview ───────────────────────────────────────────────
+  document.querySelectorAll('.btn-preview').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var scope = btn.dataset.scope
+      var cat = btn.dataset.cat
+      var row = btn.closest('.add-row')
+      var input = row.querySelector('.add-input')
+      var path = input.value.trim()
+      if (!path) return
+      var area = document.getElementById('preview-' + scope + '-' + cat)
+      if (!area) return
+      var thumbStyle = input.dataset.thumbStyle || ''
+      area.style.display = 'flex'
+      area.innerHTML =
+        '<img src="' + BASE_URL + '/' + path + '" alt="preview" style="' + thumbStyle + '" ' +
+        'onerror="this.parentElement.innerHTML=\'<span class=&quot;preview-err&quot;>Imagen no encontrada en GCS</span>\'" />' +
+        '<span class="preview-path">' + path + '</span>'
+    })
+  })
+
+  // ── Guardar ───────────────────────────────────────────────
+  document.getElementById('btn-save').addEventListener('click', async function() {
+    var btn = document.getElementById('btn-save')
+    btn.disabled = true
+    btn.textContent = 'Guardando...'
+    try {
+      var res = await fetch('/api/admin/avatar/manifest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mf),
+      })
+      var data = await res.json()
+      if (!data.ok) throw new Error(data.error || 'Error al guardar')
+      dirty = false
+      var ind = document.getElementById('change-indicator')
+      if (ind) ind.setAttribute('hidden', '')
+      var badge = document.getElementById('version-badge')
+      if (badge) badge.textContent = 'v' + data.version
+      mf.version = data.version
+      btn.textContent = '✓ Guardado'
+      setTimeout(function() { btn.textContent = 'Guardar cambios' }, 2000)
+    } catch (err) {
+      alert('Error al guardar: ' + err.message)
+      btn.disabled = false
+      btn.textContent = 'Guardar cambios'
+    }
+  })
+</script>
+
+<style>
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: white; padding: 0.75rem 1.25rem; border-radius: 0.75rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 1rem;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 0.75rem; }
+  .version-badge {
+    font-size: 0.72rem; font-weight: 700; background: #f3f4f6; color: #6b7280;
+    padding: 0.2rem 0.6rem; border-radius: 999px; letter-spacing: 0.04em; font-family: monospace;
+  }
+  .change-dot { font-size: 0.78rem; color: #f59e0b; font-weight: 600; }
+  .btn-primary {
+    background: var(--rojo); color: white; border: none;
+    padding: 0.5rem 1.25rem; border-radius: 0.4rem; font-size: 0.875rem;
+    font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .cat-tabs-wrap {
+    background: white; border-radius: 0.75rem; padding: 0.5rem 0.75rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 1rem; overflow-x: auto;
+  }
+  .cat-tabs { display: flex; gap: 0.35rem; flex-wrap: nowrap; scrollbar-width: none; }
+  .cat-tab {
+    padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1.5px solid transparent;
+    background: #f3f4f6; color: #6b7280; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; white-space: nowrap; transition: background 0.15s, color 0.15s;
+  }
+  .cat-tab:hover { background: #e5e7eb; color: #374151; }
+  .cat-tab.active { background: var(--rojo); color: white; border-color: var(--rojo); }
+
+  .cat-panel { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .av-section {
+    background: white; border-radius: 0.75rem; padding: 1.25rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .section-header {
+    display: flex; align-items: baseline; gap: 0.75rem;
+    margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 2px solid #f0f0f0;
+  }
+  .section-title { font-size: 0.95rem; font-weight: 700; color: var(--oxford); }
+  .section-count { font-size: 0.75rem; color: #9ca3af; }
+
+  .asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 0.6rem; margin-bottom: 1rem; min-height: 30px;
+  }
+  .asset-thumb {
+    position: relative; border-radius: 0.5rem; overflow: hidden;
+    border: 1.5px solid #e5e7eb; background: #f9fafb;
+  }
+  .asset-thumb:hover { border-color: #d1d5db; }
+  .thumb-inner { width: 100%; aspect-ratio: 1; overflow: hidden; background: white; }
+  .thumb-inner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb-path {
+    font-size: 0.6rem; color: #9ca3af; text-align: center;
+    padding: 0.2rem 0.3rem; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; font-family: monospace;
+  }
+  .btn-delete {
+    position: absolute; top: 3px; right: 3px; width: 18px; height: 18px;
+    border-radius: 50%; background: rgba(239,68,68,0.85); color: white;
+    border: none; font-size: 0.85rem; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .asset-thumb:hover .btn-delete { opacity: 1; }
+  .empty-msg { font-size: 0.8rem; color: #9ca3af; grid-column: 1/-1; padding: 0.5rem 0; }
+
+  .add-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .add-input {
+    flex: 1; min-width: 240px; padding: 0.45rem 0.75rem;
+    border: 1.5px solid #d1d5db; border-radius: 0.4rem;
+    font-size: 0.82rem; font-family: monospace; color: #374151;
+    background: #f9fafb; outline: none;
+  }
+  .add-input:focus { border-color: var(--rojo); background: white; }
+  .btn-preview, .btn-add-asset {
+    padding: 0.45rem 0.9rem; border-radius: 0.4rem;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; border: none;
+  }
+  .btn-preview { background: #f3f4f6; color: #374151; }
+  .btn-preview:hover { background: #e5e7eb; }
+  .btn-add-asset { background: #16a34a; color: white; }
+  .btn-add-asset:hover { opacity: 0.85; }
+
+  .preview-area {
+    display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem;
+    padding: 0.75rem; background: #f9fafb; border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+  .preview-area img {
+    width: 80px; height: 80px; object-fit: cover;
+    border-radius: 0.4rem; background: white; border: 1px solid #e5e7eb;
+  }
+  .preview-path { font-size: 0.75rem; color: #6b7280; font-family: monospace; word-break: break-all; }
+  .preview-err { font-size: 0.8rem; color: #ef4444; font-weight: 600; }
+</style>

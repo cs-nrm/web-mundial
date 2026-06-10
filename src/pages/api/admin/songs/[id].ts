@@ -8,12 +8,21 @@ export const PATCH: APIRoute = async ({ request, cookies, locals, params }) => {
     return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
   }
 
-  const { activo } = await request.json()
+  const body = await request.json()
   const supabase = createSupabaseServerClient(request, cookies)
+
+  // Si se está fijando una canción, primero desfijar todas las demás
+  if (body.pinned === true) {
+    await supabase.from('songs_catalog').update({ pinned: false }).neq('id', params.id!)
+  }
+
+  const update: Record<string, any> = {}
+  if (body.activo  !== undefined) update.activo  = body.activo
+  if (body.pinned  !== undefined) update.pinned  = body.pinned
 
   const { error } = await supabase
     .from('songs_catalog')
-    .update({ activo })
+    .update(update)
     .eq('id', params.id!)
 
   if (error) {

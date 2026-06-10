@@ -25,11 +25,12 @@ const { data: misCanciones } = await supabase
   .eq('playlist_id', id!)
   .order('orden')
 
-// Catálogo completo activo
+// Catálogo completo activo — pinned primero, luego alfabético
 const { data: catalogo } = await supabase
   .from('songs_catalog')
-  .select('id, artist, title, estacion')
+  .select('id, artist, title, estacion, pinned')
   .eq('activo', true)
+  .order('pinned', { ascending: false })
   .order('artist')
 
 const enPlaylist = new Set((misCanciones ?? []).map(ps => ps.song_id))
@@ -200,7 +201,7 @@ const estacionSolid = new Set(['oye', 'beat'])
         <div id="catalogo-lista" class="max-h-[calc(100vh-340px)] min-h-[200px] overflow-y-auto divide-y divide-[#320E41]/20 pr-4">
           {(catalogo ?? []).map(song => (
             <div
-              class="catalogo-item flex items-center justify-between py-3"
+              class={`catalogo-item flex items-center justify-between py-3${(song as any).pinned ? ' catalogo-pinned' : ''}`}
               data-song-id={song.id}
               data-artist={song.artist.toLowerCase()}
               data-title={song.title.toLowerCase()}
@@ -209,7 +210,12 @@ const estacionSolid = new Set(['oye', 'beat'])
               data-title-orig={song.title}
             >
               <div>
-                <p class="inter font-medium text-[#320E41] text-sm">{song.artist}</p>
+                <div class="flex items-center gap-1.5">
+                  <p class="inter font-medium text-[#320E41] text-sm">{song.artist}</p>
+                  {(song as any).pinned && (
+                    <span class="inter text-[10px] font-bold uppercase tracking-wide bg-[#320E41] text-[#f8ef22] px-1.5 py-0.5 rounded">★ destacada</span>
+                  )}
+                </div>
                 <p class="inter text-xs text-[#320E41]/60 mt-0.5">{song.title}</p>
               </div>
               <div class="flex items-center gap-3 pr-1">
