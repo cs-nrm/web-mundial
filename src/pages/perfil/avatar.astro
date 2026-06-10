@@ -467,6 +467,11 @@ const hasAvatar = !!(profile as any)?.avatar_url
 </script>
 
 <style is:global>
+  /* Bloquear scroll del body mientras está el editor */
+  html:has(.av), body:has(.av) {
+    overflow: hidden;
+  }
+
   /* ── Base ── */
   .av {
     /* full-bleed: el fondo va de borde a borde */
