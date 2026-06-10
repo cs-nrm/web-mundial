@@ -1,0 +1,84 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import BoxBanner from '../../components/BoxBanner.astro'
+import DoubleBox from '../../components/DoubleBox.astro'
+---
+
+<Layout title="Colección Retro — La Fiesta del Fútbol" description="Comparte tus fotos, anécdotas y recuerdos históricos del fútbol. Usa el hashtag #AsiLoVivi y únete a la colección creada por los aficionados.">
+  <section class="w-full py-4 poppins">
+    <div class="container my-12 mx-auto px-4 md:px-12">
+
+      <div class="my-4">
+        <h1 class="font-bold text-black text-3xl md:text-4xl mb-2">Colección Retro</h1>
+        <div class="roboto flex items-center text-sm uppercase text-zinc-500 border-b border-zinc-300 pb-3 mb-6">
+          <p>La historia del fútbol, contada por quienes la vivieron</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-8">
+        <article class="nota-interna flex-1 text-base leading-relaxed text-gray-800">
+
+          <p>El fútbol tiene una historia enorme y está llena de momentos que marcaron generaciones.</p>
+
+          <p>¿Recuerdas aquella selección inolvidable? ¿Ese jugador que cambió la historia? ¿El estadio donde ocurrió algo épico? ¿La camiseta que todos querían tener?</p>
+
+          <p>Comparte fotografías, anécdotas, recuerdos, datos curiosos o piezas históricas relacionadas con el fútbol.</p>
+
+          <h2>¿Cómo participar?</h2>
+          <ul class="landing-pasos">
+            <li>⚽ Publica tu contenido en redes sociales.</li>
+            <li>⚽ Utiliza el hashtag <strong>#AsiLoVivi</strong>.</li>
+            <li>⚽ Etiqueta a tu estación favorita.</li>
+          </ul>
+
+          <p>Las mejores publicaciones podrán formar parte de esta colección creada por los propios aficionados.</p>
+
+          <p>Porque la historia del fútbol sigue viva cada vez que alguien la recuerda.</p>
+
+          <div class="nota-aviso">
+            <strong>Importante:</strong> Todo contenido publicado deberá respetar derechos de terceros. NRM Comunicaciones podrá moderar o retirar publicaciones que incumplan los <a href="/terminos-y-condiciones">Términos y Condiciones</a> de la plataforma.
+          </div>
+
+        </article>
+
+        <aside class="w-full lg:w-[350px] flex-shrink-0">
+          <div class="bg-white p-5 rounded-xl sticky top-4">
+            <BoxBanner />
+            <div class="my-6 h-px bg-gray-200"></div>
+            <DoubleBox />
+          </div>
+        </aside>
+      </div>
+
+    </div>
+  </section>
+</Layout>
+
+<style is:global>
+  .nota-interna p { margin-bottom: 1.25em; }
+  .nota-interna h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #111827;
+    margin-top: 2em;
+    margin-bottom: 0.6em;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .nota-interna ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin-bottom: 1.25em;
+  }
+  .nota-interna li { margin-bottom: 0.5em; }
+  .nota-interna a { color: #ea262a; text-decoration: underline; }
+  .nota-aviso {
+    background: #f9fafb;
+    border-left: 3px solid #d1d5db;
+    padding: 0.9em 1.1em;
+    border-radius: 0 0.4em 0.4em 0;
+    color: #6b7280;
+    font-size: 0.92rem;
+    margin-top: 2em;
+  }
+</style>
