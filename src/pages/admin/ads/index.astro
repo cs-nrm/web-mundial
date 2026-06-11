@@ -36,7 +36,13 @@ for (const c of clicks ?? []) clkCount[c.client_id] = (clkCount[c.client_id] ?? 
 
   <div class="toolbar">
     <h2 class="section-title">Clientes activos</h2>
-    <button id="btn-nuevo" class="btn-primary">+ Nuevo cliente</button>
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <span id="last-update" style="font-size:0.78rem;color:#9ca3af;"></span>
+      <button id="btn-refresh" class="btn-secondary" title="Actualizar datos">
+        <span id="refresh-icon">↻</span> Actualizar
+      </button>
+      <button id="btn-nuevo" class="btn-primary">+ Nuevo cliente</button>
+    </div>
   </div>
 
   <!-- Modal nuevo cliente -->
@@ -98,6 +104,30 @@ for (const c of clicks ?? []) clkCount[c.client_id] = (clkCount[c.client_id] ?? 
 </AdminLayout>
 
 <script>
+// Última actualización + botón refresh
+const lastUpdateEl = document.getElementById('last-update')!
+const refreshBtn = document.getElementById('btn-refresh') as HTMLButtonElement
+const refreshIcon = document.getElementById('refresh-icon')!
+
+function showTimestamp() {
+  const now = new Date()
+  const hh = now.getHours().toString().padStart(2, '0')
+  const mm = now.getMinutes().toString().padStart(2, '0')
+  const ss = now.getSeconds().toString().padStart(2, '0')
+  lastUpdateEl.textContent = `Actualizado ${hh}:${mm}:${ss}`
+}
+
+showTimestamp()
+
+refreshBtn.onclick = () => {
+  refreshIcon.style.display = 'inline-block'
+  refreshIcon.style.animation = 'spin 0.6s linear infinite'
+  location.reload()
+}
+
+// Auto-refresh cada 2 minutos
+setTimeout(() => location.reload(), 2 * 60 * 1000)
+
 // Nuevo cliente
 const modal = document.getElementById('modal-nuevo')!
 document.getElementById('btn-nuevo')!.onclick = () => { modal.removeAttribute('hidden'); modal.style.display = 'flex' }
@@ -152,4 +182,5 @@ document.querySelectorAll<HTMLButtonElement>('.toggle-btn').forEach(btn => {
 .toggle-btn { padding:0.3rem 0.75rem; border-radius:999px; font-size:0.78rem; font-weight:600; border:none; cursor:pointer; }
 .toggle-on { background:#dcfce7; color:#16a34a; }
 .toggle-off { background:#f3f4f6; color:#6b7280; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
