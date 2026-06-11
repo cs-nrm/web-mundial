@@ -14,22 +14,16 @@ const { data: clients } = await supabase
   .select('id, name, active, created_at')
   .order('created_at', { ascending: true })
 
-// Impresiones últimos 7 días por cliente
+// Impresiones y clicks últimos 7 días — contados en la BD para evitar el límite de 1000 filas
 const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-const { data: impressions } = await supabase
-  .from('ad_impressions')
-  .select('client_id')
-  .gte('created_at', since)
-
-const { data: clicks } = await supabase
-  .from('ad_clicks')
-  .select('client_id')
-  .gte('created_at', since)
+const { data: stats } = await supabase.rpc('get_ad_stats', { since_ts: since })
 
 const impCount: Record<string, number> = {}
 const clkCount: Record<string, number> = {}
-for (const i of impressions ?? []) impCount[i.client_id] = (impCount[i.client_id] ?? 0) + 1
-for (const c of clicks ?? []) clkCount[c.client_id] = (clkCount[c.client_id] ?? 0) + 1
+for (const s of stats ?? []) {
+  impCount[s.client_id] = Number(s.imp_count)
+  clkCount[s.client_id] = Number(s.clk_count)
+}
 ---
 
 <AdminLayout title="Publicidad">
