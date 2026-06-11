@@ -151,10 +151,18 @@
           <div class="title">Tendencias</div>
         </div>
       </div></a>
-      <div class="icon-box gb a desactivado">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3l8 -8" /><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9" /></svg></div>
-        <div class="text">
-          <div class="title">La Cancha de los Expertos</div>
+      <div class="cancha-wrapper">
+        <div class="icon-box gb a">
+          <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M15.536 8.464a5 5 0 0 1 0 7.072" /><path d="M8.464 8.464a5 5 0 0 0 0 7.072" /><path d="M18.364 5.636a9 9 0 0 1 0 12.728" /><path d="M5.636 5.636a9 9 0 0 0 0 12.728" /></svg></div>
+          <div class="text">
+            <div class="title">La Cancha de los Expertos <span class="cancha-chevron">›</span></div>
+          </div>
+        </div>
+        <div class="cancha-links">
+          <a href="https://beat.kiniela.cloud/" target="_blank">Beat 100.9</a>
+          <a href="https://oye.kiniela.cloud/" target="_blank">Oye 89.7 FM</a>
+          <a href="https://sabrosita.kiniela.cloud/" target="_blank">Sabrosita 590 - 1410</a>
+          <a href="https://stereocien.kiniela.cloud/" target="_blank">Stereo Cien 100.1</a>
         </div>
       </div>
       <div class="sub-menu-holder"></div>
@@ -627,5 +635,52 @@ nav .menu-item.highlight:hover ~ #sub-menu-container #sub-menu-holder #sub-menu-
 }
 .menu-item .icon-box.desactivado {
     cursor: default !important;
-} 
+}
+
+/* Cancha de los Expertos dropdown */
+.cancha-wrapper {
+  position: relative;
+  width: 100%;
+}
+.cancha-links {
+  position: absolute;
+  top: 2.1em;
+  left: 0;
+  background: var(--verde);
+  border: 1px solid rgba(0,0,0,0.25);
+  border-radius: 8px;
+  padding: 0.35em 0;
+  display: none;
+  flex-direction: column;
+  z-index: 10001;
+  min-width: 14em;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+.cancha-wrapper:hover .cancha-links {
+  display: flex;
+}
+.cancha-links a {
+  color: #000;
+  text-decoration: none;
+  padding: 0.45em 0.85em;
+  font-size: 0.85em;
+  white-space: nowrap;
+  transition: color 0.1s ease-out, background 0.1s ease-out;
+}
+.cancha-links a:hover {
+  color: var(--text-hover);
+  background: rgba(0,0,0,0.06);
+}
+.cancha-chevron {
+  font-size: 1em;
+  opacity: 0.55;
+  display: inline-block;
+  transition: transform 0.2s ease-out;
+}
+.cancha-wrapper:hover .cancha-chevron {
+  transform: rotate(90deg);
+}
+.menu-item:hover .sub-menu.double:has(.cancha-wrapper:hover) {
+  clip-path: inset(0 0 -9em 0 round 10px);
+}
 </style>
