@@ -56,7 +56,8 @@
     </a>`
   }
 
-  function renderHTML(el, creative) {
+  function renderHTML(el, creative, divId) {
+    const slotType = resolveSlotType(divId)
     el.style.display = 'block'
     el.innerHTML = creative.html_code
     el.querySelectorAll('img').forEach(img => {
@@ -71,6 +72,15 @@
       Array.from(old.attributes).forEach(a => s.setAttribute(a.name, a.value))
       s.textContent = old.textContent
       old.replaceWith(s)
+    })
+    // Track clicks en creatividades HTML
+    el.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        fetch(
+          `/api/ads/click?id=${creative.id}&slot=${slotType}&div=${divId}&page=${encodeURIComponent(location.pathname)}`,
+          { keepalive: true, redirect: 'manual' }
+        ).catch(() => {})
+      })
     })
   }
 
@@ -106,7 +116,7 @@
       const creative = findCreative(creativesBySlot, divId)
       if (!creative) continue
       if (creative.type === 'image') renderImage(el, creative, divId)
-      else if (creative.type === 'html') renderHTML(el, creative)
+      else if (creative.type === 'html') renderHTML(el, creative, divId)
       trackImpression(creative, client.id, divId)
     }
   }
