@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ url }) => {
     .eq('id', creativeId)
     .single()
 
-  if (!creative?.href) return new Response(null, { status: 404 })
+  if (!creative) return new Response(null, { status: 404 })
 
   await supabase.from('ad_clicks').insert({
     creative_id: creative.id,
@@ -23,8 +23,14 @@ export const GET: APIRoute = async ({ url }) => {
     page_url: url.searchParams.get('page') ?? null,
   })
 
-  return new Response(null, {
-    status: 302,
-    headers: { Location: creative.href },
-  })
+  // Creatividades imagen: redirige al destino
+  // Creatividades HTML: el link del propio HTML maneja la navegación
+  if (creative.href) {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: creative.href },
+    })
+  }
+
+  return new Response(null, { status: 204 })
 }
