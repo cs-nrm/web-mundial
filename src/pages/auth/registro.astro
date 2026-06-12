@@ -9,6 +9,7 @@ const errorMessages: Record<string, string> = {
   contrasenas_no_coinciden: 'Las contraseñas no coinciden.',
   contrasena_corta: 'La contraseña debe tener al menos 8 caracteres.',
   email_en_uso: 'Ese correo ya está registrado. Intenta iniciar sesión.',
+  limite_emails: 'Hay mucho tráfico en este momento. Espera unos minutos e intenta de nuevo.',
   error: 'Ocurrió un error. Intenta de nuevo.',
 }
 const errorMsg = errorParam ? (errorMessages[errorParam] ?? errorMessages.error) : null

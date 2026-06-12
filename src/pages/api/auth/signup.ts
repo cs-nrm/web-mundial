@@ -37,7 +37,10 @@ export const POST: APIRoute = async ({ request, cookies, redirect, url }) => {
   })
 
   if (error) {
-    const msg = error.message.includes('already registered') ? 'email_en_uso' : 'error'
+    const msg =
+      error.message.includes('already registered') ? 'email_en_uso' :
+      error.message.toLowerCase().includes('rate limit') ? 'limite_emails' :
+      'error'
     return redirect(`/auth/registro?error=${msg}&redirect=${encodeURIComponent(redirectAfter)}`)
   }
 
