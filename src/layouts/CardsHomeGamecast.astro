@@ -5,11 +5,11 @@ import { getFlagUrl } from "../lib/flags.js";
 
 const posts = await getArticles(undefined, { sites: [wpSiteGamecastConfig.url] });
 
-if (!posts || posts.length === 0) {
+if (!posts || posts.length < 5) {
   console.warn('CardsHomeGamecast: no hay posts con el tag gamecast (29732)');
 }
 
-function formatFecha(fecha: string | null | undefined) {
+function formatFecha(fecha: string | null | undefined) { 
   if (!fecha) return null;
   const d = new Date(fecha.replace(' ', 'T'));
   return d.toLocaleDateString('es-MX', {
@@ -26,7 +26,7 @@ function formatFecha(fecha: string | null | undefined) {
 <div class="container m-auto">
   <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold" data-anim="hero-title">Partidos del día</h1>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    {posts.map((post) => {
+    {posts.slice(0, 4).map((post) => {
       const pais1 = post.acf?.pais1;
       const pais2 = post.acf?.pais2;
       const fecha = post.acf?.fecha;
