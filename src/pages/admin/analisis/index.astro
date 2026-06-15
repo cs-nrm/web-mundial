@@ -1,0 +1,158 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
+import { canAccess, EDITOR_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+const { role } = Astro.locals
+const canManage = canAccess(role as UserRole, EDITOR_ROLES)
+
+const supabase = createSupabaseAdminClient()
+const { data: entradas } = await supabase
+  .from('analisis')
+  .select('id, titulo, slug, publicado_en, created_at')
+  .order('publicado_en', { ascending: false })
+---
+
+<AdminLayout title="Resumen de Análisis">
+  <div class="toolbar">
+    {canManage && <a href="/admin/analisis/nuevo" class="btn-primary">+ Nueva entrada</a>}
+  </div>
+
+  {(!entradas || entradas.length === 0) ? (
+    <div class="empty-state">
+      <p>No hay entradas publicadas aún.</p>
+      {canManage && <a href="/admin/analisis/nuevo" class="btn-primary">Crear la primera</a>}
+    </div>
+  ) : (
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Slug</th>
+            <th>Publicado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entradas.map((e: any) => (
+            <tr>
+              <td class="name-cell">{e.titulo}</td>
+              <td class="mono">{e.slug}</td>
+              <td class="fecha">{new Date(e.publicado_en).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+              <td class="actions">
+                <a href={`/admin/analisis/${e.id}`} class="action-link">Editar</a>
+                <a href={`/resumen-de-analisis/${e.slug}`} target="_blank" class="action-link muted">Ver</a>
+                {canManage && (
+                  <button class="action-link action-delete btn-del"
+                    data-id={e.id} data-titulo={e.titulo}>
+                    Eliminar
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</AdminLayout>
+
+<script>
+  document.querySelectorAll('.btn-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLButtonElement
+      if (!confirm(`¿Eliminar "${el.dataset.titulo}"? Esta acción no se puede deshacer.`)) return
+      el.disabled = true
+      const res = await fetch(`/api/admin/analisis/${el.dataset.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        el.closest('tr')?.remove()
+      } else {
+        const data = await res.json()
+        alert(data.error ?? 'Error al eliminar')
+        el.disabled = false
+      }
+    })
+  })
+</script>
+
+<style>
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-primary {
+    background: var(--rojo);
+    color: white;
+    padding: 0.55rem 1.2rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .table-wrap {
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .data-table th {
+    background: #fafafa;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #888;
+    border-bottom: 1px solid #eee;
+  }
+
+  .data-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f5f5f5;
+    vertical-align: middle;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .name-cell { font-weight: 600; color: var(--morado); max-width: 400px; }
+  .mono { font-family: monospace; font-size: 0.85rem; color: #666; }
+  .fecha { font-size: 0.85rem; color: #888; white-space: nowrap; }
+
+  .actions { display: flex; gap: 0.75rem; }
+
+  .action-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--rojo);
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .action-link:hover { opacity: 0.7; }
+  .action-link.muted { color: #888; font-weight: 400; }
+  .action-delete { background: none; border: none; color: #dc2626; cursor: pointer; padding: 0; font-family: inherit; }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 0;
+    color: #aaa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+</style>
