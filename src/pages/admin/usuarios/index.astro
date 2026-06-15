@@ -140,6 +140,7 @@ users = users.slice(desde, desde + porPagina)
                   style={u.role === 'estadistica' ? '' : 'display:none'}
                 >
                   <option value="">— estación —</option>
+                  <option value="todas" selected={u.estacion_asignada === 'todas'}>Todas</option>
                   {(['oye', 'beat', 'stereocien', 'sabrosita'] as const).map(e => (
                     <option value={e} selected={u.estacion_asignada === e}>
                       {e === 'stereocien' ? 'Stereo Cien' : e.charAt(0).toUpperCase() + e.slice(1)}
@@ -251,6 +252,15 @@ async function enviarInvitacion() {
       const userId = (select as HTMLSelectElement).dataset.userId
       const estacionSel = document.querySelector(`.estacion-select[data-user-id="${userId}"]`) as HTMLSelectElement
       if (estacionSel) estacionSel.style.display = select.value === 'estadistica' ? '' : 'none'
+      const btn = document.querySelector(`.btn-save-role[data-user-id="${userId}"]`) as HTMLButtonElement
+      if (btn) btn.disabled = false
+    })
+  })
+
+  // Habilitar botón al cambiar estación
+  document.querySelectorAll('.estacion-select').forEach(select => {
+    select.addEventListener('change', () => {
+      const userId = (select as HTMLSelectElement).dataset.userId
       const btn = document.querySelector(`.btn-save-role[data-user-id="${userId}"]`) as HTMLButtonElement
       if (btn) btn.disabled = false
     })

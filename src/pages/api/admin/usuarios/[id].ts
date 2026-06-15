@@ -26,7 +26,7 @@ export const PATCH: APIRoute = async ({ request, locals, params }) => {
     return new Response(JSON.stringify({ error: 'Solo superadmin puede asignar este rol' }), { status: 403 })
   }
 
-  const VALID_ESTACIONES = ['oye', 'beat', 'stereocien', 'sabrosita']
+  const VALID_ESTACIONES = ['todas', 'oye', 'beat', 'stereocien', 'sabrosita']
   if (role === 'estadistica' && estacion_asignada && !VALID_ESTACIONES.includes(estacion_asignada)) {
     return new Response(JSON.stringify({ error: 'Estación inválida' }), { status: 400 })
   }

@@ -16,11 +16,13 @@ const ESTACION_LABELS: Record<string, string> = {
   oye: 'Oye', beat: 'Beat', stereocien: 'Stereo Cien', sabrosita: 'Sabrosita',
 }
 
-// estadistica role: locked to their station; others: URL param or first station
+// estadistica con estación específica: bloqueado a esa estación
+// estadistica con 'todas' o admin/superadmin: puede navegar libremente
 const isStatsRole = role === 'estadistica'
-const estacion = isStatsRole
-  ? (estacion_favorita ?? ESTACIONES[0])
-  : (Astro.url.searchParams.get('estacion') ?? ESTACIONES[0])
+const stationLocked = isStatsRole && estacion_favorita !== null && estacion_favorita !== 'todas'
+const estacion = stationLocked
+  ? estacion_favorita
+  : (Astro.url.searchParams.get('estacion') ?? 'todas')
 
 const estacionColors: Record<string, string> = {
   oye: '#e2241a', beat: '#ffaa1f', stereocien: '#012169', sabrosita: '#f2510a',
@@ -32,8 +34,10 @@ const TIMELINE_START = '2026-06-11'
 let albumData: any = {}
 
 if (tab === 'album') {
-  // Álbumes de la estación
-  const { data: albums } = await supabase.from('albums').select('id, name').eq('estacion', estacion)
+  // Álbumes de la estación (sin filtro si es 'todas')
+  let aQ = supabase.from('albums').select('id, name')
+  if (estacion !== 'todas') aQ = aQ.eq('estacion', estacion)
+  const { data: albums } = await aQ
   const albumIds = albums?.map(a => a.id) ?? []
 
   // Cards de esos álbumes
@@ -161,7 +165,7 @@ if (tab === 'album') {
   const regGenMap: Record<string, string> = {}
   for (const g of (regGens ?? [])) regGenMap[g.user_id] = g.estacion_favorita ?? 'desconocida'
 
-  const regFiltered = (regProfiles ?? []).filter(p => regGenMap[p.id] === estacion)
+  const regFiltered = (regProfiles ?? []).filter(p => estacion === 'todas' || regGenMap[p.id] === estacion)
   const totalRegistros = regFiltered.length
 
   const regDiaMap: Record<string, number> = {}
@@ -271,58 +275,6 @@ if (tab === 'avatar') {
   avatarData = { totalAvatares: totalRegistrados ?? 0, totalUsuarios: totalUsuarios ?? 0, porEstacion }
 }
 
-// ─── TAB: PUBLICIDAD ──────────────────────────────────────────────────────────
-let pubData: any = {}
-
-if (tab === 'publicidad') {
-  const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-
-  const [{ data: clients }, { data: imps }, { data: clks }] = await Promise.all([
-    supabase.from('ad_clients').select('id, name, active').order('created_at'),
-    supabase.from('ad_impressions').select('client_id, slot_type, created_at').gte('created_at', since30),
-    supabase.from('ad_clicks').select('client_id, slot_type, created_at').gte('created_at', since30),
-  ])
-
-  const impTotal = (imps ?? []).length
-  const clkTotal = (clks ?? []).length
-
-  // Por cliente
-  const perClient = (clients ?? []).map(c => {
-    const ci = (imps ?? []).filter(r => r.client_id === c.id).length
-    const cc = (clks ?? []).filter(r => r.client_id === c.id).length
-    return { ...c, impressions: ci, clicks: cc, ctr: ci > 0 ? ((cc / ci) * 100).toFixed(1) + '%' : '—' }
-  }).sort((a, b) => b.impressions - a.impressions)
-
-  // Por slot_type
-  const slotMap: Record<string, { impressions: number; clicks: number }> = {}
-  for (const r of (imps ?? [])) {
-    const k = r.slot_type ?? 'desconocido'
-    if (!slotMap[k]) slotMap[k] = { impressions: 0, clicks: 0 }
-    slotMap[k].impressions++
-  }
-  for (const r of (clks ?? [])) {
-    const k = r.slot_type ?? 'desconocido'
-    if (!slotMap[k]) slotMap[k] = { impressions: 0, clicks: 0 }
-    slotMap[k].clicks++
-  }
-  const perSlot = Object.entries(slotMap).sort((a, b) => b[1].impressions - a[1].impressions)
-
-  // Impresiones por día (últimos 30 días)
-  const desde = new Date(); desde.setDate(desde.getDate() - 29); desde.setHours(0,0,0,0)
-  const diaMap: Record<string, number> = {}
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(desde); d.setDate(d.getDate() + i)
-    diaMap[d.toISOString().slice(0, 10)] = 0
-  }
-  for (const r of (imps ?? [])) {
-    const dia = r.created_at?.slice(0, 10)
-    if (dia && diaMap[dia] !== undefined) diaMap[dia]++
-  }
-  const diasData = Object.entries(diaMap)
-  const maxBar = Math.max(...diasData.map(([, v]) => v), 1)
-
-  pubData = { impTotal, clkTotal, ctr: impTotal > 0 ? ((clkTotal / impTotal) * 100).toFixed(1) + '%' : '—', perClient, perSlot, diasData, maxBar }
-}
 
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
@@ -341,28 +293,31 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
     <a href={tabUrl('album')} class={`tab-btn ${tab === 'album' ? 'active' : ''}`}>Álbum</a>
     <a href={tabUrl('playlist')} class={`tab-btn ${tab === 'playlist' ? 'active' : ''}`}>Playlist</a>
     <a href={tabUrl('avatar')} class={`tab-btn ${tab === 'avatar' ? 'active' : ''}`}>Avatar</a>
-    <a href="?tab=progreso" class={`tab-btn ${tab === 'progreso' ? 'active' : ''}`}>Progreso</a>
-    <a href="?tab=publicidad" class={`tab-btn ${tab === 'publicidad' ? 'active' : ''}`}>Publicidad</a>
   </div>
 
   <!-- Filtro estación -->
   <div class="estacion-bar">
-    {isStatsRole ? (
+    {stationLocked ? (
       <span
         class="est-pill active"
         style={`background:${estacionColors[estacion]};border-color:${estacionColors[estacion]};color:white`}
       >
         {ESTACION_LABELS[estacion] ?? estacion}
       </span>
-    ) : ESTACIONES.map(e => (
-      <a
-        href={estUrl(e)}
-        class={`est-pill ${estacion === e ? 'active' : ''}`}
-        style={estacion === e ? `background:${estacionColors[e]};border-color:${estacionColors[e]};` : ''}
-      >
-        {ESTACION_LABELS[e]}
-      </a>
-    ))}
+    ) : (
+      <>
+        <a href={estUrl('todas')} class={`est-pill ${estacion === 'todas' ? 'active' : ''}`}>Todas</a>
+        {ESTACIONES.map(e => (
+          <a
+            href={estUrl(e)}
+            class={`est-pill ${estacion === e ? 'active' : ''}`}
+            style={estacion === e ? `background:${estacionColors[e]};border-color:${estacionColors[e]};` : ''}
+          >
+            {ESTACION_LABELS[e]}
+          </a>
+        ))}
+      </>
+    )}
   </div>
 
   <!-- ═══ TAB ÁLBUM ════════════════════════════════════════════════════════════ -->
@@ -610,92 +565,6 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
     </div>
   )}
 
-  <!-- ═══ TAB PUBLICIDAD ══════════════════════════════════════════════════════ -->
-  {tab === 'publicidad' && (
-    <div>
-      <div class="stats-row">
-        <div class="stat-card"><div><p class="stat-val">{pubData.impTotal ?? 0}</p><p class="stat-lbl">Impresiones (30d)</p></div></div>
-        <div class="stat-card"><div><p class="stat-val">{pubData.clkTotal ?? 0}</p><p class="stat-lbl">Clicks (30d)</p></div></div>
-        <div class="stat-card"><div><p class="stat-val">{pubData.ctr ?? '—'}</p><p class="stat-lbl">CTR global</p></div></div>
-      </div>
-
-      <div class="panel">
-        <h2>Impresiones últimos 30 días</h2>
-        {(pubData.diasData ?? []).every(([,v]: any) => v === 0) ? (
-          <p class="empty">Sin actividad en este período.</p>
-        ) : (
-          <div class="bar-chart">
-            {(pubData.diasData ?? []).map(([dia, count]: any) => (
-              <div class="bar-col">
-                <span class="bar-count">{count > 0 ? count : ''}</span>
-                <div class="bar-fill" style={`height: ${(count / (pubData.maxBar ?? 1)) * 100}%`}></div>
-                <span class="bar-label">{dia.slice(5)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div class="two-col">
-        <div class="panel">
-          <div class="panel-hdr"><h2>Por cliente</h2><button class="btn-csv" data-filename="ads-por-cliente">⬇ CSV</button></div>
-          {!(pubData.perClient ?? []).length ? (
-            <p class="empty">Sin datos.</p>
-          ) : (
-            <table class="mini-table">
-              <thead><tr><th>Cliente</th><th>Estado</th><th>Impresiones</th><th>Clicks</th><th>CTR</th></tr></thead>
-              <tbody>
-                {(pubData.perClient ?? []).map((c: any) => (
-                  <tr>
-                    <td class="user-name">{c.name}</td>
-                    <td><span class={`pct-badge ${c.active ? 'pct-full' : 'pct-low'}`}>{c.active ? 'Activo' : 'Pausado'}</span></td>
-                    <td class="count">{c.impressions}</td>
-                    <td class="count">{c.clicks}</td>
-                    <td style="font-weight:600;">{c.ctr}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        <div class="panel">
-          <div class="panel-hdr"><h2>Por slot</h2><button class="btn-csv" data-filename="ads-por-slot">⬇ CSV</button></div>
-          {!(pubData.perSlot ?? []).length ? (
-            <p class="empty">Sin datos.</p>
-          ) : (
-            <table class="mini-table">
-              <thead><tr><th>Slot</th><th>Impresiones</th><th>Clicks</th><th>CTR</th></tr></thead>
-              <tbody>
-                {(pubData.perSlot ?? []).map(([slot, d]: any) => {
-                  const ctr = d.impressions > 0 ? ((d.clicks / d.impressions) * 100).toFixed(1) + '%' : '—'
-                  return (
-                    <tr>
-                      <td class="user-name">{slot}</td>
-                      <td class="count">{d.impressions}</td>
-                      <td class="count">{d.clicks}</td>
-                      <td style="font-weight:600;">{ctr}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-    </div>
-  )}
-
-  <!-- ═══ TAB PROGRESO ══════════════════════════════════════════════════════════ -->
-  {tab === 'progreso' && (
-    <div>
-      <div class="panel" style="text-align:center;padding:3rem 2rem;">
-        <h2 style="color:#374151;margin-bottom:0.5rem;">Progreso global</h2>
-        <p style="color:#9ca3af;font-size:0.9rem;">Usa el tab <strong>Álbum</strong> para ver el ranking de participantes y el detalle por carta.</p>
-        <a href="?tab=album&estacion=todas" style="display:inline-block;margin-top:1rem;background:var(--rojo);color:white;padding:0.5rem 1.2rem;border-radius:0.5rem;font-weight:700;text-decoration:none;">Ver estadísticas de álbum</a>
-      </div>
-    </div>
-  )}
 
 <script>
   document.addEventListener('click', e => {
