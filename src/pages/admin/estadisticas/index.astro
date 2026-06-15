@@ -253,26 +253,37 @@ if (tab === 'playlist') {
 let avatarData: any = {}
 
 if (tab === 'avatar') {
-  const [{ count: totalRegistrados }, { count: totalUsuarios }] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).not('avatar_config', 'is', null),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-  ])
+  // user_generales para mapeo de estación
+  const { data: allGens } = await supabase
+    .from('user_generales').select('user_id, estacion_favorita')
 
-  // IDs con avatar para buscar su estación en user_generales
-  const { data: avIds } = await supabase
-    .from('profiles').select('id').not('avatar_config', 'is', null)
+  // IDs de la estación seleccionada (null = todas → sin filtro)
+  const stationUids = estacion === 'todas'
+    ? null
+    : (allGens ?? []).filter(g => g.estacion_favorita === estacion).map(g => g.user_id)
 
-  const { data: avGens } = (avIds ?? []).length
-    ? await supabase.from('user_generales').select('user_id, estacion_favorita').in('user_id', (avIds ?? []).map(p => p.id))
-    : { data: [] }
+  // Total registros (filtrado por estación)
+  let regQ = supabase.from('profiles').select('id', { count: 'exact', head: true })
+  if (stationUids) regQ = regQ.in('id', stationUids)
+  const { count: totalUsuarios } = await regQ
 
+  // Total avatars (filtrado por estación)
+  let avQ = supabase.from('profiles').select('id', { count: 'exact', head: true }).not('avatar_config', 'is', null)
+  if (stationUids) avQ = avQ.in('id', stationUids)
+  const { count: totalAvatares } = await avQ
+
+  // porEstacion siempre muestra el desglose completo de todas las estaciones
+  const { data: avIds } = await supabase.from('profiles').select('id').not('avatar_config', 'is', null)
+  const avIdSet = new Set((avIds ?? []).map(p => p.id))
   const porEstacion: Record<string, number> = {}
-  for (const g of (avGens ?? [])) {
-    const e = g.estacion_favorita ?? 'desconocida'
-    porEstacion[e] = (porEstacion[e] ?? 0) + 1
+  for (const g of (allGens ?? [])) {
+    if (avIdSet.has(g.user_id)) {
+      const e = g.estacion_favorita ?? 'desconocida'
+      porEstacion[e] = (porEstacion[e] ?? 0) + 1
+    }
   }
 
-  avatarData = { totalAvatares: totalRegistrados ?? 0, totalUsuarios: totalUsuarios ?? 0, porEstacion }
+  avatarData = { totalAvatares: totalAvatares ?? 0, totalUsuarios: totalUsuarios ?? 0, porEstacion }
 }
 
 
@@ -328,10 +339,10 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
           <div><p class="stat-val">{albumData.totalCanjes ?? 0}</p><p class="stat-lbl">Canjes totales</p></div>
         </div>
         <div class="stat-card">
-          <div><p class="stat-val">{albumData.usuariosActivos ?? 0}</p><p class="stat-lbl">Usuarios activos</p></div>
+          <div><p class="stat-val">{albumData.usuariosActivos ?? 0}</p><p class="stat-lbl">Coleccionistas</p></div>
         </div>
         <div class="stat-card" style="border-left:4px solid #6366f1">
-          <div><p class="stat-val">{albumData.totalRegistros ?? 0}</p><p class="stat-lbl">Registros (desde 11 Jun)</p></div>
+          <div><p class="stat-val">{albumData.totalRegistros ?? 0}</p><p class="stat-lbl">Registros desde Jun 11</p></div>
         </div>
       </div>
 
@@ -548,7 +559,7 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
     <div>
       <div class="stats-row">
         <div class="stat-card">
-          <div><p class="stat-val">{avatarData.totalUsuarios}</p><p class="stat-lbl">Registros totales</p></div>
+          <div><p class="stat-val">{avatarData.totalUsuarios}</p><p class="stat-lbl">Usuarios registrados</p></div>
         </div>
         <div class="stat-card" style="border-left:4px solid var(--rojo)">
           <div><p class="stat-val">{avatarData.totalAvatares}</p><p class="stat-lbl">Avatars creados</p></div>
