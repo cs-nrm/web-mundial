@@ -13,7 +13,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
     return new Response(JSON.stringify({ error: 'Cuerpo inválido' }), { status: 400 })
   }
 
-  const { titulo, slug, cuerpo, publicado_en } = body
+  const { titulo, slug, cuerpo, publicado_en, partido_slug } = body
 
   if (!titulo?.trim() || !slug?.trim() || !cuerpo?.trim()) {
     return new Response(JSON.stringify({ error: 'Título, slug y contenido son requeridos' }), { status: 400 })
@@ -26,7 +26,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase
     .from('analisis')
-    .update({ titulo: titulo.trim(), slug: slug.trim(), cuerpo: cuerpo.trim(), publicado_en })
+    .update({ titulo: titulo.trim(), slug: slug.trim(), cuerpo: cuerpo.trim(), publicado_en, partido_slug: partido_slug || null })
     .eq('id', params.id!)
 
   if (error) {

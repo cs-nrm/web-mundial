@@ -26,6 +26,12 @@ if (!canAccess(role as UserRole, EDITOR_ROLES)) {
       </div>
 
       <div class="form-group">
+        <label for="partido_slug">Slug del partido (gamecast)</label>
+        <input id="partido_slug" name="partido_slug" type="text" placeholder="ej. iran-vs-nueva-zelanda" />
+        <span class="hint">Opcional. Vincula esta previa con la tarjeta del partido en el inicio.</span>
+      </div>
+
+      <div class="form-group">
         <label for="publicado_en">Fecha de publicación</label>
         <input id="publicado_en" name="publicado_en" type="datetime-local" />
       </div>
@@ -146,6 +152,7 @@ if (!canAccess(role as UserRole, EDITOR_ROLES)) {
       slug: slugInput.value.trim(),
       cuerpo: html,
       publicado_en: new Date(fechaInput.value).toISOString(),
+      partido_slug: (document.getElementById('partido_slug') as HTMLInputElement).value.trim() || null,
     }
 
     try {

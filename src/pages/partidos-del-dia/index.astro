@@ -5,8 +5,25 @@ import { getArticles } from '../../lib/api.js'
 import { wpSiteGamecastConfig } from '../../config/sites.js'
 import { getFlagUrl } from '../../lib/flags.js'
 import LeaderBoard from "../../components/LeaderBoard.astro";
+import { createSupabaseAdminClient } from '../../lib/supabase'
 
-const posts = await getArticles(undefined, { sites: [wpSiteGamecastConfig.url] })
+const allPosts = await getArticles(undefined, { sites: [wpSiteGamecastConfig.url] })
+
+const today = new Date().toISOString().slice(0, 10)
+const posts = (allPosts ?? [])
+  .filter(p => p.acf?.fecha?.slice(0, 10) === today)
+  .sort((a, b) => (a.acf?.fecha ?? '').localeCompare(b.acf?.fecha ?? ''))
+
+const supabase = createSupabaseAdminClient()
+const { data: previasData } = await supabase
+  .from('analisis')
+  .select('partido_slug, slug')
+  .not('partido_slug', 'is', null)
+
+const previasMap: Record<string, string> = {}
+for (const p of (previasData ?? [])) {
+  if (p.partido_slug) previasMap[p.partido_slug] = p.slug
+}
 
 function formatFecha(fecha: string | null | undefined) {
   if (!fecha) return null
@@ -17,7 +34,6 @@ function formatFecha(fecha: string | null | undefined) {
     month: 'long',
     hour: '2-digit',
     minute: '2-digit',
-    //timeZone: 'America/Mexico_City',
   })
 }
 ---
@@ -32,7 +48,7 @@ function formatFecha(fecha: string | null | undefined) {
     <div class="flex flex-col lg:flex-row gap-8">
 
       <div class="flex-1 min-w-0">
-        {posts && posts.length > 0 ? (
+        {posts.length > 0 ? (
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {posts.map((post) => {
               const pais1 = post.acf?.pais1
@@ -41,6 +57,7 @@ function formatFecha(fecha: string | null | undefined) {
               const flag2 = getFlagUrl(pais2, 80)
               const fechaFormateada = formatFecha(post.acf?.fecha)
               const sede = post.acf?.sede
+              const previaSlug = previasMap[post.slug]
 
               return (
                 <a href={`/partidos-del-dia/${post.slug}/`} class="group">
@@ -68,7 +85,12 @@ function formatFecha(fecha: string | null | undefined) {
                     {sede && (
                       <p class="text-xs text-neutral-400 uppercase tracking-widest" set:html={sede}></p>
                     )}
-                    <p class="text-xs text-[#7af12b] font-semibold uppercase tracking-wide group-hover:underline">
+                    {previaSlug && (
+                      <p class="text-xs text-[#7af12b] font-bold uppercase tracking-wide">
+                        Previa del partido →
+                      </p>
+                    )}
+                    <p class="text-xs text-neutral-400 font-semibold uppercase tracking-wide group-hover:underline">
                       Ver Gamecast →
                     </p>
                   </div>
@@ -77,7 +99,7 @@ function formatFecha(fecha: string | null | undefined) {
             })}
           </div>
         ) : (
-          <p class="text-center text-gray-400 py-16">No hay gamecasts disponibles por el momento.</p>
+          <p class="text-center text-gray-400 py-16">No hay partidos programados para hoy.</p>
         )}
       </div>
 

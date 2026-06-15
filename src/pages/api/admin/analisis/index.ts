@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Cuerpo inválido' }), { status: 400 })
   }
 
-  const { titulo, slug, cuerpo, publicado_en } = body
+  const { titulo, slug, cuerpo, publicado_en, partido_slug } = body
 
   if (!titulo?.trim() || !slug?.trim() || !cuerpo?.trim()) {
     return new Response(JSON.stringify({ error: 'Título, slug y contenido son requeridos' }), { status: 400 })
@@ -31,6 +31,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       slug: slug.trim(),
       cuerpo: cuerpo.trim(),
       publicado_en: publicado_en || new Date().toISOString(),
+      partido_slug: partido_slug || null,
     })
     .select('id')
     .single()
