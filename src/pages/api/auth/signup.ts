@@ -44,5 +44,5 @@ export const POST: APIRoute = async ({ request, cookies, redirect, url }) => {
     return redirect(`/auth/registro?error=${msg}&redirect=${encodeURIComponent(redirectAfter)}`)
   }
 
-  return redirect('/auth/confirmar')
+  return redirect(redirectAfter)
 }
