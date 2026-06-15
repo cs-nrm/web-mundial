@@ -4,28 +4,36 @@ import { createSupabaseAdminClient } from '../../../lib/supabase'
 import { canAccess, STATS_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 
-const { role } = Astro.locals
+const { role, estacion_favorita } = Astro.locals as any
 if (!canAccess(role as UserRole, STATS_ROLES)) return Astro.redirect('/admin')
 
 const supabase = createSupabaseAdminClient()
 
 const tab = Astro.url.searchParams.get('tab') ?? 'album'
-const estacion = Astro.url.searchParams.get('estacion') ?? 'todas'
 const albumFilter = Astro.url.searchParams.get('album_id') ?? ''
 const ESTACIONES = ['oye', 'beat', 'stereocien', 'sabrosita'] as const
+const ESTACION_LABELS: Record<string, string> = {
+  oye: 'Oye', beat: 'Beat', stereocien: 'Stereo Cien', sabrosita: 'Sabrosita',
+}
+
+// estadistica role: locked to their station; others: URL param or first station
+const isStatsRole = role === 'estadistica'
+const estacion = isStatsRole
+  ? (estacion_favorita ?? ESTACIONES[0])
+  : (Astro.url.searchParams.get('estacion') ?? ESTACIONES[0])
 
 const estacionColors: Record<string, string> = {
   oye: '#e2241a', beat: '#ffaa1f', stereocien: '#012169', sabrosita: '#f2510a',
 }
+
+const TIMELINE_START = '2026-06-11'
 
 // ─── TAB: ÁLBUM ───────────────────────────────────────────────────────────────
 let albumData: any = {}
 
 if (tab === 'album') {
   // Álbumes de la estación
-  let aQ = supabase.from('albums').select('id, name')
-  if (estacion !== 'todas') aQ = aQ.eq('estacion', estacion)
-  const { data: albums } = await aQ
+  const { data: albums } = await supabase.from('albums').select('id, name').eq('estacion', estacion)
   const albumIds = albums?.map(a => a.id) ?? []
 
   // Cards de esos álbumes
@@ -44,49 +52,42 @@ if (tab === 'album') {
   const totalCanjes = uc.length
   const usuariosActivos = new Set(uc.map(r => r.user_id)).size
 
-  // Canjes por día (últimos 30 días)
-  const desde = new Date(); desde.setDate(desde.getDate() - 29); desde.setHours(0,0,0,0)
+  // Canjes por día desde el 11 de junio
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const timelineStart = new Date(TIMELINE_START)
+  const daysFromStart = Math.ceil((Date.now() - timelineStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
   const diaMap: Record<string, number> = {}
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(desde); d.setDate(d.getDate() + i)
-    diaMap[d.toISOString().slice(0, 10)] = 0
+  for (let i = 0; i < daysFromStart; i++) {
+    const d = new Date(timelineStart); d.setDate(d.getDate() + i)
+    const k = d.toISOString().slice(0, 10)
+    if (k <= todayStr) diaMap[k] = 0
   }
   for (const r of uc) {
     const dia = r.redeemed_at?.slice(0, 10)
     if (dia && diaMap[dia] !== undefined) diaMap[dia]++
   }
 
-  // Top figuritas
-  const cardMap: Record<string, { name: string; album: string; count: number }> = {}
+  // Todas las cartas con sus canjes (sin límite)
   const cardAlbumName: Record<string, string> = {}
   for (const c of (cards ?? [])) {
     cardAlbumName[c.id] = albums?.find(a => a.id === c.album_id)?.name ?? '?'
   }
+  const cardMap: Record<string, { name: string; album: string; posicion: number; count: number }> = {}
   for (const r of uc) {
     if (!cardMap[r.card_id]) {
       const card = (cards ?? []).find(c => c.id === r.card_id)
-      cardMap[r.card_id] = { name: card?.name ?? '?', album: cardAlbumName[r.card_id] ?? '?', count: 0 }
+      cardMap[r.card_id] = { name: card?.name ?? '?', album: cardAlbumName[r.card_id] ?? '?', posicion: card?.posicion ?? 0, count: 0 }
     }
     cardMap[r.card_id].count++
   }
-  const topCards = Object.values(cardMap).sort((a, b) => b.count - a.count).slice(0, 10)
+  const allCards = Object.values(cardMap).sort((a, b) => b.count - a.count)
 
-  // Top usuarios
+  // Coleccionistas — todos, ordenados por total de cartas
   const userCountMap: Record<string, number> = {}
   for (const r of uc) userCountMap[r.user_id] = (userCountMap[r.user_id] ?? 0) + 1
-  const topUserIds = Object.entries(userCountMap).sort((a, b) => b[1] - a[1]).slice(0, 10)
-  const { data: topProfiles } = topUserIds.length
-    ? await supabase.from('profiles').select('id, email, full_name').in('id', topUserIds.map(([id]) => id))
-    : { data: [] }
-  const topUsers = topUserIds.map(([id, count]) => {
-    const p = (topProfiles ?? []).find(p => p.id === id)
-    return { name: p?.full_name ?? 'Anónimo', email: p?.email ?? '', count }
-  })
+  const allUserIds = Object.entries(userCountMap).sort((a, b) => b[1] - a[1])
 
-  const diasData = Object.entries(diaMap)
-  const maxBar = Math.max(...diasData.map(([, v]) => v), 1)
-
-  // ── Participantes ──
+  // Participantes por álbum
   const cardAlbumId: Record<string, string> = {}
   const totalActivePerAlbum: Record<string, number> = {}
   for (const c of (cards ?? [])) {
@@ -103,10 +104,37 @@ if (tab === 'album') {
     if (!slot) { uAgg[r.user_id][alb] = { count: 1, firstAt: r.redeemed_at, lastAt: r.redeemed_at } }
     else { slot.count++; if (r.redeemed_at < slot.firstAt) slot.firstAt = r.redeemed_at; if (r.redeemed_at > slot.lastAt) slot.lastAt = r.redeemed_at }
   }
-  const allUids = Object.keys(uAgg)
+
+  // Fetch de todos los perfiles necesarios (unión de coleccionistas + participantes)
+  const allUids = [...new Set([...Object.keys(uAgg), ...allUserIds.map(([id]) => id)])]
   const { data: allProfs } = allUids.length
     ? await supabase.from('profiles').select('id, email, full_name').in('id', allUids)
     : { data: [] }
+
+  // Coleccionistas con id incluido
+  const topUsers = allUserIds.map(([id, count]) => {
+    const p = (allProfs ?? []).find(p => p.id === id)
+    return { id, name: p?.full_name ?? 'Anónimo', email: p?.email ?? '', count }
+  })
+
+  // Detalle expandible por coleccionista — cartas con timestamp
+  const userCardsDetail: Record<string, Array<{posicion: number; cardName: string; albumName: string; redeemedAt: string}>> = {}
+  for (const r of uc) {
+    if (!userCardsDetail[r.user_id]) userCardsDetail[r.user_id] = []
+    const card = (cards ?? []).find(c => c.id === r.card_id)
+    const alb = (albums ?? []).find(a => a.id === card?.album_id)
+    userCardsDetail[r.user_id].push({
+      posicion: card?.posicion ?? 0,
+      cardName: card?.name ?? '?',
+      albumName: alb?.name ?? '?',
+      redeemedAt: r.redeemed_at ?? ''
+    })
+  }
+  for (const uid of Object.keys(userCardsDetail)) {
+    userCardsDetail[uid].sort((a, b) => a.redeemedAt.localeCompare(b.redeemedAt))
+  }
+
+  // Participantes
   const participantes: any[] = []
   for (const [uid, albumEntries] of Object.entries(uAgg)) {
     const prof = (allProfs ?? []).find((p: any) => p.id === uid) as any
@@ -119,17 +147,43 @@ if (tab === 'album') {
   }
   participantes.sort((a, b) => b.pct - a.pct || b.count - a.count)
 
-  // ── Detalle por carta ──
-  const cardRedemptions: any[] = []
-  for (const r of uc) {
-    const card = (cards ?? []).find((c: any) => c.id === r.card_id) as any
-    const prof = (allProfs ?? []).find((p: any) => p.id === r.user_id) as any
-    const alb = (albums ?? []).find((a: any) => a.id === card?.album_id) as any
-    cardRedemptions.push({ posicion: card?.posicion ?? 0, cardName: card?.name ?? '?', albumName: alb?.name ?? '?', userName: prof?.full_name ?? 'Anónimo', userEmail: prof?.email ?? '', redeemedAt: r.redeemed_at })
-  }
-  cardRedemptions.sort((a, b) => a.posicion - b.posicion || a.redeemedAt?.localeCompare(b.redeemedAt))
+  // ── Registros nuevos por día desde el 11 de junio (filtrados por estación) ──
+  const { data: regProfiles } = await supabase
+    .from('profiles')
+    .select('id, created_at')
+    .gte('created_at', TIMELINE_START)
 
-  albumData = { totalCanjes, usuariosActivos, diasData, topCards, topUsers, maxBar, participantes, cardRedemptions }
+  const regProfIds = (regProfiles ?? []).map(p => p.id)
+  const { data: regGens } = regProfIds.length
+    ? await supabase.from('user_generales').select('user_id, estacion_favorita').in('user_id', regProfIds)
+    : { data: [] }
+
+  const regGenMap: Record<string, string> = {}
+  for (const g of (regGens ?? [])) regGenMap[g.user_id] = g.estacion_favorita ?? 'desconocida'
+
+  const regFiltered = (regProfiles ?? []).filter(p => regGenMap[p.id] === estacion)
+  const totalRegistros = regFiltered.length
+
+  const regDiaMap: Record<string, number> = {}
+  for (let i = 0; i < daysFromStart; i++) {
+    const d = new Date(timelineStart); d.setDate(d.getDate() + i)
+    const k = d.toISOString().slice(0, 10)
+    if (k <= todayStr) regDiaMap[k] = 0
+  }
+  for (const p of regFiltered) {
+    const dia = p.created_at?.slice(0, 10)
+    if (dia && regDiaMap[dia] !== undefined) regDiaMap[dia]++
+  }
+  const regDiasData = Object.entries(regDiaMap)
+  const regMaxBar = Math.max(...regDiasData.map(([, v]) => v), 1)
+
+  const diasData = Object.entries(diaMap)
+  const maxBar = Math.max(...diasData.map(([, v]) => v), 1)
+
+  albumData = {
+    totalCanjes, usuariosActivos, diasData, allCards, topUsers, maxBar,
+    participantes, totalRegistros, regDiasData, regMaxBar, userCardsDetail
+  }
 }
 
 // ─── TAB: PLAYLIST ────────────────────────────────────────────────────────────
@@ -195,62 +249,26 @@ if (tab === 'playlist') {
 let avatarData: any = {}
 
 if (tab === 'avatar') {
-  const { data: avProfiles, count: totalRegistrados } = await supabase
-    .from('profiles')
-    .select('id, full_name, avatar_config, estacion_favorita, updated_at', { count: 'exact' })
-    .not('avatar_config', 'is', null)
+  const [{ count: totalRegistrados }, { count: totalUsuarios }] = await Promise.all([
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).not('avatar_config', 'is', null),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+  ])
 
-  const perfiles = avProfiles ?? []
+  // IDs con avatar para buscar su estación en user_generales
+  const { data: avIds } = await supabase
+    .from('profiles').select('id').not('avatar_config', 'is', null)
 
-  // Total usuarios registrados para calcular %
-  const { count: totalUsuarios } = await supabase
-    .from('profiles').select('*', { count: 'exact', head: true })
+  const { data: avGens } = (avIds ?? []).length
+    ? await supabase.from('user_generales').select('user_id, estacion_favorita').in('user_id', (avIds ?? []).map(p => p.id))
+    : { data: [] }
 
-  const pctAvatar = totalUsuarios && totalRegistrados
-    ? Math.round((totalRegistrados / totalUsuarios) * 100)
-    : 0
-
-  // Distribución por estación
   const porEstacion: Record<string, number> = {}
-  for (const p of perfiles) {
-    const e = p.estacion_favorita ?? 'desconocida'
+  for (const g of (avGens ?? [])) {
+    const e = g.estacion_favorita ?? 'desconocida'
     porEstacion[e] = (porEstacion[e] ?? 0) + 1
   }
 
-  // Piezas más usadas por categoría
-  const Z_ORDER = ['fondo','cuerpo-jersey','cabello','cejas','ojos','lentes','boca','bigote','barba','gorra','marco']
-  const CAT_LABELS: Record<string, string> = {
-    fondo:'Fondo','cuerpo-jersey':'Jersey',cabello:'Cabello',cejas:'Cejas',
-    ojos:'Ojos',lentes:'Lentes',boca:'Boca',bigote:'Bigote',barba:'Barba',gorra:'Gorra',marco:'Marco',
-  }
-  const catStats: Record<string, Array<{ path: string; count: number }>> = {}
-  for (const cat of Z_ORDER) catStats[cat] = []
-
-  const catCountMap: Record<string, Record<string, number>> = {}
-  for (const p of perfiles) {
-    const cfg = p.avatar_config
-    if (!cfg || typeof cfg !== 'object') continue
-    for (const cat of Z_ORDER) {
-      const val = cfg[cat]
-      if (!val) continue
-      if (!catCountMap[cat]) catCountMap[cat] = {}
-      catCountMap[cat][val] = (catCountMap[cat][val] ?? 0) + 1
-    }
-  }
-  for (const cat of Z_ORDER) {
-    catStats[cat] = Object.entries(catCountMap[cat] ?? {})
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([path, count]) => ({ path, count }))
-  }
-
-  // Últimas 10 creaciones
-  const recientes = [...perfiles]
-    .sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''))
-    .slice(0, 10)
-    .map(p => ({ name: p.full_name ?? 'Anónimo', estacion: p.estacion_favorita ?? '?', at: p.updated_at }))
-
-  avatarData = { totalAvatares: totalRegistrados ?? 0, totalUsuarios: totalUsuarios ?? 0, pctAvatar, porEstacion, catStats, CAT_LABELS, Z_ORDER, recientes }
+  avatarData = { totalAvatares: totalRegistrados ?? 0, totalUsuarios: totalUsuarios ?? 0, porEstacion }
 }
 
 // ─── TAB: PUBLICIDAD ──────────────────────────────────────────────────────────
@@ -327,21 +345,25 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
     <a href="?tab=publicidad" class={`tab-btn ${tab === 'publicidad' ? 'active' : ''}`}>Publicidad</a>
   </div>
 
-  {tab !== 'avatar' && (
-    <!-- Filtro estación -->
-    <div class="estacion-bar">
-      <a href={estUrl('todas')} class={`est-pill ${estacion === 'todas' ? 'active' : ''}`}>Todas</a>
-      {ESTACIONES.map(e => (
-        <a
-          href={estUrl(e)}
-          class={`est-pill ${estacion === e ? 'active' : ''}`}
-          style={estacion === e ? `background:${estacionColors[e]};border-color:${estacionColors[e]};` : ''}
-        >
-          {e.charAt(0).toUpperCase() + e.slice(1)}
-        </a>
-      ))}
-    </div>
-  )}
+  <!-- Filtro estación -->
+  <div class="estacion-bar">
+    {isStatsRole ? (
+      <span
+        class="est-pill active"
+        style={`background:${estacionColors[estacion]};border-color:${estacionColors[estacion]};color:white`}
+      >
+        {ESTACION_LABELS[estacion] ?? estacion}
+      </span>
+    ) : ESTACIONES.map(e => (
+      <a
+        href={estUrl(e)}
+        class={`est-pill ${estacion === e ? 'active' : ''}`}
+        style={estacion === e ? `background:${estacionColors[e]};border-color:${estacionColors[e]};` : ''}
+      >
+        {ESTACION_LABELS[e]}
+      </a>
+    ))}
+  </div>
 
   <!-- ═══ TAB ÁLBUM ════════════════════════════════════════════════════════════ -->
   {tab === 'album' && (
@@ -353,10 +375,13 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
         <div class="stat-card">
           <div><p class="stat-val">{albumData.usuariosActivos ?? 0}</p><p class="stat-lbl">Usuarios activos</p></div>
         </div>
+        <div class="stat-card" style="border-left:4px solid #6366f1">
+          <div><p class="stat-val">{albumData.totalRegistros ?? 0}</p><p class="stat-lbl">Registros (desde 11 Jun)</p></div>
+        </div>
       </div>
 
       <div class="panel">
-        <h2>Canjes últimos 30 días</h2>
+        <h2>Canjes desde el 11 de junio</h2>
         {(albumData.diasData ?? []).every(([,v]: any) => v === 0) ? (
           <p class="empty">Sin actividad en este período.</p>
         ) : (
@@ -372,16 +397,33 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
         )}
       </div>
 
+      <div class="panel">
+        <h2>Registros nuevos desde el 11 de junio</h2>
+        {(albumData.regDiasData ?? []).every(([,v]: any) => v === 0) ? (
+          <p class="empty">Sin registros en este período.</p>
+        ) : (
+          <div class="bar-chart">
+            {(albumData.regDiasData ?? []).map(([dia, count]: any) => (
+              <div class="bar-col">
+                <span class="bar-count">{count > 0 ? count : ''}</span>
+                <div class="bar-fill" style={`height: ${(count / (albumData.regMaxBar ?? 1)) * 100}%; background:#6366f1`}></div>
+                <span class="bar-label">{dia.slice(5)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div class="two-col">
         <div class="panel">
-          <div class="panel-hdr"><h2>Top 10 cards más canjeadas</h2><button class="btn-csv" data-filename="top-cards">⬇ CSV</button></div>
-          {(albumData.topCards ?? []).length === 0 ? (
+          <div class="panel-hdr"><h2>Cartas — canjes totales</h2><button class="btn-csv" data-filename="cartas">⬇ CSV</button></div>
+          {(albumData.allCards ?? []).length === 0 ? (
             <p class="empty">Sin datos.</p>
           ) : (
             <table class="mini-table">
-              <thead><tr><th>#</th><th>Card</th><th>Álbum</th><th>Canjes</th></tr></thead>
+              <thead><tr><th>#</th><th>Carta</th><th>Álbum</th><th>Canjes</th></tr></thead>
               <tbody>
-                {(albumData.topCards ?? []).map((r: any, i: number) => (
+                {(albumData.allCards ?? []).map((r: any, i: number) => (
                   <tr>
                     <td class="pos">{i + 1}</td>
                     <td>{r.name}</td>
@@ -395,25 +437,43 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
         </div>
 
         <div class="panel">
-          <div class="panel-hdr"><h2>Top 10 coleccionistas</h2><button class="btn-csv" data-filename="top-coleccionistas">⬇ CSV</button></div>
+          <div class="panel-hdr"><h2>Coleccionistas</h2><button class="btn-csv" data-filename="coleccionistas">⬇ CSV</button></div>
           {(albumData.topUsers ?? []).length === 0 ? (
             <p class="empty">Sin datos.</p>
           ) : (
-            <table class="mini-table">
-              <thead><tr><th>#</th><th>Usuario</th><th>Cards</th></tr></thead>
-              <tbody>
-                {(albumData.topUsers ?? []).map((u: any, i: number) => (
-                  <tr>
-                    <td class="pos">{i + 1}</td>
-                    <td>
-                      <span class="user-name">{u.name}</span>
-                      <span class="muted block">{u.email}</span>
-                    </td>
-                    <td class="count">{u.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div class="collector-list">
+              {(albumData.topUsers ?? []).map((u: any, i: number) => {
+                const uCards = ((albumData.userCardsDetail ?? {}) as any)[u.id] ?? []
+                return (
+                  <details class="collector-item">
+                    <summary class="collector-summary">
+                      <span class="col-rank">{i + 1}</span>
+                      <span class="col-info">
+                        <span class="user-name">{u.name}</span>
+                        <span class="muted block">{u.email}</span>
+                      </span>
+                      <span class="col-count">{u.count} <span class="muted">cartas</span></span>
+                      <span class="col-chevron">▼</span>
+                    </summary>
+                    <div class="collector-detail">
+                      <table class="mini-table" style="margin-top:0.5rem">
+                        <thead><tr><th>#</th><th>Carta</th><th>Álbum</th><th>Fecha/hora</th></tr></thead>
+                        <tbody>
+                          {uCards.map((c: any) => (
+                            <tr>
+                              <td class="pos">{c.posicion}</td>
+                              <td class="user-name">{c.cardName}</td>
+                              <td class="muted">{c.albumName}</td>
+                              <td class="date-cell muted">{fmtDate(c.redeemedAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
@@ -425,41 +485,17 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
           <p class="empty">Sin participantes aún.</p>
         ) : (
           <table class="mini-table prog-table">
-            <thead><tr><th>#</th><th>Usuario</th><th>Álbum</th><th>Progreso</th><th>Cards</th><th>%</th><th>Primera carta</th><th>Última carta</th></tr></thead>
+            <thead><tr><th>#</th><th>Usuario</th><th>Progreso</th><th class="col-center">%</th><th class="col-center">Cards</th><th class="col-center">Primera carta</th><th class="col-center">Última carta</th></tr></thead>
             <tbody>
               {(albumData.participantes as any[]).map((r: any, i: number) => (
                 <tr class={r.pct === 100 ? 'row-complete' : ''}>
                   <td class="pos">{i + 1}</td>
                   <td><span class="user-name">{r.name}</span><span class="muted block">{r.email}</span></td>
-                  <td class="muted album-cell">{r.albumName}</td>
                   <td class="prog-cell"><div class="prog-track"><div class="prog-fill" style={`width:${r.pct}%`}></div></div></td>
-                  <td class="count">{r.count}<span class="muted">/{r.total}</span></td>
-                  <td><span class={`pct-badge ${r.pct === 100 ? 'pct-full' : r.pct >= 50 ? 'pct-mid' : 'pct-low'}`}>{r.pct}%</span></td>
-                  <td class="date-cell muted">{fmtDate(r.firstAt)}</td>
-                  <td class="date-cell muted">{fmtDate(r.lastAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <!-- ── Detalle por carta ── -->
-      <div class="panel">
-        <div class="panel-hdr"><h2>Detalle por carta — quién la redimió y cuándo</h2><button class="btn-csv" data-filename="detalle-cartas">⬇ CSV</button></div>
-        {(albumData.cardRedemptions ?? []).length === 0 ? (
-          <p class="empty">Sin canjes aún.</p>
-        ) : (
-          <table class="mini-table prog-table">
-            <thead><tr><th>#</th><th>Carta</th><th>Álbum</th><th>Usuario</th><th>Hora de redención</th></tr></thead>
-            <tbody>
-              {(albumData.cardRedemptions as any[]).map((r: any) => (
-                <tr>
-                  <td class="pos">{r.posicion}</td>
-                  <td class="user-name">{r.cardName}</td>
-                  <td class="muted album-cell">{r.albumName}</td>
-                  <td><span class="user-name">{r.userName}</span><span class="muted block">{r.userEmail}</span></td>
-                  <td class="date-cell muted">{fmtDate(r.redeemedAt)}</td>
+                  <td class="col-center"><span class={`pct-badge ${r.pct === 100 ? 'pct-full' : r.pct >= 50 ? 'pct-mid' : 'pct-low'}`}>{r.pct}%</span></td>
+                  <td class="col-center">{r.count}<span class="muted">/{r.total}</span></td>
+                  <td class="col-center date-cell muted">{fmtDate(r.firstAt)}</td>
+                  <td class="col-center date-cell muted">{fmtDate(r.lastAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -555,109 +591,21 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
   <!-- ═══ TAB AVATAR ════════════════════════════════════════════════════════════ -->
   {tab === 'avatar' && (
     <div>
-      <!-- KPIs -->
       <div class="stats-row">
         <div class="stat-card">
-          <div><p class="stat-val">{avatarData.totalAvatares}</p><p class="stat-lbl">Avatares creados</p></div>
-        </div>
-        <div class="stat-card">
-          <div><p class="stat-val">{avatarData.totalUsuarios}</p><p class="stat-lbl">Usuarios registrados</p></div>
+          <div><p class="stat-val">{avatarData.totalUsuarios}</p><p class="stat-lbl">Registros totales</p></div>
         </div>
         <div class="stat-card" style="border-left:4px solid var(--rojo)">
-          <div><p class="stat-val">{avatarData.pctAvatar}%</p><p class="stat-lbl">Adoptaron el avatar</p></div>
+          <div><p class="stat-val">{avatarData.totalAvatares}</p><p class="stat-lbl">Avatars creados</p></div>
         </div>
-      </div>
-
-      <!-- Distribución por estación -->
-      <div class="panel">
-        <h2>Avatares por estación</h2>
-        {Object.keys(avatarData.porEstacion ?? {}).length === 0 ? (
-          <p class="empty">Sin datos aún.</p>
-        ) : (
-          <div class="est-bars">
-            {Object.entries(avatarData.porEstacion ?? {})
-              .sort((a: any, b: any) => b[1] - a[1])
-              .map(([e, count]: any) => {
-                const total = avatarData.totalAvatares || 1
-                const pct = Math.round((count / total) * 100)
-                const color = estacionColors[e] ?? '#9ca3af'
-                return (
-                  <div class="est-bar-row">
-                    <span class="est-bar-label" style={`color:${color}`}>{e.charAt(0).toUpperCase() + e.slice(1)}</span>
-                    <div class="est-bar-track">
-                      <div class="est-bar-fill" style={`width:${pct}%;background:${color}`}></div>
-                    </div>
-                    <span class="est-bar-count">{count} <span class="muted">({pct}%)</span></span>
-                  </div>
-                )
-              })
-            }
+        {ESTACIONES.map(e => (
+          <div class="stat-card" style={`border-left:4px solid ${estacionColors[e]}`}>
+            <div>
+              <p class="stat-val">{(avatarData.porEstacion ?? {})[e] ?? 0}</p>
+              <p class="stat-lbl">Avatars {ESTACION_LABELS[e]}</p>
+            </div>
           </div>
-        )}
-      </div>
-
-      <!-- Piezas más usadas por categoría -->
-      <div class="panel">
-        <h2>Piezas más usadas por categoría</h2>
-        {avatarData.totalAvatares === 0 ? (
-          <p class="empty">Sin datos aún.</p>
-        ) : (
-          <div class="av-cat-grid">
-            {(avatarData.Z_ORDER ?? []).map((cat: string) => {
-              const tops = avatarData.catStats?.[cat] ?? []
-              const label = avatarData.CAT_LABELS?.[cat] ?? cat
-              return (
-                <div class="av-cat-block">
-                  <h3 class="av-cat-title">{label}</h3>
-                  {tops.length === 0 ? (
-                    <p class="empty" style="font-size:0.75rem">Sin selecciones</p>
-                  ) : (
-                    <div class="av-top-list">
-                      {tops.map((item: any, i: number) => (
-                        <div class="av-top-row">
-                          <span class="av-top-rank">{i + 1}</span>
-                          <img
-                            src={`https://storage.googleapis.com/nrm-web/mundial/avatar/${item.path}`}
-                            alt=""
-                            class={`av-top-thumb av-top-thumb--${cat}`}
-                            loading="lazy"
-                          />
-                          <span class="av-top-name">{item.path.split('/').pop()}</span>
-                          <span class="av-top-count">{item.count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      <!-- Últimas creaciones -->
-      <div class="panel">
-        <h2>Últimas 10 actualizaciones</h2>
-        {(avatarData.recientes ?? []).length === 0 ? (
-          <p class="empty">Sin datos.</p>
-        ) : (
-          <table class="mini-table">
-            <thead><tr><th>Usuario</th><th>Estación</th><th>Actualizado</th></tr></thead>
-            <tbody>
-              {(avatarData.recientes ?? []).map((r: any) => (
-                <tr>
-                  <td class="user-name">{r.name}</td>
-                  <td>
-                    <span class="est-tag" style={`background:${(estacionColors as any)[r.estacion] ?? '#e5e7eb'}20;color:${(estacionColors as any)[r.estacion] ?? '#6b7280'}`}>
-                      {r.estacion}
-                    </span>
-                  </td>
-                  <td class="date-cell muted">{fmtDate(r.at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        ))}
       </div>
     </div>
   )}
@@ -868,7 +816,10 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
 
   /* ── Participantes / Progreso ── */
   .prog-table { font-size: 0.85rem; }
-  .prog-cell { min-width: 100px; }
+  .prog-table th { text-align: center; }
+  .prog-table td { vertical-align: middle; }
+  .prog-cell { width: 160px; min-width: 120px; }
+  .mini-table .col-center { text-align: center; }
   .prog-track { height: 8px; background: #f0f0f0; border-radius: 999px; overflow: hidden; }
   .prog-fill { height: 100%; background: var(--rojo); border-radius: 999px; }
   .pct-badge { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
@@ -878,6 +829,23 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
   .row-complete td { background: #f0fdf4; }
   .date-cell { font-size: 0.78rem; white-space: nowrap; }
   .album-cell { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Collector expandable ── */
+  .collector-list { display: flex; flex-direction: column; gap: 0.35rem; }
+  .collector-item { border: 1px solid #f0f0f0; border-radius: 0.5rem; overflow: hidden; }
+  .collector-summary {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 0.75rem; cursor: pointer; list-style: none; background: #fafafa;
+  }
+  .collector-summary::-webkit-details-marker { display: none; }
+  .collector-summary:hover { background: #f3f4f6; }
+  details[open] > .collector-summary { background: #f3f4f6; border-bottom: 1px solid #f0f0f0; }
+  .col-rank { width: 20px; font-weight: 700; color: #d1d5db; font-size: 0.8rem; flex-shrink: 0; }
+  .col-info { flex: 1; min-width: 0; }
+  .col-count { font-weight: 700; color: var(--rojo); font-size: 0.825rem; white-space: nowrap; }
+  .col-chevron { font-size: 0.6rem; color: #9ca3af; transition: transform 0.2s; flex-shrink: 0; }
+  details[open] > .collector-summary .col-chevron { transform: rotate(180deg); }
+  .collector-detail { padding: 0.6rem 0.75rem; background: white; }
 
   /* ── Avatar stats ── */
   .av-cat-grid {

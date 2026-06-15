@@ -23,7 +23,7 @@ const authUsers = (authData?.users ?? [])
 // Traer perfiles para cruzar roles y nombres
 const ids = authUsers.map(u => u.id)
 const { data: profiles } = ids.length
-  ? await adminClient.from('profiles').select('id, full_name, role, avatar_url').in('id', ids)
+  ? await adminClient.from('profiles').select('id, full_name, role, avatar_url, estacion_asignada').in('id', ids)
   : { data: [] }
 
 const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
@@ -35,6 +35,7 @@ let users = authUsers.map(u => ({
   full_name: profileMap[u.id]?.full_name ?? '',
   role: profileMap[u.id]?.role ?? 'user',
   avatar_url: profileMap[u.id]?.avatar_url ?? '',
+  estacion_asignada: profileMap[u.id]?.estacion_asignada ?? '',
   created_at: u.created_at,
 }))
 
@@ -123,7 +124,7 @@ users = users.slice(desde, desde + porPagina)
                 <span>{u.full_name ?? '—'}</span>
               </td>
               <td class="email">{u.email}</td>
-              <td>
+              <td class="role-cell">
                 <select
                   class="role-select"
                   data-user-id={u.id}
@@ -131,6 +132,18 @@ users = users.slice(desde, desde + porPagina)
                 >
                   {(['superadmin', 'admin', 'editor', 'estadistica', 'user'] as const).map(r => (
                     <option value={r} selected={u.role === r}>{r}</option>
+                  ))}
+                </select>
+                <select
+                  class="estacion-select"
+                  data-user-id={u.id}
+                  style={u.role === 'estadistica' ? '' : 'display:none'}
+                >
+                  <option value="">— estación —</option>
+                  {(['oye', 'beat', 'stereocien', 'sabrosita'] as const).map(e => (
+                    <option value={e} selected={u.estacion_asignada === e}>
+                      {e === 'stereocien' ? 'Stereo Cien' : e.charAt(0).toUpperCase() + e.slice(1)}
+                    </option>
                   ))}
                 </select>
               </td>
@@ -232,22 +245,27 @@ async function enviarInvitacion() {
     })
   })
 
-  // Habilitar botón cuando cambia el select
+  // Mostrar/ocultar selector de estación y habilitar botón al cambiar rol
   document.querySelectorAll('.role-select').forEach(select => {
     select.addEventListener('change', () => {
       const userId = (select as HTMLSelectElement).dataset.userId
+      const estacionSel = document.querySelector(`.estacion-select[data-user-id="${userId}"]`) as HTMLSelectElement
+      if (estacionSel) estacionSel.style.display = select.value === 'estadistica' ? '' : 'none'
       const btn = document.querySelector(`.btn-save-role[data-user-id="${userId}"]`) as HTMLButtonElement
       if (btn) btn.disabled = false
     })
   })
 
-  // Guardar rol
+  // Guardar rol (+ estación si aplica)
   document.querySelectorAll('.btn-save-role').forEach(btn => {
     btn.addEventListener('click', async () => {
       const el = btn as HTMLButtonElement
       const userId = el.dataset.userId
       const select = document.querySelector(`.role-select[data-user-id="${userId}"]`) as HTMLSelectElement
+      const estacionSel = document.querySelector(`.estacion-select[data-user-id="${userId}"]`) as HTMLSelectElement
       const newRole = select.value
+      const body: Record<string, string> = { role: newRole }
+      if (newRole === 'estadistica' && estacionSel?.value) body.estacion_asignada = estacionSel.value
 
       el.disabled = true
       el.textContent = 'Guardando…'
@@ -255,7 +273,7 @@ async function enviarInvitacion() {
       const res = await fetch(`/api/admin/usuarios/${userId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify(body),
       })
 
       if (res.ok) {
@@ -311,13 +329,15 @@ async function enviarInvitacion() {
   .muted { color: #888; font-size: 0.825rem; }
   .empty-row { text-align: center; color: #aaa; padding: 2rem !important; }
 
-  .role-select {
+  .role-cell { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .role-select, .estacion-select {
     border: 1.5px solid #ddd; border-radius: 0.35rem;
     padding: 0.3rem 0.5rem; font-size: 0.85rem;
     outline: none; background: white; cursor: pointer;
     transition: border-color 0.2s;
   }
-  .role-select:focus { border-color: var(--rojo); }
+  .role-select:focus, .estacion-select:focus { border-color: var(--rojo); }
+  .estacion-select { color: #6366f1; border-color: #c7d2fe; }
 
   .actions-cell { display: flex; align-items: center; gap: 1rem; }
   .action-link {

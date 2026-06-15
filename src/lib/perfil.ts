@@ -4,13 +4,18 @@ export type UserRole = 'superadmin' | 'admin' | 'editor' | 'estadistica' | 'user
 
 export async function getUserContext(supabase: SupabaseClient, userId: string) {
   const [{ data: profile }, { data: generales }] = await Promise.all([
-    supabase.from('profiles').select('role').eq('id', userId).maybeSingle(),
+    supabase.from('profiles').select('role, estacion_asignada').eq('id', userId).maybeSingle(),
     supabase.from('user_generales').select('user_id, estacion_favorita').eq('user_id', userId).maybeSingle(),
   ])
+  const role = (profile?.role as UserRole) ?? 'user'
+  // estadistica: usa la estación asignada por admin; otros roles: preferencia del usuario
+  const estacion_favorita = role === 'estadistica'
+    ? (profile?.estacion_asignada as string | null) ?? null
+    : (generales?.estacion_favorita as string | null) ?? null
   return {
-    role: (profile?.role as UserRole) ?? 'user',
+    role,
     hasGenerales: !!generales,
-    estacion_favorita: (generales?.estacion_favorita as string | null) ?? null,
+    estacion_favorita,
   }
 }
 

@@ -15,7 +15,7 @@ export const PATCH: APIRoute = async ({ request, locals, params }) => {
     return new Response(JSON.stringify({ error: 'Cuerpo inválido' }), { status: 400 })
   }
 
-  const { role } = body
+  const { role, estacion_asignada } = body
 
   if (!role || !VALID_ROLES.includes(role)) {
     return new Response(JSON.stringify({ error: 'Rol inválido' }), { status: 400 })
@@ -26,10 +26,22 @@ export const PATCH: APIRoute = async ({ request, locals, params }) => {
     return new Response(JSON.stringify({ error: 'Solo superadmin puede asignar este rol' }), { status: 403 })
   }
 
+  const VALID_ESTACIONES = ['oye', 'beat', 'stereocien', 'sabrosita']
+  if (role === 'estadistica' && estacion_asignada && !VALID_ESTACIONES.includes(estacion_asignada)) {
+    return new Response(JSON.stringify({ error: 'Estación inválida' }), { status: 400 })
+  }
+
+  const updateData: Record<string, any> = { role }
+  if (role === 'estadistica') {
+    updateData.estacion_asignada = estacion_asignada ?? null
+  } else {
+    updateData.estacion_asignada = null
+  }
+
   const supabase = createSupabaseAdminClient()
   const { error } = await supabase
     .from('profiles')
-    .update({ role })
+    .update(updateData)
     .eq('id', params.id!)
 
   if (error) {
