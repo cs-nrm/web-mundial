@@ -2,7 +2,6 @@
 import { getArticles } from "../lib/api.js";
 import { wpSiteGamecastConfig } from "../config/sites.js";
 import { getFlagUrl } from "../lib/flags.js";
-import { createSupabaseAdminClient } from "../lib/supabase";
 
 const allPosts = await getArticles(undefined, { sites: [wpSiteGamecastConfig.url] });
 
@@ -10,18 +9,6 @@ const today = new Date().toISOString().slice(0, 10);
 const posts = (allPosts ?? [])
   .filter(p => p.acf?.fecha?.slice(0, 10) === today)
   .sort((a, b) => (a.acf?.fecha ?? '').localeCompare(b.acf?.fecha ?? ''));
-
-// Cargar previews vinculadas
-const supabase = createSupabaseAdminClient();
-const { data: previasData } = await supabase
-  .from('analisis')
-  .select('partido_slug, slug')
-  .not('partido_slug', 'is', null);
-
-const previasMap: Record<string, string> = {};
-for (const p of (previasData ?? [])) {
-  if (p.partido_slug) previasMap[p.partido_slug] = p.slug;
-}
 
 function formatFecha(fecha: string | null | undefined) {
   if (!fecha) return null;
@@ -51,7 +38,7 @@ function formatFecha(fecha: string | null | undefined) {
         const flag2 = getFlagUrl(pais2, 80);
         const fechaFormateada = formatFecha(fecha);
         const sede = post.acf?.sede;
-        const previaSlug = previasMap[post.slug];
+        const previa = post.acf?.previa;
 
         return (
           <a href={`/partidos-del-dia/${post.slug}/`} data-anim="fade-up">
@@ -79,11 +66,17 @@ function formatFecha(fecha: string | null | undefined) {
               {sede && (
                 <p class="text-xs text-neutral-400 uppercase tracking-widest" set:html={sede}></p>
               )}
-              {previaSlug && (
-                <p class="text-xs text-[#7af12b] font-bold uppercase tracking-wide">
-                  Previa del partido →
-                </p>
-              )}
+              <div class="flex flex-col gap-1">
+                {previa && (
+                  <span onclick={`event.preventDefault();event.stopPropagation();window.location.href='${previa}'`}
+                    class="text-xs text-[#7af12b] font-bold uppercase tracking-wide cursor-pointer hover:underline">
+                    Previa del partido →
+                  </span>
+                )}
+                <span class="text-xs text-white font-bold uppercase tracking-wide">
+                  Minuto a Minuto →
+                </span>
+              </div>
             </div>
           </a>
         );
