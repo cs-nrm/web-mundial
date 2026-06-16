@@ -109,11 +109,17 @@ if (tab === 'album') {
     else { slot.count++; if (r.redeemed_at < slot.firstAt) slot.firstAt = r.redeemed_at; if (r.redeemed_at > slot.lastAt) slot.lastAt = r.redeemed_at }
   }
 
-  // Fetch de todos los perfiles necesarios (unión de coleccionistas + participantes)
+  // Fetch de todos los perfiles necesarios (unión de coleccionistas + participantes).
+  // Se hace en lotes porque .in() con cientos de IDs genera una URL GET demasiado
+  // larga y la petición falla silenciosamente (perfiles quedan como "Anónimo").
   const allUids = [...new Set([...Object.keys(uAgg), ...allUserIds.map(([id]) => id)])]
-  const { data: allProfs } = allUids.length
-    ? await supabase.from('profiles').select('id, email, full_name').in('id', allUids)
-    : { data: [] }
+  const allProfs: any[] = []
+  const BATCH = 100
+  for (let i = 0; i < allUids.length; i += BATCH) {
+    const batch = allUids.slice(i, i + BATCH)
+    const { data } = await supabase.from('profiles').select('id, email, full_name').in('id', batch)
+    if (data) allProfs.push(...data)
+  }
 
   // Coleccionistas con id incluido
   const topUsers = allUserIds.map(([id, count]) => {
@@ -157,10 +163,12 @@ if (tab === 'album') {
     .select('id, created_at')
     .gte('created_at', TIMELINE_START)
 
-  const regProfIds = (regProfiles ?? []).map(p => p.id)
-  const { data: regGens } = regProfIds.length
-    ? await supabase.from('user_generales').select('user_id, estacion_favorita').in('user_id', regProfIds)
-    : { data: [] }
+  // Filtramos user_generales por estación primero (lista chica) en vez de mandar
+  // todos los IDs de perfiles en un .in() — con cientos de registros esa URL
+  // GET se vuelve demasiado larga y la petición falla silenciosamente.
+  let regGenQ = supabase.from('user_generales').select('user_id, estacion_favorita')
+  if (estacion !== 'todas') regGenQ = regGenQ.eq('estacion_favorita', estacion)
+  const { data: regGens } = await regGenQ
 
   const regGenMap: Record<string, string> = {}
   for (const g of (regGens ?? [])) regGenMap[g.user_id] = g.estacion_favorita ?? 'desconocida'
@@ -339,7 +347,7 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
           <div><p class="stat-val">{albumData.totalCanjes ?? 0}</p><p class="stat-lbl">Canjes totales</p></div>
         </div>
         <div class="stat-card" style="border-left:4px solid #6366f1">
-          <div><p class="stat-val">{albumData.totalRegistros ?? 0}</p><p class="stat-lbl">Registros desde Jun 11</p></div>
+          <div><p class="stat-val">{albumData.totalRegistros ?? 0}</p><p class="stat-lbl">Registros</p></div>
         </div>
       </div>
 
