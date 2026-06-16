@@ -8,14 +8,16 @@ export async function getUserContext(supabase: SupabaseClient, userId: string) {
     supabase.from('user_generales').select('user_id, estacion_favorita').eq('user_id', userId).maybeSingle(),
   ])
   const role = (profile?.role as UserRole) ?? 'user'
-  // estadistica: usa la estación asignada por admin; otros roles: preferencia del usuario
-  const estacion_favorita = role === 'estadistica'
-    ? (profile?.estacion_asignada as string | null) ?? null
-    : (generales?.estacion_favorita as string | null) ?? null
+  // estacion_favorita es siempre la preferencia personal del usuario (álbum, jerseys, etc).
+  // estacion_asignada es el alcance que un admin le dio a un rol "estadistica" para ver
+  // reportes — son dos cosas distintas, no deben mezclarse.
+  const estacion_favorita = (generales?.estacion_favorita as string | null) ?? null
+  const estacion_asignada = (profile?.estacion_asignada as string | null) ?? null
   return {
     role,
     hasGenerales: !!generales,
     estacion_favorita,
+    estacion_asignada,
   }
 }
 

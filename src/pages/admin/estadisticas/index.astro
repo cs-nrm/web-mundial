@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from '../../../lib/supabase'
 import { canAccess, STATS_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 
-const { role, estacion_favorita } = Astro.locals as any
+const { role, estacion_asignada } = Astro.locals as any
 if (!canAccess(role as UserRole, STATS_ROLES)) return Astro.redirect('/admin')
 
 const supabase = createSupabaseAdminClient()
@@ -19,9 +19,9 @@ const ESTACION_LABELS: Record<string, string> = {
 // estadistica con estación específica: bloqueado a esa estación
 // estadistica con 'todas' o admin/superadmin: puede navegar libremente
 const isStatsRole = role === 'estadistica'
-const stationLocked = isStatsRole && estacion_favorita !== null && estacion_favorita !== 'todas'
+const stationLocked = isStatsRole && estacion_asignada !== null && estacion_asignada !== 'todas'
 const estacion = stationLocked
-  ? estacion_favorita
+  ? estacion_asignada
   : (Astro.url.searchParams.get('estacion') ?? 'todas')
 
 const estacionColors: Record<string, string> = {

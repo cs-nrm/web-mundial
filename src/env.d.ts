@@ -18,6 +18,7 @@ declare global {
       hasGenerales: boolean
       role: 'superadmin' | 'admin' | 'editor' | 'estadistica' | 'user'
       estacion_favorita: string | null
+      estacion_asignada: string | null
     }
   }
 }

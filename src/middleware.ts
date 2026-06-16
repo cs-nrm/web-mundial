@@ -27,10 +27,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.hasGenerales = ctx.hasGenerales
     context.locals.role = ctx.role
     context.locals.estacion_favorita = ctx.estacion_favorita
+    context.locals.estacion_asignada = ctx.estacion_asignada
   } else {
     context.locals.hasGenerales = false
     context.locals.role = 'user'
     context.locals.estacion_favorita = null
+    context.locals.estacion_asignada = null
   }
 
   // Fallback de emergencia: cookie firmada cuando Google/Supabase no están disponibles
