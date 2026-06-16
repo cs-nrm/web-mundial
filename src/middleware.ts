@@ -54,5 +54,21 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
+  // Forzar onboarding: a un usuario normal sin estación favorita (p.ej. si se le
+  // borró por error) no se le deja navegar hasta que vuelva a completar el cuestionario.
+  const exento = pathname.startsWith('/admin')
+    || pathname.startsWith('/api')
+    || pathname.startsWith('/auth')
+    || pathname.startsWith('/perfil/datos')
+    || pathname.includes('.')
+  if (
+    context.locals.user &&
+    context.locals.role === 'user' &&
+    !context.locals.estacion_favorita &&
+    !exento
+  ) {
+    return context.redirect('/perfil/datos')
+  }
+
   return next()
 })

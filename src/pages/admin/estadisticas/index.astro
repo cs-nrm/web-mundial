@@ -76,15 +76,18 @@ if (tab === 'album') {
   for (const c of (cards ?? [])) {
     cardAlbumName[c.id] = albums?.find(a => a.id === c.album_id)?.name ?? '?'
   }
-  const cardMap: Record<string, { name: string; album: string; posicion: number; count: number }> = {}
+  const cardMap: Record<string, { name: string; album: string; posicion: number; count: number; firstAt: string }> = {}
   for (const r of uc) {
     if (!cardMap[r.card_id]) {
       const card = (cards ?? []).find(c => c.id === r.card_id)
-      cardMap[r.card_id] = { name: card?.name ?? '?', album: cardAlbumName[r.card_id] ?? '?', posicion: card?.posicion ?? 0, count: 0 }
+      cardMap[r.card_id] = { name: card?.name ?? '?', album: cardAlbumName[r.card_id] ?? '?', posicion: card?.posicion ?? 0, count: 0, firstAt: r.redeemed_at ?? '' }
     }
     cardMap[r.card_id].count++
+    if (r.redeemed_at && (!cardMap[r.card_id].firstAt || r.redeemed_at < cardMap[r.card_id].firstAt)) {
+      cardMap[r.card_id].firstAt = r.redeemed_at
+    }
   }
-  const allCards = Object.values(cardMap).sort((a, b) => b.count - a.count)
+  const allCards = Object.values(cardMap).sort((a, b) => a.firstAt.localeCompare(b.firstAt))
 
   // Coleccionistas — todos, ordenados por total de cartas
   const userCountMap: Record<string, number> = {}
@@ -392,13 +395,22 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
             <p class="empty">Sin datos.</p>
           ) : (
             <table class="mini-table">
-              <thead><tr><th>#</th><th>Carta</th><th>Álbum</th><th>Canjes</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Carta</th>
+                  {estacion === 'todas' && <th>Álbum</th>}
+                  <th>Primer canje</th>
+                  <th>Canjes</th>
+                </tr>
+              </thead>
               <tbody>
                 {(albumData.allCards ?? []).map((r: any, i: number) => (
                   <tr>
                     <td class="pos">{i + 1}</td>
                     <td>{r.name}</td>
-                    <td class="muted">{r.album}</td>
+                    {estacion === 'todas' && <td class="muted">{r.album}</td>}
+                    <td class="muted">{r.firstAt ? new Date(r.firstAt).toLocaleDateString('es-MX') : '—'}</td>
                     <td class="count">{r.count}</td>
                   </tr>
                 ))}

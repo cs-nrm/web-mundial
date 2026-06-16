@@ -1,11 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro'
 
-const { user, hasGenerales } = Astro.locals
+const { user, hasGenerales, estacion_favorita } = Astro.locals
 if (!user) {
   return Astro.redirect(`/auth/login?redirect=/perfil/datos`)
 }
-if (hasGenerales) {
+if (hasGenerales && estacion_favorita) {
   return Astro.redirect('/perfil')
 }
 

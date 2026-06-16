@@ -20,13 +20,25 @@ const { data: authData } = await adminClient.auth.admin.listUsers({ perPage: 100
 const authUsers = (authData?.users ?? [])
   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-// Traer perfiles para cruzar roles y nombres
+// Traer perfiles para cruzar roles y nombres (en lotes: .in() con cientos de ids
+// puede exceder el límite de tamaño de la query string y fallar silenciosamente)
 const ids = authUsers.map(u => u.id)
-const { data: profiles } = ids.length
-  ? await adminClient.from('profiles').select('id, full_name, role, avatar_url, estacion_asignada').in('id', ids)
-  : { data: [] }
+const LOTE = 100
+const profiles: any[] = []
+for (let i = 0; i < ids.length; i += LOTE) {
+  const lote = ids.slice(i, i + LOTE)
+  const { data, error } = await adminClient
+    .from('profiles')
+    .select('id, full_name, role, avatar_url, estacion_asignada')
+    .in('id', lote)
+  if (error) {
+    console.error('Error al obtener perfiles:', error.message)
+    continue
+  }
+  if (data) profiles.push(...data)
+}
 
-const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
+const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
 
 // Combinar y filtrar
 let users = authUsers.map(u => ({
