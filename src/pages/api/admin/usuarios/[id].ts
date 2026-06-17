@@ -3,7 +3,7 @@ import { createSupabaseAdminClient } from '../../../../lib/supabase'
 import { canAccess, MANAGE_ROLES, SUPERADMIN_ROLES } from '../../../../lib/admin'
 import type { UserRole } from '../../../../lib/perfil'
 
-const VALID_ROLES: UserRole[] = ['superadmin', 'admin', 'editor', 'estadistica', 'user']
+const VALID_ROLES: UserRole[] = ['superadmin', 'admin', 'editor', 'estadistica', 'social', 'anuncios', 'user']
 
 export const PATCH: APIRoute = async ({ request, locals, params }) => {
   if (!canAccess(locals.role as UserRole, MANAGE_ROLES)) {

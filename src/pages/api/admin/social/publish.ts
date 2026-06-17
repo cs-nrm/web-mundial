@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro'
 import { createSupabaseAdminClient } from '../../../../lib/supabase'
-import { canAccess, MANAGE_ROLES } from '../../../../lib/admin'
+import { canAccess, SOCIAL_ROLES } from '../../../../lib/admin'
 import type { UserRole } from '../../../../lib/perfil'
 // @ts-ignore – JS module in scripts/, Node SSR context
 import { generateImage } from '../../../../../scripts/goal-bot/image.js'
@@ -33,7 +33,7 @@ async function postToMetricool(
       method: 'POST',
       headers: { 'X-Mc-Auth': token, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        publicationDate: { dateTime: cdmxDateTimeString(5 * 60_000), timezone: 'America/Mexico_City' },
+        publicationDate: { dateTime: cdmxDateTimeString(0), timezone: 'America/Mexico_City' },
         text,
         providers,
         media: [imageUrl],
@@ -47,7 +47,7 @@ async function postToMetricool(
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  if (!canAccess(locals.role as UserRole, MANAGE_ROLES)) {
+  if (!canAccess(locals.role as UserRole, SOCIAL_ROLES)) {
     return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
   }
 
