@@ -104,6 +104,7 @@ function formatDate(iso: string) {
 
           {ev.status !== 'publicado' && (
             <div class="card-actions">
+
               <button class="btn-preview" data-id={ev.id} onclick="previewImage(this)">
                 Ver previsualización
               </button>
@@ -112,28 +113,28 @@ function formatDate(iso: string) {
                 <img class="preview-img" src="" alt="Preview" loading="lazy" />
               </div>
 
-              <label class="caption-label">Instagram + X (con @handles)</label>
-              <textarea
-                class="caption-input"
-                id={`caption-igx-${ev.id}`}
-                placeholder="Texto para IG y X…"
-                rows="6"
-              >{captionIgX(ev)}</textarea>
+              <div class="captions-grid">
+                <div class="caption-col">
+                  <div class="caption-label">📸 Instagram + X</div>
+                  <textarea
+                    class="caption-input"
+                    id={`caption-igx-${ev.id}`}
+                    placeholder="Texto para IG y X…"
+                    rows="7"
+                  >{captionIgX(ev)}</textarea>
+                </div>
+                <div class="caption-col">
+                  <div class="caption-label">👥 Facebook</div>
+                  <textarea
+                    class="caption-input"
+                    id={`caption-fb-${ev.id}`}
+                    placeholder="Texto para Facebook…"
+                    rows="7"
+                  >{captionFacebook(ev)}</textarea>
+                </div>
+              </div>
 
-              <label class="caption-label">Facebook (sin @menciones)</label>
-              <textarea
-                class="caption-input"
-                id={`caption-fb-${ev.id}`}
-                placeholder="Texto para Facebook…"
-                rows="6"
-              >{captionFacebook(ev)}</textarea>
-
-              <button
-                class="btn-publish"
-                data-id={ev.id}
-                onclick="publishPost(this)"
-                disabled={ev.status === 'error' ? undefined : undefined}
-              >
+              <button class="btn-publish" data-id={ev.id} onclick="publishPost(this)">
                 {ev.status === 'error' ? '⟳ Reintentar publicación' : 'Publicar en Enfoque'}
               </button>
 
@@ -509,11 +510,23 @@ async function publishPost(btn) {
     display: block;
   }
 
+  .captions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .caption-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
   .caption-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: #6b7280;
   }
 
