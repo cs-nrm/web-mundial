@@ -85,13 +85,16 @@ const EVENT_LABEL: Record<string, string> = {
 
     {matchGroups.map(group => (
       <div class="match-group" data-match-id={group.matchId}>
-        <div class="match-group-header">
+        <div class="match-group-header" onclick="toggleGroup(this)" role="button" tabindex="0">
           <span class="group-teams">{group.teamHome} <span class="vs">vs</span> {group.teamAway}</span>
-          <span class="group-count">
-            {group.events.filter(e => e.status === 'pendiente').length > 0
-              ? `${group.events.filter(e => e.status === 'pendiente').length} pendiente${group.events.filter(e => e.status === 'pendiente').length > 1 ? 's' : ''}`
-              : 'todos publicados'}
-          </span>
+          <div class="group-right">
+            <span class="group-count">
+              {group.events.filter(e => e.status === 'pendiente').length > 0
+                ? `${group.events.filter(e => e.status === 'pendiente').length} pendiente${group.events.filter(e => e.status === 'pendiente').length > 1 ? 's' : ''}`
+                : 'todos publicados'}
+            </span>
+            <span class="group-chevron">▾</span>
+          </div>
         </div>
 
         <div class="events-grid">
@@ -194,6 +197,13 @@ const EVENT_LABEL: Record<string, string> = {
 </AdminLayout>
 
 <script is:inline>
+function toggleGroup(header) {
+  var group = header.closest('.match-group')
+  var chevron = header.querySelector('.group-chevron')
+  var isCollapsed = group.classList.toggle('collapsed')
+  chevron.textContent = isCollapsed ? '▸' : '▾'
+}
+
 function toggleFilter() {
   var page = document.getElementById('social-page')
   var btn = document.getElementById('filter-toggle')
@@ -468,12 +478,26 @@ async function publishPost(btn) {
     color: white;
     font-size: 0.9rem;
     font-weight: 700;
+    cursor: pointer;
+    user-select: none;
   }
+  .match-group-header:hover { background: #2a2a4e; }
+
+  .match-group.collapsed .match-group-header {
+    border-radius: 0.6rem;
+  }
+  .match-group.collapsed .events-grid { display: none; }
 
   .group-teams .vs {
     font-weight: 400;
     opacity: 0.6;
     margin: 0 0.4em;
+  }
+
+  .group-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .group-count {
@@ -482,6 +506,11 @@ async function publishPost(btn) {
     background: rgba(255,255,255,0.15);
     padding: 0.2rem 0.6rem;
     border-radius: 999px;
+  }
+
+  .group-chevron {
+    font-size: 1rem;
+    opacity: 0.8;
   }
 
   .events-grid {

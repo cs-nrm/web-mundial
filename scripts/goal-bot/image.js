@@ -70,7 +70,8 @@ function scoreOverlaySvg(scoreHome, scoreAway) {
       <style>
         .score { font-family: Impact, Arial Black, sans-serif; font-size: ${s.fontSize}px; fill: #111; }
       </style>
-      <text x="${s.leftX}" y="${s.y}" text-anchor="middle" class="score">${scoreHome}</text>
+      <text x="${s.leftX}"  y="${s.y}" text-anchor="middle" class="score">${scoreHome}</text>
+      <text x="${s.dashX}"  y="${s.y}" text-anchor="middle" class="score">-</text>
       <text x="${s.rightX}" y="${s.y}" text-anchor="middle" class="score">${scoreAway}</text>
     </svg>
   `)
