@@ -14,6 +14,7 @@ const supabase = createSupabaseAdminClient()
 const { data: events = [] } = await supabase
   .from('goal_posts')
   .select('*')
+  .neq('status', 'descartado')
   .order('created_at', { ascending: false })
   .limit(200)
 
@@ -179,9 +180,14 @@ const EVENT_LABEL: Record<string, string> = {
                     </div>
                   </div>
 
-                  <button class="btn-publish" data-id={ev.id} onclick="publishPost(this)">
-                    {ev.status === 'error' ? '⟳ Reintentar' : '📤 Enviar borrador a Metricool'}
-                  </button>
+                  <div class="action-row">
+                    <button class="btn-publish" data-id={ev.id} onclick="publishPost(this)">
+                      {ev.status === 'error' ? '⟳ Reintentar publicación' : '📤 Publicar en Enfoque'}
+                    </button>
+                    <button class="btn-discard" data-id={ev.id} onclick="discardPost(this)">
+                      Descartar
+                    </button>
+                  </div>
 
                   <div class="feedback" id={`feedback-${ev.id}`}></div>
                 </div>
@@ -283,7 +289,7 @@ async function publishPost(btn) {
       return
     }
 
-    feedback.textContent = '✅ Borradores enviados a Metricool'
+    feedback.textContent = '✅ Publicado correctamente'
     feedback.className = 'feedback feedback-ok'
 
     var card = document.querySelector('.event-card[data-id="' + id + '"]')
@@ -310,6 +316,49 @@ async function publishPost(btn) {
     feedback.className = 'feedback feedback-error'
     btn.disabled = false
     btn.textContent = '⟳ Reintentar'
+  }
+}
+
+async function discardPost(btn) {
+  var id = btn.dataset.id
+  if (!confirm('¿Descartar este evento? No se publicará y desaparecerá de la lista.')) return
+
+  btn.disabled = true
+  btn.textContent = 'Descartando…'
+
+  try {
+    var res = await fetch('/api/admin/social/discard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId: id }),
+    })
+
+    if (!res.ok) {
+      btn.disabled = false
+      btn.textContent = 'Descartar'
+      alert('No se pudo descartar')
+      return
+    }
+
+    // Eliminar la card del DOM
+    var card = document.querySelector('.event-card[data-id="' + id + '"]')
+    if (card) {
+      var group = card.closest('.match-group')
+      card.remove()
+
+      // Si el grupo quedó vacío, quitarlo también
+      if (group && group.querySelectorAll('.event-card').length === 0) {
+        group.remove()
+      } else if (group) {
+        // Actualizar contador
+        var remaining = group.querySelectorAll('.event-card[data-status="pendiente"], .event-card[data-status="error"]').length
+        var countEl = group.querySelector('.group-count')
+        if (countEl) countEl.textContent = remaining > 0 ? remaining + ' pendiente' + (remaining > 1 ? 's' : '') : 'todos publicados'
+      }
+    }
+  } catch (e) {
+    btn.disabled = false
+    btn.textContent = 'Descartar'
   }
 }
 
@@ -684,6 +733,26 @@ async function publishPost(btn) {
     border-color: #EA262A;
     box-shadow: 0 0 0 2px rgba(234,38,42,0.1);
   }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-discard {
+    background: none;
+    border: 1px solid #d1d5db;
+    color: #9ca3af;
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.4rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .btn-discard:hover:not(:disabled) { color: #ef4444; border-color: #fca5a5; }
+  .btn-discard:disabled { opacity: 0.5; cursor: default; }
 
   .btn-publish {
     align-self: flex-start;
