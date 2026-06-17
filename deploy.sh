@@ -17,9 +17,10 @@ if [ $? -eq 0 ]; then
   echo "✅ Build exitoso. Reiniciando servidor..."
   
   # 4. Reiniciar PM2
-  # 'reload' intenta 0 downtime si está en modo cluster. Si falla, usa 'restart'.
   pm2 reload web-mundial || pm2 restart web-mundial
-  
+  # El bot no requiere build — reiniciar directo para tomar cambios en scripts/
+  pm2 restart goal-bot 2>/dev/null || echo "⚠️  goal-bot no está corriendo (inicia con: pm2 start ecosystem.config.cjs --only goal-bot)"
+
   echo "🚀 ¡Despliegue completado!"
 else
   echo "❌ Error en el build. No se reinició el servidor."
