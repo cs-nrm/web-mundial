@@ -64,15 +64,13 @@ async function makeCircularFlag(url, size) {
 }
 
 function scoreOverlaySvg(scoreHome, scoreAway) {
-  const { score: s, team: t, flagLeft, flagRight } = LAYOUT
+  const { score: s } = LAYOUT
   return Buffer.from(`
     <svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
       <style>
         .score { font-family: Impact, Arial Black, sans-serif; font-size: ${s.fontSize}px; fill: #111; }
-        .team  { font-family: Arial, sans-serif; font-size: ${t.fontSize}px; font-weight: 700; fill: #111; }
       </style>
       <text x="${s.leftX}" y="${s.y}" text-anchor="middle" class="score">${scoreHome}</text>
-      <text x="${s.dashX}" y="${s.y}" text-anchor="middle" class="score">-</text>
       <text x="${s.rightX}" y="${s.y}" text-anchor="middle" class="score">${scoreAway}</text>
     </svg>
   `)

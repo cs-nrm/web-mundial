@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from '../../../lib/supabase'
 import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 // @ts-ignore
-import { captionForEvent } from '../../../../scripts/goal-bot/captions.js'
+import { captionIgX, captionFacebook } from '../../../../scripts/goal-bot/captions.js'
 
 if (!canAccess(Astro.locals.role as UserRole, MANAGE_ROLES)) {
   return Astro.redirect('/admin')
@@ -112,12 +112,21 @@ function formatDate(iso: string) {
                 <img class="preview-img" src="" alt="Preview" loading="lazy" />
               </div>
 
+              <label class="caption-label">Instagram + X (con @handles)</label>
               <textarea
                 class="caption-input"
-                id={`caption-${ev.id}`}
-                placeholder="Texto del post…"
+                id={`caption-igx-${ev.id}`}
+                placeholder="Texto para IG y X…"
                 rows="6"
-              >{captionForEvent(ev)}</textarea>
+              >{captionIgX(ev)}</textarea>
+
+              <label class="caption-label">Facebook (sin @menciones)</label>
+              <textarea
+                class="caption-input"
+                id={`caption-fb-${ev.id}`}
+                placeholder="Texto para Facebook…"
+                rows="6"
+              >{captionFacebook(ev)}</textarea>
 
               <button
                 class="btn-publish"
@@ -174,7 +183,8 @@ async function previewImage(btn) {
 
 async function publishPost(btn) {
   const id = btn.dataset.id
-  const caption = document.getElementById('caption-' + id)?.value ?? ''
+  const captionIgX = document.getElementById('caption-igx-' + id)?.value ?? ''
+  const captionFb  = document.getElementById('caption-fb-'  + id)?.value ?? ''
   const feedback = document.getElementById('feedback-' + id)
 
   btn.disabled = true
@@ -186,7 +196,7 @@ async function publishPost(btn) {
     const res = await fetch('/api/admin/social/publish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventId: id, caption }),
+      body: JSON.stringify({ eventId: id, captionIgX, captionFb }),
     })
 
     const data = await res.json().catch(() => ({}))
@@ -497,6 +507,14 @@ async function publishPost(btn) {
     border-radius: 0.5rem;
     border: 1px solid #e5e7eb;
     display: block;
+  }
+
+  .caption-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
   }
 
   .caption-input {

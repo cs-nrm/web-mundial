@@ -62,7 +62,7 @@ function parseGoals(xml, seenIds) {
 export async function pollMatch(matchId, state) {
   const url = `${DF_BASE}/?ppaass=${DF_PASS}&canal=${DF_CANAL_FICHA(matchId)}`
   const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-  const xml = await res.text()
+  const xml = new TextDecoder('iso-8859-1').decode(await res.arrayBuffer())
 
   const status = parseStatus(xml)
   const teams = parseTeams(xml)

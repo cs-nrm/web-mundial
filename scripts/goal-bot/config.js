@@ -10,9 +10,9 @@ export const METRICOOL_USER_ID = process.env.METRICOOL_USER_ID
 export const METRICOOL_BLOG_ID = process.env.METRICOOL_BLOG_ID
 
 // Intervalo de polling cuando hay partido en vivo (ms)
-export const POLL_INTERVAL_LIVE = 20_000
+export const POLL_INTERVAL_LIVE = 60_000
 // Intervalo de polling para revisar el fixture cuando no hay partidos en vivo (ms)
-export const POLL_INTERVAL_IDLE = 2 * 60_000
+export const POLL_INTERVAL_IDLE = 60_000
 
 // Estados del feed de DataFactory
 export const STATUS = {

@@ -8,7 +8,7 @@ function attr(tag, name) {
 export async function fetchLiveMatches() {
   const url = `${DF_BASE}/?ppaass=${DF_PASS}&canal=${DF_CANAL_FIXTURE}`
   const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-  const xml = await res.text()
+  const xml = new TextDecoder('iso-8859-1').decode(await res.arrayBuffer())
 
   const now = new Date()
   // hora CDMX = hora UTC - 6h (getTime() siempre es UTC, sin importar zona del servidor)
