@@ -37,7 +37,7 @@ async function postToMetricool(
         text,
         providers,
         media: [imageUrl],
-        autoPublish: false,
+        autoPublish: true,
       }),
       signal: AbortSignal.timeout(20_000),
     }

@@ -96,6 +96,8 @@ users = users.slice(desde, desde + porPagina)
           <option value="admin">Admin</option>
           <option value="editor">Editor</option>
           <option value="estadistica">Estadística</option>
+          <option value="social">Social</option>
+          <option value="anuncios">Anuncios</option>
         </select>
       </div>
 
@@ -142,7 +144,7 @@ users = users.slice(desde, desde + porPagina)
                   data-user-id={u.id}
                   data-current-role={u.role}
                 >
-                  {(['superadmin', 'admin', 'editor', 'estadistica', 'user'] as const).map(r => (
+                  {(['superadmin', 'admin', 'editor', 'estadistica', 'social', 'anuncios', 'user'] as const).map(r => (
                     <option value={r} selected={u.role === r}>{r}</option>
                   ))}
                 </select>
