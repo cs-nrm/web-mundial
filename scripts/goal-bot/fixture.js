@@ -11,9 +11,8 @@ export async function fetchLiveMatches() {
   const xml = await res.text()
 
   const now = new Date()
-  // hora CDMX = hora UTC - 6h
-  const cdmxOffset = -6 * 60
-  const cdmxNow = new Date(now.getTime() + (cdmxOffset - now.getTimezoneOffset()) * 60_000)
+  // hora CDMX = hora UTC - 6h (getTime() siempre es UTC, sin importar zona del servidor)
+  const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
 
   const matches = []
   const tags = xml.match(/<partido\b[^>]*>/g) ?? []
