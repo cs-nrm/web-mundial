@@ -1,0 +1,543 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
+import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+// @ts-ignore
+import { captionForEvent } from '../../../../scripts/goal-bot/captions.js'
+
+if (!canAccess(Astro.locals.role as UserRole, MANAGE_ROLES)) {
+  return Astro.redirect('/admin')
+}
+
+const supabase = createSupabaseAdminClient()
+const { data: events = [] } = await supabase
+  .from('goal_posts')
+  .select('*')
+  .order('created_at', { ascending: false })
+  .limit(50)
+
+const counts = {
+  pendiente: events?.filter(e => e.status === 'pendiente').length ?? 0,
+  publicado: events?.filter(e => e.status === 'publicado').length ?? 0,
+  error:     events?.filter(e => e.status === 'error').length ?? 0,
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleString('es-MX', {
+    timeZone: 'America/Mexico_City',
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
+}
+---
+
+<AdminLayout title="Social — Publicación Automática">
+  <div class="social-page">
+
+    <div class="page-header">
+      <div class="header-top">
+        <p class="page-desc">Eventos detectados por el bot. Previsualiza la imagen, escribe el texto y publica en Facebook, Instagram y X vía Metricool.</p>
+        <div class="header-actions">
+          <span class="last-update" id="last-update">Actualizado ahora</span>
+          <button class="btn-reload" onclick="location.reload()">↺ Recargar</button>
+        </div>
+      </div>
+      <div class="stat-pills">
+        <span class="pill pill-pending" id="pill-pending">{counts.pendiente} pendiente{counts.pendiente !== 1 ? 's' : ''}</span>
+        <span class="pill pill-done">{counts.publicado} publicado{counts.publicado !== 1 ? 's' : ''}</span>
+        {counts.error > 0 && <span class="pill pill-error">{counts.error} con error</span>}
+      </div>
+    </div>
+
+    <div id="new-events-banner" style="display:none" class="new-events-banner">
+      <span id="new-events-text">Hay nuevos eventos</span>
+      <button onclick="location.reload()">Ver ahora</button>
+    </div>
+
+    {(!events || events.length === 0) && (
+      <div class="empty-state">
+        <p>No hay eventos aún. El bot se encargará de detectarlos cuando haya partidos en vivo.</p>
+      </div>
+    )}
+
+    <div class="events-grid">
+      {events?.map(ev => (
+        <div class="event-card" data-id={ev.id} data-status={ev.status}>
+
+          <div class="card-header">
+            <span class={`badge-type ${ev.event_type === 'gol' ? 'type-gol' : ev.event_type === 'inicio' ? 'type-inicio' : 'type-medio'}`}>
+              {ev.event_type === 'gol' ? '⚽ Gol' : ev.event_type === 'inicio' ? '🟢 Inicio' : '🔵 Medio Tiempo'}
+            </span>
+            <span class={`badge-status status-${ev.status}`}>
+              {ev.status === 'pendiente' ? 'Pendiente' : ev.status === 'publicado' ? 'Publicado' : 'Error'}
+            </span>
+          </div>
+
+          <div class="match-info">
+            <div class="teams">
+              <span class="team">{ev.team_home}</span>
+              <span class="score">{ev.score_home} - {ev.score_away}</span>
+              <span class="team">{ev.team_away}</span>
+            </div>
+            {ev.event_type === 'gol' && ev.player_name && (
+              <div class="goal-detail">
+                {ev.player_name}
+                {ev.minute > 0 && <span class="minute">min. {ev.minute}'</span>}
+                {ev.goal_type && <span class="goal-type">{ev.goal_type}</span>}
+              </div>
+            )}
+            <div class="event-date">{formatDate(ev.created_at)}</div>
+          </div>
+
+          {ev.status === 'publicado' && ev.published_at && (
+            <div class="published-info">
+              ✅ Publicado el {formatDate(ev.published_at)}
+            </div>
+          )}
+
+          {ev.status === 'error' && ev.error_detail && (
+            <div class="error-info">
+              ⚠️ {ev.error_detail.length > 120 ? ev.error_detail.slice(0, 120) + '…' : ev.error_detail}
+            </div>
+          )}
+
+          {ev.status !== 'publicado' && (
+            <div class="card-actions">
+              <button class="btn-preview" data-id={ev.id} onclick="previewImage(this)">
+                Ver previsualización
+              </button>
+
+              <div class="preview-area" id={`preview-${ev.id}`} style="display:none">
+                <img class="preview-img" src="" alt="Preview" loading="lazy" />
+              </div>
+
+              <textarea
+                class="caption-input"
+                id={`caption-${ev.id}`}
+                placeholder="Texto del post…"
+                rows="6"
+              >{captionForEvent(ev)}</textarea>
+
+              <button
+                class="btn-publish"
+                data-id={ev.id}
+                onclick="publishPost(this)"
+                disabled={ev.status === 'error' ? undefined : undefined}
+              >
+                {ev.status === 'error' ? '⟳ Reintentar publicación' : 'Publicar en Enfoque'}
+              </button>
+
+              <div class="feedback" id={`feedback-${ev.id}`}></div>
+            </div>
+          )}
+
+        </div>
+      ))}
+    </div>
+  </div>
+</AdminLayout>
+
+<script is:inline>
+async function previewImage(btn) {
+  const id = btn.dataset.id
+  const area = document.getElementById('preview-' + id)
+  const img = area.querySelector('img')
+
+  btn.disabled = true
+  btn.textContent = 'Generando…'
+
+  try {
+    const res = await fetch('/api/admin/social/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId: id }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Error desconocido' }))
+      btn.textContent = '⚠ ' + (err.error || 'Error')
+      btn.disabled = false
+      return
+    }
+
+    const blob = await res.blob()
+    img.src = URL.createObjectURL(blob)
+    area.style.display = 'block'
+    btn.textContent = 'Actualizar preview'
+    btn.disabled = false
+  } catch (e) {
+    btn.textContent = '⚠ Error de red'
+    btn.disabled = false
+  }
+}
+
+async function publishPost(btn) {
+  const id = btn.dataset.id
+  const caption = document.getElementById('caption-' + id)?.value ?? ''
+  const feedback = document.getElementById('feedback-' + id)
+
+  btn.disabled = true
+  btn.textContent = 'Publicando…'
+  feedback.textContent = ''
+  feedback.className = 'feedback'
+
+  try {
+    const res = await fetch('/api/admin/social/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId: id, caption }),
+    })
+
+    const data = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      feedback.textContent = '⚠ ' + (data.error || `Error ${res.status}`)
+      feedback.className = 'feedback feedback-error'
+      btn.disabled = false
+      btn.textContent = '⟳ Reintentar publicación'
+      return
+    }
+
+    feedback.textContent = '✅ Publicado correctamente'
+    feedback.className = 'feedback feedback-ok'
+
+    const card = document.querySelector('.event-card[data-id="' + id + '"]')
+    if (card) {
+      const statusBadge = card.querySelector('.badge-status')
+      if (statusBadge) {
+        statusBadge.textContent = 'Publicado'
+        statusBadge.className = 'badge-status status-publicado'
+      }
+      const actions = card.querySelector('.card-actions')
+      if (actions) actions.style.opacity = '0.4'
+      btn.style.display = 'none'
+    }
+  } catch (e) {
+    feedback.textContent = '⚠ Error de red'
+    feedback.className = 'feedback feedback-error'
+    btn.disabled = false
+    btn.textContent = '⟳ Reintentar publicación'
+  }
+}
+// --- Auto-polling: revisa nuevos eventos cada 30 segundos ---
+;(function () {
+  var pageLoadedAt = new Date().toISOString()
+  var banner = document.getElementById('new-events-banner')
+  var bannerText = document.getElementById('new-events-text')
+  var lastUpdate = document.getElementById('last-update')
+
+  function updateTimestamp() {
+    var now = new Date()
+    var h = String(now.getHours()).padStart(2, '0')
+    var m = String(now.getMinutes()).padStart(2, '0')
+    if (lastUpdate) lastUpdate.textContent = 'Actualizado ' + h + ':' + m
+  }
+
+  function checkNewEvents() {
+    fetch('/api/admin/social/events?since=' + encodeURIComponent(pageLoadedAt))
+      .then(function (r) { return r.json() })
+      .then(function (data) {
+        updateTimestamp()
+        var newEvs = data.events || []
+        if (newEvs.length > 0 && banner) {
+          var label = newEvs.length === 1
+            ? '1 nuevo evento detectado'
+            : newEvs.length + ' nuevos eventos detectados'
+          if (bannerText) bannerText.textContent = label
+          banner.style.display = 'flex'
+        }
+      })
+      .catch(function () { /* silencioso — red puede fallar */ })
+  }
+
+  setInterval(checkNewEvents, 30_000)
+})()
+</script>
+
+<style>
+  .social-page { max-width: 900px; }
+
+  .page-header {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .last-update {
+    font-size: 0.72rem;
+    color: #9ca3af;
+  }
+
+  .btn-reload {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 0.3rem 0.75rem;
+    border-radius: 0.35rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-reload:hover { background: #e5e7eb; }
+
+  .page-desc {
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .new-events-banner {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 0.5rem;
+    padding: 0.65rem 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #92400e;
+    font-weight: 600;
+  }
+
+  .new-events-banner button {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 0.35rem 0.9rem;
+    border-radius: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .new-events-banner button:hover { background: #d97706; }
+
+  .stat-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .pill-pending { background: #fef3c7; color: #92400e; }
+  .pill-done    { background: #d1fae5; color: #065f46; }
+  .pill-error   { background: #fee2e2; color: #991b1b; }
+
+  .empty-state {
+    background: white;
+    border: 2px dashed #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .events-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .event-card {
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e7eb;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .event-card[data-status="publicado"] { opacity: 0.7; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .badge-type, .badge-status {
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .type-gol   { background: #fef9c3; color: #713f12; }
+  .type-inicio { background: #dcfce7; color: #14532d; }
+  .type-medio  { background: #dbeafe; color: #1e3a8a; }
+
+  .status-pendiente { background: #fef3c7; color: #92400e; }
+  .status-publicado { background: #d1fae5; color: #065f46; }
+  .status-error     { background: #fee2e2; color: #991b1b; }
+
+  .match-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .teams {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    flex-wrap: wrap;
+  }
+
+  .score {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #EA262A;
+    letter-spacing: 0.05em;
+  }
+
+  .goal-detail {
+    font-size: 0.8rem;
+    color: #374151;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .minute {
+    background: #f3f4f6;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.72rem;
+  }
+
+  .goal-type {
+    color: #6b7280;
+    font-style: italic;
+    font-size: 0.75rem;
+  }
+
+  .event-date {
+    font-size: 0.72rem;
+    color: #9ca3af;
+  }
+
+  .published-info {
+    font-size: 0.78rem;
+    color: #065f46;
+    background: #d1fae5;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.4rem;
+  }
+
+  .error-info {
+    font-size: 0.78rem;
+    color: #991b1b;
+    background: #fee2e2;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.4rem;
+  }
+
+  .card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f3f4f6;
+  }
+
+  .btn-preview {
+    align-self: flex-start;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-preview:hover:not(:disabled) { background: #e5e7eb; }
+  .btn-preview:disabled { opacity: 0.6; cursor: default; }
+
+  .preview-area { margin: 0.25rem 0; }
+
+  .preview-img {
+    max-width: 100%;
+    width: 320px;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    display: block;
+  }
+
+  .caption-input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: vertical;
+    color: #1a1a2e;
+    line-height: 1.5;
+  }
+
+  .caption-input:focus {
+    outline: none;
+    border-color: #EA262A;
+    box-shadow: 0 0 0 2px rgba(234,38,42,0.1);
+  }
+
+  .btn-publish {
+    align-self: flex-start;
+    background: #EA262A;
+    color: white;
+    border: none;
+    padding: 0.55rem 1.25rem;
+    border-radius: 0.4rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-publish:hover:not(:disabled) { background: #c91f23; }
+  .btn-publish:disabled { opacity: 0.6; cursor: default; }
+
+  .feedback {
+    font-size: 0.8rem;
+    min-height: 1.2em;
+  }
+
+  .feedback-ok    { color: #065f46; }
+  .feedback-error { color: #991b1b; }
+</style>
