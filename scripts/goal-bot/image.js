@@ -89,13 +89,18 @@ function teamNamesOverlaySvg(teamHome, teamAway) {
   `)
 }
 
-function templateForEvent(event_type) {
-  if (event_type === 'gol') return 'gol.jpg'
-  if (event_type === 'inicio') {
-    const f = join(TEMPLATES, 'inicio.jpg')
-    return existsSync(f) ? 'inicio.jpg' : 'gol.jpg'
+function pickTemplate(...names) {
+  for (const name of names) {
+    if (existsSync(join(TEMPLATES, name))) return name
   }
-  return 'medio-tiempo.jpg'
+  return 'gol.jpg'
+}
+
+function templateForEvent(event_type) {
+  if (event_type === 'gol')         return pickTemplate('gol1.jpg', 'gol.jpg')
+  if (event_type === 'inicio')      return pickTemplate('inicio1.jpg', 'inicio.jpg', 'gol1.jpg', 'gol.jpg')
+  if (event_type === 'final')       return pickTemplate('final1.jpg', 'gol1.jpg', 'gol.jpg')
+  /* medio_tiempo */                return pickTemplate('medio-tiempo1.jpg', 'medio-tiempo.jpg')
 }
 
 export async function generateImage(event) {

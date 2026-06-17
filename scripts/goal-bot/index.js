@@ -10,7 +10,7 @@ const matchStates = {}
 
 function getMatchState(matchId) {
   if (!matchStates[matchId]) {
-    matchStates[matchId] = { seenIncidenceIds: new Set(), halftimePosted: false, kickoffPosted: false }
+    matchStates[matchId] = { seenIncidenceIds: new Set(), halftimePosted: false, kickoffPosted: false, finishedPosted: false }
   }
   return matchStates[matchId]
 }
@@ -63,6 +63,28 @@ async function processMatch(match) {
         incidence_id: incidenceId,
         match_id: match.id,
         event_type: 'medio_tiempo',
+        match_date: match.fecha,
+        team_home: teams.teamHome,
+        team_away: teams.teamAway,
+        team_home_id: teams.teamHomeId,
+        team_away_id: teams.teamAwayId,
+        score_home: teams.scoreHome,
+        score_away: teams.scoreAway,
+      })
+    }
+  }
+
+  // Guardar evento de final de partido
+  if (isFinished && !state.finishedPosted) {
+    state.finishedPosted = true
+    const incidenceId = `final_${match.id}`
+    const alreadySaved = await isAlreadyProcessed(incidenceId)
+    if (!alreadySaved) {
+      log(`FINAL detectado — ${teams.teamHome} ${teams.scoreHome}-${teams.scoreAway} ${teams.teamAway}`)
+      await saveEvent({
+        incidence_id: incidenceId,
+        match_id: match.id,
+        event_type: 'final',
         match_date: match.fecha,
         team_home: teams.teamHome,
         team_away: teams.teamAway,

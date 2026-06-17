@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from '../../../lib/supabase'
 import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 // @ts-ignore
-import { captionIgX, captionFacebook } from '../../../../scripts/goal-bot/captions.js'
+import { captionInstagram, captionTwitter, captionFacebook } from '../../../../scripts/goal-bot/captions.js'
 
 if (!canAccess(Astro.locals.role as UserRole, MANAGE_ROLES)) {
   return Astro.redirect('/admin')
@@ -15,12 +15,24 @@ const { data: events = [] } = await supabase
   .from('goal_posts')
   .select('*')
   .order('created_at', { ascending: false })
-  .limit(50)
+  .limit(200)
+
+// Agrupar por partido, eventos en orden cronológico dentro de cada grupo
+const matchMap = new Map<string, { teamHome: string; teamAway: string; matchId: string; events: any[] }>()
+for (const ev of events ?? []) {
+  const key = ev.match_id ?? `${ev.team_home}-${ev.team_away}`
+  if (!matchMap.has(key)) {
+    matchMap.set(key, { teamHome: ev.team_home, teamAway: ev.team_away, matchId: key, events: [] })
+  }
+  matchMap.get(key)!.events.push(ev)
+}
+const matchGroups = [...matchMap.values()]
+matchGroups.forEach(g => g.events.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
 
 const counts = {
   pendiente: events?.filter(e => e.status === 'pendiente').length ?? 0,
-  publicado: events?.filter(e => e.status === 'publicado').length ?? 0,
-  error:     events?.filter(e => e.status === 'error').length ?? 0,
+  publicado:  events?.filter(e => e.status === 'publicado').length  ?? 0,
+  error:      events?.filter(e => e.status === 'error').length      ?? 0,
 }
 
 function formatDate(iso: string) {
@@ -30,23 +42,33 @@ function formatDate(iso: string) {
     timeStyle: 'short',
   })
 }
+
+const EVENT_LABEL: Record<string, string> = {
+  gol:         '⚽ Gol',
+  inicio:      '🟢 Inicio',
+  medio_tiempo:'🔵 Medio Tiempo',
+  final:       '🏁 Final',
+}
 ---
 
 <AdminLayout title="Social — Publicación Automática">
-  <div class="social-page">
+  <div class="social-page pending-only" id="social-page">
 
     <div class="page-header">
       <div class="header-top">
-        <p class="page-desc">Eventos detectados por el bot. Previsualiza la imagen, escribe el texto y publica en Facebook, Instagram y X vía Metricool.</p>
+        <p class="page-desc">Eventos detectados por el bot. Ajusta los textos y envía como <strong>borrador</strong> a Metricool para revisar antes de publicar.</p>
         <div class="header-actions">
           <span class="last-update" id="last-update">Actualizado ahora</span>
           <button class="btn-reload" onclick="location.reload()">↺ Recargar</button>
         </div>
       </div>
-      <div class="stat-pills">
-        <span class="pill pill-pending" id="pill-pending">{counts.pendiente} pendiente{counts.pendiente !== 1 ? 's' : ''}</span>
-        <span class="pill pill-done">{counts.publicado} publicado{counts.publicado !== 1 ? 's' : ''}</span>
-        {counts.error > 0 && <span class="pill pill-error">{counts.error} con error</span>}
+      <div class="toolbar">
+        <div class="stat-pills">
+          <span class="pill pill-pending" id="pill-pending">{counts.pendiente} pendiente{counts.pendiente !== 1 ? 's' : ''}</span>
+          <span class="pill pill-done">{counts.publicado} publicado{counts.publicado !== 1 ? 's' : ''}</span>
+          {counts.error > 0 && <span class="pill pill-error">{counts.error} con error</span>}
+        </div>
+        <button class="btn-filter" id="filter-toggle" onclick="toggleFilter()">Ver todos</button>
       </div>
     </div>
 
@@ -55,123 +77,163 @@ function formatDate(iso: string) {
       <button onclick="location.reload()">Ver ahora</button>
     </div>
 
-    {(!events || events.length === 0) && (
+    {matchGroups.length === 0 && (
       <div class="empty-state">
         <p>No hay eventos aún. El bot se encargará de detectarlos cuando haya partidos en vivo.</p>
       </div>
     )}
 
-    <div class="events-grid">
-      {events?.map(ev => (
-        <div class="event-card" data-id={ev.id} data-status={ev.status}>
-
-          <div class="card-header">
-            <span class={`badge-type ${ev.event_type === 'gol' ? 'type-gol' : ev.event_type === 'inicio' ? 'type-inicio' : 'type-medio'}`}>
-              {ev.event_type === 'gol' ? '⚽ Gol' : ev.event_type === 'inicio' ? '🟢 Inicio' : '🔵 Medio Tiempo'}
-            </span>
-            <span class={`badge-status status-${ev.status}`}>
-              {ev.status === 'pendiente' ? 'Pendiente' : ev.status === 'publicado' ? 'Publicado' : 'Error'}
-            </span>
-          </div>
-
-          <div class="match-info">
-            <div class="teams">
-              <span class="team">{ev.team_home}</span>
-              <span class="score">{ev.score_home} - {ev.score_away}</span>
-              <span class="team">{ev.team_away}</span>
-            </div>
-            {ev.event_type === 'gol' && ev.player_name && (
-              <div class="goal-detail">
-                {ev.player_name}
-                {ev.minute > 0 && <span class="minute">min. {ev.minute}'</span>}
-                {ev.goal_type && <span class="goal-type">{ev.goal_type}</span>}
-              </div>
-            )}
-            <div class="event-date">{formatDate(ev.created_at)}</div>
-          </div>
-
-          {ev.status === 'publicado' && ev.published_at && (
-            <div class="published-info">
-              ✅ Publicado el {formatDate(ev.published_at)}
-            </div>
-          )}
-
-          {ev.status === 'error' && ev.error_detail && (
-            <div class="error-info">
-              ⚠️ {ev.error_detail.length > 120 ? ev.error_detail.slice(0, 120) + '…' : ev.error_detail}
-            </div>
-          )}
-
-          {ev.status !== 'publicado' && (
-            <div class="card-actions">
-
-              <button class="btn-preview" data-id={ev.id} onclick="previewImage(this)">
-                Ver previsualización
-              </button>
-
-              <div class="preview-area" id={`preview-${ev.id}`} style="display:none">
-                <img class="preview-img" src="" alt="Preview" loading="lazy" />
-              </div>
-
-              <div class="captions-grid">
-                <div class="caption-col">
-                  <div class="caption-label">📸 Instagram + X</div>
-                  <textarea
-                    class="caption-input"
-                    id={`caption-igx-${ev.id}`}
-                    placeholder="Texto para IG y X…"
-                    rows="7"
-                  >{captionIgX(ev)}</textarea>
-                </div>
-                <div class="caption-col">
-                  <div class="caption-label">👥 Facebook</div>
-                  <textarea
-                    class="caption-input"
-                    id={`caption-fb-${ev.id}`}
-                    placeholder="Texto para Facebook…"
-                    rows="7"
-                  >{captionFacebook(ev)}</textarea>
-                </div>
-              </div>
-
-              <button class="btn-publish" data-id={ev.id} onclick="publishPost(this)">
-                {ev.status === 'error' ? '⟳ Reintentar publicación' : 'Publicar en Enfoque'}
-              </button>
-
-              <div class="feedback" id={`feedback-${ev.id}`}></div>
-            </div>
-          )}
-
+    {matchGroups.map(group => (
+      <div class="match-group" data-match-id={group.matchId}>
+        <div class="match-group-header">
+          <span class="group-teams">{group.teamHome} <span class="vs">vs</span> {group.teamAway}</span>
+          <span class="group-count">
+            {group.events.filter(e => e.status === 'pendiente').length > 0
+              ? `${group.events.filter(e => e.status === 'pendiente').length} pendiente${group.events.filter(e => e.status === 'pendiente').length > 1 ? 's' : ''}`
+              : 'todos publicados'}
+          </span>
         </div>
-      ))}
-    </div>
+
+        <div class="events-grid">
+          {group.events.map(ev => (
+            <div class="event-card" data-id={ev.id} data-status={ev.status}>
+
+              <div class="card-header">
+                <span class={`badge-type type-${ev.event_type}`}>
+                  {EVENT_LABEL[ev.event_type] ?? ev.event_type}
+                </span>
+                <span class={`badge-status status-${ev.status}`}>
+                  {ev.status === 'pendiente' ? 'Pendiente' : ev.status === 'publicado' ? 'Publicado' : 'Error'}
+                </span>
+                <span class="event-date">{formatDate(ev.created_at)}</span>
+              </div>
+
+              {ev.event_type === 'gol' && (
+                <div class="goal-detail">
+                  {ev.player_name && <span class="player">{ev.player_name}</span>}
+                  {ev.minute > 0 && <span class="minute">min. {ev.minute}'</span>}
+                  {ev.goal_type && <span class="goal-type">{ev.goal_type}</span>}
+                  {ev.score_home !== undefined && (
+                    <span class="goal-score">{ev.score_home} - {ev.score_away}</span>
+                  )}
+                </div>
+              )}
+
+              {ev.event_type !== 'gol' && ev.score_home !== undefined && (
+                <div class="score-line">{ev.score_home} - {ev.score_away}</div>
+              )}
+
+              {ev.status === 'publicado' && ev.published_at && (
+                <div class="published-info">✅ Publicado el {formatDate(ev.published_at)}</div>
+              )}
+
+              {ev.status === 'error' && ev.error_detail && (
+                <div class="error-info">
+                  ⚠️ {typeof ev.error_detail === 'string'
+                    ? (ev.error_detail.length > 120 ? ev.error_detail.slice(0, 120) + '…' : ev.error_detail)
+                    : JSON.stringify(ev.error_detail).slice(0, 120) + '…'}
+                </div>
+              )}
+
+              {ev.status !== 'publicado' && (
+                <div class="card-actions">
+
+                  <button class="btn-preview" data-id={ev.id} onclick="previewImage(this)">
+                    Ver imagen
+                  </button>
+
+                  <div class="preview-area" id={`preview-${ev.id}`} style="display:none">
+                    <img class="preview-img" src="" alt="Preview" loading="lazy" />
+                  </div>
+
+                  <div class="captions-grid">
+                    <div class="caption-col">
+                      <div class="caption-label">📸 Instagram</div>
+                      <textarea
+                        class="caption-input"
+                        id={`caption-ig-${ev.id}`}
+                        placeholder="Texto para Instagram…"
+                        rows="8"
+                      >{captionInstagram(ev)}</textarea>
+                    </div>
+                    <div class="caption-col">
+                      <div class="caption-label">🐦 X / Twitter</div>
+                      <textarea
+                        class="caption-input"
+                        id={`caption-tw-${ev.id}`}
+                        placeholder="Texto para X / Twitter…"
+                        rows="8"
+                      >{captionTwitter(ev)}</textarea>
+                    </div>
+                    <div class="caption-col">
+                      <div class="caption-label">👥 Facebook</div>
+                      <textarea
+                        class="caption-input"
+                        id={`caption-fb-${ev.id}`}
+                        placeholder="Texto para Facebook…"
+                        rows="8"
+                      >{captionFacebook(ev)}</textarea>
+                    </div>
+                  </div>
+
+                  <button class="btn-publish" data-id={ev.id} onclick="publishPost(this)">
+                    {ev.status === 'error' ? '⟳ Reintentar' : '📤 Enviar borrador a Metricool'}
+                  </button>
+
+                  <div class="feedback" id={`feedback-${ev.id}`}></div>
+                </div>
+              )}
+
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+
   </div>
 </AdminLayout>
 
 <script is:inline>
+function toggleFilter() {
+  var page = document.getElementById('social-page')
+  var btn = document.getElementById('filter-toggle')
+  var isPendingOnly = page.classList.toggle('pending-only')
+  btn.textContent = isPendingOnly ? 'Ver todos' : 'Solo pendientes'
+
+  // Ocultar grupos donde todos los eventos están publicados cuando estamos en modo pendiente
+  document.querySelectorAll('.match-group').forEach(function(group) {
+    if (isPendingOnly) {
+      var hasVisible = group.querySelectorAll('.event-card:not([data-status="publicado"])').length > 0
+      group.style.display = hasVisible ? '' : 'none'
+    } else {
+      group.style.display = ''
+    }
+  })
+}
+
 async function previewImage(btn) {
-  const id = btn.dataset.id
-  const area = document.getElementById('preview-' + id)
-  const img = area.querySelector('img')
+  var id = btn.dataset.id
+  var area = document.getElementById('preview-' + id)
+  var img = area.querySelector('img')
 
   btn.disabled = true
   btn.textContent = 'Generando…'
 
   try {
-    const res = await fetch('/api/admin/social/preview', {
+    var res = await fetch('/api/admin/social/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventId: id }),
     })
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Error desconocido' }))
+      var err = await res.json().catch(function() { return { error: 'Error desconocido' } })
       btn.textContent = '⚠ ' + (err.error || 'Error')
       btn.disabled = false
       return
     }
 
-    const blob = await res.blob()
+    var blob = await res.blob()
     img.src = URL.createObjectURL(blob)
     area.style.display = 'block'
     btn.textContent = 'Actualizar preview'
@@ -183,55 +245,65 @@ async function previewImage(btn) {
 }
 
 async function publishPost(btn) {
-  const id = btn.dataset.id
-  const captionIgX = document.getElementById('caption-igx-' + id)?.value ?? ''
-  const captionFb  = document.getElementById('caption-fb-'  + id)?.value ?? ''
-  const feedback = document.getElementById('feedback-' + id)
+  var id = btn.dataset.id
+  var captionIg = document.getElementById('caption-ig-' + id)?.value ?? ''
+  var captionTw = document.getElementById('caption-tw-' + id)?.value ?? ''
+  var captionFb = document.getElementById('caption-fb-' + id)?.value ?? ''
+  var feedback = document.getElementById('feedback-' + id)
 
   btn.disabled = true
-  btn.textContent = 'Publicando…'
+  btn.textContent = 'Enviando a Metricool…'
   feedback.textContent = ''
   feedback.className = 'feedback'
 
   try {
-    const res = await fetch('/api/admin/social/publish', {
+    var res = await fetch('/api/admin/social/publish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventId: id, captionIgX, captionFb }),
+      body: JSON.stringify({ eventId: id, captionIg, captionTw, captionFb }),
     })
 
-    const data = await res.json().catch(() => ({}))
+    var data = await res.json().catch(function() { return {} })
 
     if (!res.ok) {
-      feedback.textContent = '⚠ ' + (data.error || `Error ${res.status}`)
+      feedback.textContent = '⚠ ' + (data.error || 'Error ' + res.status)
       feedback.className = 'feedback feedback-error'
       btn.disabled = false
-      btn.textContent = '⟳ Reintentar publicación'
+      btn.textContent = '⟳ Reintentar'
       return
     }
 
-    feedback.textContent = '✅ Publicado correctamente'
+    feedback.textContent = '✅ Borradores enviados a Metricool'
     feedback.className = 'feedback feedback-ok'
 
-    const card = document.querySelector('.event-card[data-id="' + id + '"]')
+    var card = document.querySelector('.event-card[data-id="' + id + '"]')
     if (card) {
-      const statusBadge = card.querySelector('.badge-status')
+      card.dataset.status = 'publicado'
+      var statusBadge = card.querySelector('.badge-status')
       if (statusBadge) {
         statusBadge.textContent = 'Publicado'
         statusBadge.className = 'badge-status status-publicado'
       }
-      const actions = card.querySelector('.card-actions')
-      if (actions) actions.style.opacity = '0.4'
-      btn.style.display = 'none'
+      var actions = card.querySelector('.card-actions')
+      if (actions) actions.style.display = 'none'
+    }
+
+    // Actualizar contador del encabezado del grupo
+    var group = card?.closest('.match-group')
+    if (group) {
+      var remaining = group.querySelectorAll('.event-card[data-status="pendiente"], .event-card[data-status="error"]').length
+      var countEl = group.querySelector('.group-count')
+      if (countEl) countEl.textContent = remaining > 0 ? remaining + ' pendiente' + (remaining > 1 ? 's' : '') : 'todos publicados'
     }
   } catch (e) {
     feedback.textContent = '⚠ Error de red'
     feedback.className = 'feedback feedback-error'
     btn.disabled = false
-    btn.textContent = '⟳ Reintentar publicación'
+    btn.textContent = '⟳ Reintentar'
   }
 }
-// --- Auto-polling: revisa nuevos eventos cada 30 segundos ---
+
+// Auto-polling: revisa nuevos eventos cada 30 segundos
 ;(function () {
   var pageLoadedAt = new Date().toISOString()
   var banner = document.getElementById('new-events-banner')
@@ -259,7 +331,7 @@ async function publishPost(btn) {
           banner.style.display = 'flex'
         }
       })
-      .catch(function () { /* silencioso — red puede fallar */ })
+      .catch(function () {})
   }
 
   setInterval(checkNewEvents, 30_000)
@@ -267,10 +339,13 @@ async function publishPost(btn) {
 </script>
 
 <style>
-  .social-page { max-width: 900px; }
+  .social-page { max-width: 960px; }
+
+  /* Ocultar eventos publicados en modo "solo pendientes" */
+  .pending-only .event-card[data-status="publicado"] { display: none; }
 
   .page-header {
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -291,10 +366,7 @@ async function publishPost(btn) {
     flex-shrink: 0;
   }
 
-  .last-update {
-    font-size: 0.72rem;
-    color: #9ca3af;
-  }
+  .last-update { font-size: 0.72rem; color: #9ca3af; }
 
   .btn-reload {
     background: #f3f4f6;
@@ -304,10 +376,40 @@ async function publishPost(btn) {
     border-radius: 0.35rem;
     font-size: 0.78rem;
     cursor: pointer;
-    transition: background 0.15s;
+  }
+  .btn-reload:hover { background: #e5e7eb; }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  .btn-reload:hover { background: #e5e7eb; }
+  .stat-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+  .pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .pill-pending { background: #fef3c7; color: #92400e; }
+  .pill-done    { background: #d1fae5; color: #065f46; }
+  .pill-error   { background: #fee2e2; color: #991b1b; }
+
+  .btn-filter {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 0.3rem 0.9rem;
+    border-radius: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-filter:hover { background: #e5e7eb; }
 
   .page-desc {
     color: #64748b;
@@ -329,7 +431,6 @@ async function publishPost(btn) {
     color: #92400e;
     font-weight: 600;
   }
-
   .new-events-banner button {
     background: #f59e0b;
     color: white;
@@ -340,25 +441,7 @@ async function publishPost(btn) {
     font-weight: 700;
     cursor: pointer;
   }
-
   .new-events-banner button:hover { background: #d97706; }
-
-  .stat-pills {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .pill {
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .pill-pending { background: #fef3c7; color: #92400e; }
-  .pill-done    { background: #d1fae5; color: #065f46; }
-  .pill-error   { background: #fee2e2; color: #991b1b; }
 
   .empty-state {
     background: white;
@@ -370,28 +453,63 @@ async function publishPost(btn) {
     font-size: 0.9rem;
   }
 
+  /* --- Grupos por partido --- */
+  .match-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .match-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: #1a1a2e;
+    border-radius: 0.6rem 0.6rem 0 0;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .group-teams .vs {
+    font-weight: 400;
+    opacity: 0.6;
+    margin: 0 0.4em;
+  }
+
+  .group-count {
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.15);
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+
   .events-grid {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0;
+    border: 1px solid #e5e7eb;
+    border-top: none;
+    border-radius: 0 0 0.6rem 0.6rem;
+    overflow: hidden;
   }
 
   .event-card {
     background: white;
-    border-radius: 0.75rem;
-    border: 1px solid #e5e7eb;
-    padding: 1.25rem;
+    padding: 1rem 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.6rem;
+    border-bottom: 1px solid #f3f4f6;
   }
-
-  .event-card[data-status="publicado"] { opacity: 0.7; }
+  .event-card:last-child { border-bottom: none; }
+  .event-card[data-status="publicado"] { opacity: 0.65; }
 
   .card-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .badge-type, .badge-status {
@@ -402,46 +520,30 @@ async function publishPost(btn) {
     letter-spacing: 0.02em;
   }
 
-  .type-gol   { background: #fef9c3; color: #713f12; }
-  .type-inicio { background: #dcfce7; color: #14532d; }
-  .type-medio  { background: #dbeafe; color: #1e3a8a; }
+  .type-gol         { background: #fef9c3; color: #713f12; }
+  .type-inicio      { background: #dcfce7; color: #14532d; }
+  .type-medio_tiempo{ background: #dbeafe; color: #1e3a8a; }
+  .type-final       { background: #f3e8ff; color: #581c87; }
 
   .status-pendiente { background: #fef3c7; color: #92400e; }
   .status-publicado { background: #d1fae5; color: #065f46; }
   .status-error     { background: #fee2e2; color: #991b1b; }
 
-  .match-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .teams {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1a1a2e;
-    flex-wrap: wrap;
-  }
-
-  .score {
-    font-size: 1.25rem;
-    font-weight: 900;
-    color: #EA262A;
-    letter-spacing: 0.05em;
+  .event-date {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-left: auto;
   }
 
   .goal-detail {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     color: #374151;
     display: flex;
     gap: 0.5rem;
     align-items: center;
     flex-wrap: wrap;
   }
-
+  .player { font-weight: 600; }
   .minute {
     background: #f3f4f6;
     padding: 0.1rem 0.4rem;
@@ -449,23 +551,28 @@ async function publishPost(btn) {
     font-weight: 600;
     font-size: 0.72rem;
   }
-
   .goal-type {
     color: #6b7280;
     font-style: italic;
     font-size: 0.75rem;
   }
+  .goal-score {
+    font-weight: 800;
+    color: #EA262A;
+    font-size: 0.9rem;
+  }
 
-  .event-date {
-    font-size: 0.72rem;
-    color: #9ca3af;
+  .score-line {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #EA262A;
   }
 
   .published-info {
     font-size: 0.78rem;
     color: #065f46;
     background: #d1fae5;
-    padding: 0.4rem 0.75rem;
+    padding: 0.35rem 0.6rem;
     border-radius: 0.4rem;
   }
 
@@ -473,7 +580,7 @@ async function publishPost(btn) {
     font-size: 0.78rem;
     color: #991b1b;
     background: #fee2e2;
-    padding: 0.4rem 0.75rem;
+    padding: 0.35rem 0.6rem;
     border-radius: 0.4rem;
   }
 
@@ -490,21 +597,18 @@ async function publishPost(btn) {
     background: #f3f4f6;
     color: #374151;
     border: 1px solid #d1d5db;
-    padding: 0.4rem 0.9rem;
+    padding: 0.35rem 0.8rem;
     border-radius: 0.4rem;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     cursor: pointer;
-    transition: background 0.15s;
   }
-
   .btn-preview:hover:not(:disabled) { background: #e5e7eb; }
   .btn-preview:disabled { opacity: 0.6; cursor: default; }
 
   .preview-area { margin: 0.25rem 0; }
-
   .preview-img {
     max-width: 100%;
-    width: 320px;
+    width: 280px;
     border-radius: 0.5rem;
     border: 1px solid #e5e7eb;
     display: block;
@@ -512,8 +616,12 @@ async function publishPost(btn) {
 
   .captions-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 0.75rem;
+  }
+
+  @media (max-width: 720px) {
+    .captions-grid { grid-template-columns: 1fr; }
   }
 
   .caption-col {
@@ -535,13 +643,13 @@ async function publishPost(btn) {
     border: 1px solid #d1d5db;
     border-radius: 0.4rem;
     padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-family: inherit;
     resize: vertical;
     color: #1a1a2e;
     line-height: 1.5;
+    box-sizing: border-box;
   }
-
   .caption-input:focus {
     outline: none;
     border-color: #EA262A;
@@ -553,14 +661,13 @@ async function publishPost(btn) {
     background: #EA262A;
     color: white;
     border: none;
-    padding: 0.55rem 1.25rem;
+    padding: 0.5rem 1.1rem;
     border-radius: 0.4rem;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
   }
-
   .btn-publish:hover:not(:disabled) { background: #c91f23; }
   .btn-publish:disabled { opacity: 0.6; cursor: default; }
 
@@ -568,7 +675,6 @@ async function publishPost(btn) {
     font-size: 0.8rem;
     min-height: 1.2em;
   }
-
   .feedback-ok    { color: #065f46; }
   .feedback-error { color: #991b1b; }
 </style>
