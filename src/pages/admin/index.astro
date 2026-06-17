@@ -19,28 +19,41 @@ const [
   supabase.from('albums').select('id, name, slug').eq('active', true),
 ])
 
-// Top 5 figuritas más canjeadas
-const { data: topCards } = await supabase
-  .from('user_cards')
-  .select('card_id, cards(name, posicion, albums(name))')
-  .limit(200)
-
-// Contar por card_id manualmente ya que no hay group by en el client
-const cardCount: Record<string, { name: string; album: string; count: number }> = {}
-for (const uc of (topCards ?? [])) {
-  const id = uc.card_id
-  if (!cardCount[id]) {
-    cardCount[id] = {
-      name: (uc.cards as any)?.name ?? '?',
-      album: (uc.cards as any)?.albums?.name ?? '?',
-      count: 0,
-    }
-  }
-  cardCount[id].count++
+// Top 5 figuritas más canjeadas — paginamos para no quedar truncados en 1000
+let allUcOffset = 0
+const allUcRaw: Array<{ card_id: string }> = []
+while (true) {
+  const { data, error } = await supabase
+    .from('user_cards')
+    .select('card_id')
+    .range(allUcOffset, allUcOffset + 999)
+  if (error || !data || data.length === 0) break
+  allUcRaw.push(...data)
+  if (data.length < 1000) break
+  allUcOffset += 1000
 }
-const topFiguritas = Object.values(cardCount)
-  .sort((a, b) => b.count - a.count)
+
+const cardCountMap: Record<string, number> = {}
+for (const uc of allUcRaw) {
+  cardCountMap[uc.card_id] = (cardCountMap[uc.card_id] ?? 0) + 1
+}
+const top5Ids = Object.entries(cardCountMap)
+  .sort((a, b) => b[1] - a[1])
   .slice(0, 5)
+  .map(([id]) => id)
+
+const { data: top5Cards } = top5Ids.length
+  ? await supabase.from('cards').select('id, name, albums(name)').in('id', top5Ids)
+  : { data: [] }
+
+const topFiguritas = top5Ids.map(id => {
+  const card = (top5Cards ?? []).find((c: any) => c.id === id)
+  return {
+    name: card?.name ?? '?',
+    album: (card?.albums as any)?.name ?? '?',
+    count: cardCountMap[id],
+  }
+})
 ---
 
 <AdminLayout title="Dashboard">

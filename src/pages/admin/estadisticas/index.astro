@@ -30,6 +30,21 @@ const estacionColors: Record<string, string> = {
 
 const TIMELINE_START = '2026-06-11'
 
+// Supabase limita a 1000 filas por query; esta función pagina hasta agotar resultados.
+async function fetchAll<T>(buildQuery: (from: number, to: number) => any): Promise<T[]> {
+  const PAGE = 1000
+  const result: T[] = []
+  let offset = 0
+  while (true) {
+    const { data, error } = await buildQuery(offset, offset + PAGE - 1)
+    if (error || !data || data.length === 0) break
+    result.push(...data)
+    if (data.length < PAGE) break
+    offset += PAGE
+  }
+  return result
+}
+
 // ─── TAB: ÁLBUM ───────────────────────────────────────────────────────────────
 let albumData: any = {}
 
@@ -46,11 +61,12 @@ if (tab === 'album') {
     : { data: [] }
   const cardIds = (cards ?? []).map(c => c.id)
 
-  // user_cards de esas cards
-  const { data: userCards } = cardIds.length
-    ? await supabase.from('user_cards').select('user_id, card_id, redeemed_at').in('card_id', cardIds)
-    : { data: [] }
-  const uc = userCards ?? []
+  // user_cards de esas cards (paginado para no quedar truncado en 1000)
+  const uc = cardIds.length
+    ? await fetchAll<{ user_id: string; card_id: string; redeemed_at: string }>(
+        (from, to) => supabase.from('user_cards').select('user_id, card_id, redeemed_at').in('card_id', cardIds).range(from, to)
+      )
+    : []
 
   // KPIs
   const totalCanjes = uc.length
@@ -161,17 +177,20 @@ if (tab === 'album') {
   participantes.sort((a, b) => b.pct - a.pct || b.count - a.count)
 
   // ── Registros nuevos por día desde el 11 de junio (filtrados por estación) ──
-  const { data: regProfiles } = await supabase
-    .from('profiles')
-    .select('id, created_at')
-    .gte('created_at', TIMELINE_START)
+  const regProfiles = await fetchAll<{ id: string; created_at: string }>(
+    (from, to) => supabase.from('profiles').select('id, created_at').gte('created_at', TIMELINE_START).range(from, to)
+  )
 
   // Filtramos user_generales por estación primero (lista chica) en vez de mandar
   // todos los IDs de perfiles en un .in() — con cientos de registros esa URL
   // GET se vuelve demasiado larga y la petición falla silenciosamente.
-  let regGenQ = supabase.from('user_generales').select('user_id, estacion_favorita')
-  if (estacion !== 'todas') regGenQ = regGenQ.eq('estacion_favorita', estacion)
-  const { data: regGens } = await regGenQ
+  const regGens = await fetchAll<{ user_id: string; estacion_favorita: string }>(
+    (from, to) => {
+      let q = supabase.from('user_generales').select('user_id, estacion_favorita')
+      if (estacion !== 'todas') q = q.eq('estacion_favorita', estacion)
+      return q.range(from, to)
+    }
+  )
 
   const regGenMap: Record<string, string> = {}
   for (const g of (regGens ?? [])) regGenMap[g.user_id] = g.estacion_favorita ?? 'desconocida'
@@ -211,11 +230,12 @@ if (tab === 'playlist') {
   const { data: songs } = await sQ
   const songIds = (songs ?? []).map(s => s.id)
 
-  // playlist_songs con esas canciones
-  const { data: psData } = songIds.length
-    ? await supabase.from('playlist_songs').select('playlist_id, song_id, created_at').in('song_id', songIds)
-    : { data: [] }
-  const ps = psData ?? []
+  // playlist_songs con esas canciones (paginado)
+  const ps = songIds.length
+    ? await fetchAll<{ playlist_id: string; song_id: string; created_at: string }>(
+        (from, to) => supabase.from('playlist_songs').select('playlist_id, song_id, created_at').in('song_id', songIds).range(from, to)
+      )
+    : []
 
   // KPIs
   const totalAgregadas = ps.length
@@ -264,9 +284,10 @@ if (tab === 'playlist') {
 let avatarData: any = {}
 
 if (tab === 'avatar') {
-  // user_generales para mapeo de estación
-  const { data: allGens } = await supabase
-    .from('user_generales').select('user_id, estacion_favorita')
+  // user_generales para mapeo de estación (paginado)
+  const allGens = await fetchAll<{ user_id: string; estacion_favorita: string }>(
+    (from, to) => supabase.from('user_generales').select('user_id, estacion_favorita').range(from, to)
+  )
 
   // IDs de la estación seleccionada (null = todas → sin filtro)
   const stationUids = estacion === 'todas'
