@@ -1,12 +1,12 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro'
 import { createSupabaseAdminClient } from '../../../lib/supabase'
-import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import { canAccess, SOCIAL_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 // @ts-ignore
 import { captionInstagram, captionTwitter, captionFacebook } from '../../../../scripts/goal-bot/captions.js'
 
-if (!canAccess(Astro.locals.role as UserRole, MANAGE_ROLES)) {
+if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
   return Astro.redirect('/admin')
 }
 

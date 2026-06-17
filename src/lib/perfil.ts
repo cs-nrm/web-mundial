@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export type UserRole = 'superadmin' | 'admin' | 'editor' | 'estadistica' | 'user'
+export type UserRole = 'superadmin' | 'admin' | 'editor' | 'estadistica' | 'social' | 'anuncios' | 'user'
 
 export async function getUserContext(supabase: SupabaseClient, userId: string) {
   const [{ data: profile }, { data: generales }] = await Promise.all([

@@ -1,11 +1,11 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro'
-import { canAccess, MANAGE_ROLES } from '../../../lib/admin'
+import { canAccess, ANUNCIOS_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 import { createSupabaseAdminClient } from '../../../lib/supabase'
 
 const { role } = Astro.locals
-if (!canAccess(role as UserRole, MANAGE_ROLES)) return Astro.redirect('/admin')
+if (!canAccess(role as UserRole, ANUNCIOS_ROLES)) return Astro.redirect('/admin')
 
 const { id } = Astro.params
 const supabase = createSupabaseAdminClient()
