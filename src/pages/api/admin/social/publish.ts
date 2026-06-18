@@ -70,7 +70,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const { data: rawHandles = [] } = await supabase.from('social_handles').select('team_name, ig, tw')
-  const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [h.team_name, { ig: h.ig, tw: h.tw }]))
+  const normalizeKey = (s: string) => s?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\.+$/, '').trim()
+  const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [normalizeKey(h.team_name), { ig: h.ig, tw: h.tw }]))
 
   const textIg = rawIg?.trim() || captionInstagram(event, handlesMap) || ''
   const textTw = rawTw?.trim() || captionTwitter(event, handlesMap)   || ''

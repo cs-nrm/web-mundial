@@ -18,8 +18,9 @@ if [ $? -eq 0 ]; then
   
   # 4. Reiniciar PM2
   pm2 reload web-mundial || pm2 restart web-mundial
-  # El bot no requiere build — reiniciar directo para tomar cambios en scripts/
+  # Los scripts no requieren build — reiniciar directo para tomar cambios
   pm2 restart goal-bot 2>/dev/null || echo "⚠️  goal-bot no está corriendo (inicia con: pm2 start ecosystem.config.cjs --only goal-bot)"
+  pm2 restart fixture-sync 2>/dev/null || echo "⚠️  fixture-sync no está corriendo (inicia con: pm2 start ecosystem.config.cjs --only fixture-sync)"
 
   echo "🚀 ¡Despliegue completado!"
 else

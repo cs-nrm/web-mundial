@@ -10,9 +10,13 @@ function matchSlug(teamHome, teamAway) {
 }
 
 // handlesMap: { [normalizedTeamName]: { ig, tw } } — si se pasa, usa DB; si no, usa hardcoded
+function normalizeKey(name) {
+  return normalize(name)?.replace(/\.+$/, '') ?? ''
+}
+
 function resolveHandle(teamName, platform, handlesMap) {
   if (handlesMap) {
-    const entry = handlesMap[normalize(teamName)]
+    const entry = handlesMap[normalizeKey(teamName)]
     return entry?.[platform] ?? entry?.ig ?? ''
   }
   return getHandleDefault(teamName, platform)

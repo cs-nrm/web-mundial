@@ -1,12 +1,12 @@
 import type { APIRoute } from 'astro'
 import { createSupabaseAdminClient } from '../../../../lib/supabase'
-import { canAccess, MANAGE_ROLES } from '../../../../lib/admin'
+import { canAccess, SOCIAL_ROLES } from '../../../../lib/admin'
 import type { UserRole } from '../../../../lib/perfil'
 // @ts-ignore – JS module in scripts/, Node SSR context
 import { generateImage } from '../../../../../scripts/goal-bot/image.js'
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  if (!canAccess(locals.role as UserRole, MANAGE_ROLES)) {
+  if (!canAccess(locals.role as UserRole, SOCIAL_ROLES)) {
     return new Response(JSON.stringify({ error: 'Sin permiso' }), { status: 403 })
   }
 

@@ -2,6 +2,7 @@
 import AdminLayout from '../../../layouts/AdminLayout.astro'
 import { createSupabaseAdminClient } from '../../../lib/supabase'
 import { canAccess, SOCIAL_ROLES } from '../../../lib/admin'
+import { getFlagUrl } from '../../../lib/flags.js'
 import type { UserRole } from '../../../lib/perfil'
 
 if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
@@ -44,9 +45,19 @@ const { data: handles = [] } = await supabase
           </tr>
         </thead>
         <tbody id="handles-body">
-          {(handles ?? []).map(h => (
+          {(handles ?? []).map(h => {
+            const flagUrl = getFlagUrl(h.team_name, 40)
+            return (
             <tr data-team={h.team_name}>
-              <td class="team-cell">{h.team_name}</td>
+              <td class="team-cell">
+                <div class="team-cell-inner">
+                  {flagUrl
+                    ? <img src={flagUrl} alt={h.team_name} class="team-flag" />
+                    : <span class="team-flag-missing" title="Sin bandera en flags.js">🏳️</span>
+                  }
+                  {h.team_name}
+                </div>
+              </td>
               <td class="handle-cell">
                 <div class="handle-wrap">
                   <input class="inp inp-handle" data-field="ig" value={h.ig} placeholder="@handle" />
@@ -68,7 +79,7 @@ const { data: handles = [] } = await supabase
                 <button class="btn-del" onclick="deleteRow(this)">✕</button>
               </td>
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
     </div>
@@ -255,10 +266,29 @@ async function deleteRow(btn) {
   .handles-table tr:hover td { background: #fafafa; }
 
   .team-cell {
+    width: 160px;
+  }
+  .team-cell-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-weight: 600;
     color: #1a1a2e;
     white-space: nowrap;
-    width: 160px;
+  }
+  .team-flag {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid #ddd;
+  }
+  .team-flag-missing {
+    font-size: 1rem;
+    opacity: 0.4;
+    cursor: help;
+    flex-shrink: 0;
   }
 
   .handle-cell { width: 280px; }

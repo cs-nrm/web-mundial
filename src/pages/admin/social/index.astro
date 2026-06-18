@@ -5,6 +5,7 @@ import { canAccess, SOCIAL_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 // @ts-ignore
 import { captionInstagram, captionTwitter, captionFacebook } from '../../../../scripts/goal-bot/captions.js'
+import { getFlagUrl } from '../../../lib/flags.js'
 
 if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
   return Astro.redirect('/admin')
@@ -15,7 +16,8 @@ const [{ data: events = [] }, { data: rawHandles = [] }] = await Promise.all([
   supabase.from('goal_posts').select('*').neq('status', 'descartado').order('created_at', { ascending: false }).limit(200),
   supabase.from('social_handles').select('team_name, ig, tw'),
 ])
-const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [h.team_name, { ig: h.ig, tw: h.tw }]))
+const normalizeKey = (s: string) => s?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\.+$/, '').trim()
+const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [normalizeKey(h.team_name), { ig: h.ig, tw: h.tw }]))
 
 // Agrupar por partido, eventos en orden cronológico dentro de cada grupo
 const matchMap = new Map<string, { teamHome: string; teamAway: string; matchId: string; events: any[] }>()
@@ -86,7 +88,27 @@ const EVENT_LABEL: Record<string, string> = {
     {matchGroups.map(group => (
       <div class="match-group" data-match-id={group.matchId}>
         <div class="match-group-header" onclick="toggleGroup(this)" role="button" tabindex="0">
-          <span class="group-teams">{group.teamHome} <span class="vs">vs</span> {group.teamAway}</span>
+          <span class="group-teams">
+            {(() => {
+              const f1 = getFlagUrl(group.teamHome, 40)
+              const f2 = getFlagUrl(group.teamAway, 40)
+              return (
+                <>
+                  {f1
+                    ? <img src={f1} alt={group.teamHome} class="group-flag" />
+                    : <span class="group-flag-missing" title={`Sin bandera: ${group.teamHome}`}>🏳️</span>
+                  }
+                  {group.teamHome}
+                  <span class="vs">vs</span>
+                  {f2
+                    ? <img src={f2} alt={group.teamAway} class="group-flag" />
+                    : <span class="group-flag-missing" title={`Sin bandera: ${group.teamAway}`}>🏳️</span>
+                  }
+                  {group.teamAway}
+                </>
+              )
+            })()}
+          </span>
           <div class="group-right">
             <span class="group-count">
               {group.events.filter(e => e.status === 'pendiente').length > 0
@@ -536,10 +558,30 @@ async function discardPost(btn) {
   }
   .match-group.collapsed .events-grid { display: none; }
 
+  .group-teams {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
   .group-teams .vs {
     font-weight: 400;
     opacity: 0.6;
-    margin: 0 0.4em;
+    margin: 0 0.2em;
+  }
+  .group-flag {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.15);
+  }
+  .group-flag-missing {
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0.5;
+    cursor: help;
   }
 
   .group-right {
