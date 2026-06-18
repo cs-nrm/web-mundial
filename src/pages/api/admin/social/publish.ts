@@ -69,9 +69,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Este evento ya fue publicado' }), { status: 409 })
   }
 
-  const textIg = rawIg?.trim() || captionInstagram(event) || ''
-  const textTw = rawTw?.trim() || captionTwitter(event)   || ''
-  const textFb = rawFb?.trim() || captionFacebook(event)  || ''
+  const { data: rawHandles = [] } = await supabase.from('social_handles').select('team_name, ig, tw')
+  const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [h.team_name, { ig: h.ig, tw: h.tw }]))
+
+  const textIg = rawIg?.trim() || captionInstagram(event, handlesMap) || ''
+  const textTw = rawTw?.trim() || captionTwitter(event, handlesMap)   || ''
+  const textFb = rawFb?.trim() || captionFacebook(event, handlesMap)  || ''
 
   // 1. Generar imagen
   let imageBuffer: Buffer

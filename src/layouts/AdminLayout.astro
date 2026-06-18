@@ -84,7 +84,8 @@ const isActive = (href: string) =>
       {can(['superadmin','admin','social']) && (
         <>
           <div class="nav-section">Social</div>
-          <a href="/admin/social" class={`nav-item ${isActive('/admin/social') ? 'active' : ''}`}>Publicación automática</a>
+          <a href="/admin/social" class={`nav-item ${isActive('/admin/social') && !isActive('/admin/social/handles') ? 'active' : ''}`}>Publicación automática</a>
+          <a href="/admin/social/handles" class={`nav-item ${isActive('/admin/social/handles') ? 'active' : ''}`}>Handles de selecciones</a>
         </>
       )}
 

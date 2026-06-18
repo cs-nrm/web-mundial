@@ -1,5 +1,5 @@
-import { getHandle } from './handles.js'
-import { getFlagEmoji } from './flags.js'
+import { getHandle as getHandleDefault } from './handles.js'
+import { getFlagEmoji, normalize } from './flags.js'
 
 const PARTIDOS_URL = 'https://fiestafutbol.com.mx/partidos-del-dia'
 const BRANDED_TAGS = '#Mundial2026 #WorldCup2026 #LaFiestaDelFútbol2026 #EnfoqueNoticias #StereoCien'
@@ -9,16 +9,24 @@ function matchSlug(teamHome, teamAway) {
   return `${PARTIDOS_URL}/${slug(teamHome)}-vs-${slug(teamAway)}/`
 }
 
-function tag(teamName, platform) {
-  const h = getHandle(teamName, platform)
-  return h ? ` (${h})` : ''
+// handlesMap: { [normalizedTeamName]: { ig, tw } } — si se pasa, usa DB; si no, usa hardcoded
+function resolveHandle(teamName, platform, handlesMap) {
+  if (handlesMap) {
+    const entry = handlesMap[normalize(teamName)]
+    return entry?.[platform] ?? entry?.ig ?? ''
+  }
+  return getHandleDefault(teamName, platform)
 }
 
-function buildCaption(event, platform) {
+function buildCaption(event, platform, handlesMap = null) {
   const { event_type, team_home, team_away, score_home, score_away, player_name, minute, goal_type, goal_team } = event
   const url = matchSlug(team_home, team_away)
   const isOwnGoal = goal_type?.toLowerCase().includes('contra')
-  const t = (name) => platform === 'fb' ? '' : tag(name, platform)
+  const t = (name) => {
+    if (platform === 'fb') return ''
+    const h = resolveHandle(name, platform, handlesMap)
+    return h ? ` (${h})` : ''
+  }
   const f = (name) => { const e = getFlagEmoji(name); return e ? `${e} ` : '' }
 
   switch (event_type) {
@@ -78,10 +86,10 @@ function buildCaption(event, platform) {
   }
 }
 
-export function captionInstagram(event) { return buildCaption(event, 'ig') }
-export function captionTwitter(event)   { return buildCaption(event, 'tw') }
-export function captionFacebook(event)  { return buildCaption(event, 'fb') }
+export function captionInstagram(event, handlesMap = null) { return buildCaption(event, 'ig', handlesMap) }
+export function captionTwitter(event, handlesMap = null)   { return buildCaption(event, 'tw', handlesMap) }
+export function captionFacebook(event, handlesMap = null)  { return buildCaption(event, 'fb', handlesMap) }
 
 // Compat aliases
-export function captionIgX(event)    { return captionInstagram(event) }
+export function captionIgX(event)      { return captionInstagram(event) }
 export function captionForEvent(event) { return captionInstagram(event) }

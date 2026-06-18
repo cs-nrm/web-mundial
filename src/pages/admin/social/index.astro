@@ -11,12 +11,11 @@ if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
 }
 
 const supabase = createSupabaseAdminClient()
-const { data: events = [] } = await supabase
-  .from('goal_posts')
-  .select('*')
-  .neq('status', 'descartado')
-  .order('created_at', { ascending: false })
-  .limit(200)
+const [{ data: events = [] }, { data: rawHandles = [] }] = await Promise.all([
+  supabase.from('goal_posts').select('*').neq('status', 'descartado').order('created_at', { ascending: false }).limit(200),
+  supabase.from('social_handles').select('team_name, ig, tw'),
+])
+const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [h.team_name, { ig: h.ig, tw: h.tw }]))
 
 // Agrupar por partido, eventos en orden cronológico dentro de cada grupo
 const matchMap = new Map<string, { teamHome: string; teamAway: string; matchId: string; events: any[] }>()
@@ -158,7 +157,7 @@ const EVENT_LABEL: Record<string, string> = {
                         id={`caption-ig-${ev.id}`}
                         placeholder="Texto para Instagram…"
                         rows="8"
-                      >{captionInstagram(ev)}</textarea>
+                      >{captionInstagram(ev, handlesMap)}</textarea>
                     </div>
                     <div class="caption-col">
                       <div class="caption-label">🐦 X / Twitter</div>
@@ -167,7 +166,7 @@ const EVENT_LABEL: Record<string, string> = {
                         id={`caption-tw-${ev.id}`}
                         placeholder="Texto para X / Twitter…"
                         rows="8"
-                      >{captionTwitter(ev)}</textarea>
+                      >{captionTwitter(ev, handlesMap)}</textarea>
                     </div>
                     <div class="caption-col">
                       <div class="caption-label">👥 Facebook</div>
@@ -176,7 +175,7 @@ const EVENT_LABEL: Record<string, string> = {
                         id={`caption-fb-${ev.id}`}
                         placeholder="Texto para Facebook…"
                         rows="8"
-                      >{captionFacebook(ev)}</textarea>
+                      >{captionFacebook(ev, handlesMap)}</textarea>
                     </div>
                   </div>
 

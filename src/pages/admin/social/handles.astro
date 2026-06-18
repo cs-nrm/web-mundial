@@ -1,0 +1,312 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
+import { canAccess, SOCIAL_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+
+if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
+  return Astro.redirect('/admin')
+}
+
+const supabase = createSupabaseAdminClient()
+const { data: handles = [] } = await supabase
+  .from('social_handles')
+  .select('team_name, ig, tw')
+  .order('team_name')
+---
+
+<AdminLayout title="Social — Handles de Selecciones">
+  <div class="handles-page">
+
+    <div class="page-header">
+      <p class="page-desc">
+        Cuentas de Instagram y X/Twitter de cada selección. Haz clic en el 🔗 para verificar que el enlace sea correcto antes de modificarlo.
+      </p>
+      <button class="btn-add" onclick="showAddRow()">+ Agregar selección</button>
+    </div>
+
+    <div class="add-row" id="add-row" style="display:none">
+      <input class="inp" id="new-team" placeholder="Nombre normalizado (ej: alemania)" />
+      <input class="inp" id="new-ig"   placeholder="Instagram (ej: @dfb_team)" />
+      <input class="inp" id="new-tw"   placeholder="Twitter (ej: @DFB_Team)" />
+      <button class="btn-save-new" onclick="saveNew()">Guardar</button>
+      <button class="btn-cancel" onclick="cancelAdd()">Cancelar</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="handles-table">
+        <thead>
+          <tr>
+            <th>Selección</th>
+            <th>📸 Instagram</th>
+            <th>🐦 X / Twitter</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="handles-body">
+          {(handles ?? []).map(h => (
+            <tr data-team={h.team_name}>
+              <td class="team-cell">{h.team_name}</td>
+              <td class="handle-cell">
+                <div class="handle-wrap">
+                  <input class="inp inp-handle" data-field="ig" value={h.ig} placeholder="@handle" />
+                  {h.ig && (
+                    <a class="verify-link" href={`https://instagram.com/${h.ig.replace('@','')}`} target="_blank" rel="noopener" title="Verificar en Instagram">🔗</a>
+                  )}
+                </div>
+              </td>
+              <td class="handle-cell">
+                <div class="handle-wrap">
+                  <input class="inp inp-handle" data-field="tw" value={h.tw} placeholder="@handle" />
+                  {h.tw && (
+                    <a class="verify-link" href={`https://x.com/${h.tw.replace('@','')}`} target="_blank" rel="noopener" title="Verificar en X">🔗</a>
+                  )}
+                </div>
+              </td>
+              <td class="actions-cell">
+                <button class="btn-save" onclick="saveRow(this)">Guardar</button>
+                <button class="btn-del" onclick="deleteRow(this)">✕</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</AdminLayout>
+
+<script is:inline>
+function showAddRow() {
+  document.getElementById('add-row').style.display = 'flex'
+  document.getElementById('new-team').focus()
+}
+function cancelAdd() {
+  document.getElementById('add-row').style.display = 'none'
+  document.getElementById('new-team').value = ''
+  document.getElementById('new-ig').value = ''
+  document.getElementById('new-tw').value = ''
+}
+
+async function saveNew() {
+  var team = document.getElementById('new-team').value.trim()
+  var ig   = document.getElementById('new-ig').value.trim()
+  var tw   = document.getElementById('new-tw').value.trim()
+  if (!team) { alert('El nombre de la selección es requerido'); return }
+
+  var res = await fetch('/api/admin/social/handles', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ team_name: team, ig, tw }),
+  })
+  if (res.ok) location.reload()
+  else alert('Error al guardar')
+}
+
+async function saveRow(btn) {
+  var row  = btn.closest('tr')
+  var team = row.dataset.team
+  var ig   = row.querySelector('[data-field="ig"]').value.trim()
+  var tw   = row.querySelector('[data-field="tw"]').value.trim()
+
+  btn.disabled = true
+  btn.textContent = '…'
+
+  var res = await fetch('/api/admin/social/handles', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ team_name: team, ig, tw }),
+  })
+
+  if (res.ok) {
+    btn.textContent = '✓'
+    btn.style.color = '#16a34a'
+    // Actualizar los links de verificación
+    row.querySelectorAll('.verify-link').forEach(function(a) { a.remove() })
+    var igCell = row.querySelector('[data-field="ig"]').parentElement
+    var twCell = row.querySelector('[data-field="tw"]').parentElement
+    if (ig) igCell.insertAdjacentHTML('beforeend', '<a class="verify-link" href="https://instagram.com/' + ig.replace('@','') + '" target="_blank" rel="noopener">🔗</a>')
+    if (tw) twCell.insertAdjacentHTML('beforeend', '<a class="verify-link" href="https://x.com/' + tw.replace('@','') + '" target="_blank" rel="noopener">🔗</a>')
+    setTimeout(function() { btn.textContent = 'Guardar'; btn.style.color = ''; btn.disabled = false }, 1500)
+  } else {
+    btn.textContent = '✕'
+    btn.style.color = '#dc2626'
+    setTimeout(function() { btn.textContent = 'Guardar'; btn.style.color = ''; btn.disabled = false }, 1500)
+  }
+}
+
+async function deleteRow(btn) {
+  var row  = btn.closest('tr')
+  var team = row.dataset.team
+  if (!confirm('¿Eliminar handle de "' + team + '"?')) return
+
+  var res = await fetch('/api/admin/social/handles?team=' + encodeURIComponent(team), { method: 'DELETE' })
+  if (res.ok) row.remove()
+  else alert('Error al eliminar')
+}
+</script>
+
+<style>
+  .handles-page { max-width: 860px; }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .page-desc {
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .btn-add {
+    background: #EA262A;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: #c91f23; }
+
+  .add-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .inp {
+    border: 1.5px solid #d1d5db;
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    outline: none;
+    font-family: inherit;
+  }
+  .inp:focus { border-color: #EA262A; }
+  .inp-handle { width: 100%; }
+
+  .btn-save-new {
+    background: #1a1a2e;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-cancel {
+    background: none;
+    border: 1px solid #d1d5db;
+    color: #6b7280;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.35rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .table-wrap {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.6rem;
+    overflow: hidden;
+  }
+
+  .handles-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .handles-table th {
+    background: #f8fafc;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .handles-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+  }
+  .handles-table tr:last-child td { border-bottom: none; }
+  .handles-table tr:hover td { background: #fafafa; }
+
+  .team-cell {
+    font-weight: 600;
+    color: #1a1a2e;
+    white-space: nowrap;
+    width: 160px;
+  }
+
+  .handle-cell { width: 280px; }
+
+  .handle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .verify-link {
+    font-size: 0.9rem;
+    text-decoration: none;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+  .verify-link:hover { opacity: 1; }
+
+  .actions-cell {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .btn-save {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.3rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .btn-save:hover:not(:disabled) { background: #e5e7eb; }
+  .btn-save:disabled { opacity: 0.5; }
+
+  .btn-del {
+    background: none;
+    border: none;
+    color: #d1d5db;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.3rem 0.4rem;
+    border-radius: 0.3rem;
+    transition: color 0.1s;
+  }
+  .btn-del:hover { color: #ef4444; }
+</style>

@@ -59,9 +59,9 @@ const HANDLES = {
   'guinea':         { ig: '@federationguineefoot',   tw: '@feguifootball' },
   'cabo verde':     { ig: '@fcfcv',                  tw: '@fcfcv' },
 
-  'chequia':         { ig: '@ceskareprezentace', tw: '@ceskareprezentace' },
-  'republica checa': { ig: '@ceskareprezentace', tw: '@ceskareprezentace' },
-  'rep. checa':      { ig: '@ceskareprezentace', tw: '@ceskareprezentace' },
+  'chequia':         { ig: '@ceskarepre', tw: '@ceskarepre' },
+  'republica checa': { ig: '@ceskarepre', tw: '@ceskarepre' },
+  'rep. checa':      { ig: '@ceskarepre', tw: '@ceskarepre' },
 
   // AFC
   'japon':          { ig: '@jfa_samuraiblue',        tw: '@jfa_samuraiblue' },
