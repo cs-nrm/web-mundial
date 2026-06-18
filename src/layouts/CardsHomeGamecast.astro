@@ -37,7 +37,7 @@ function formatHora(fechaUtc: string) {
   {(matches ?? []).length === 0 ? (
     <p class="text-center text-gray-400 py-8">No hay partidos programados para hoy.</p>
   ) : (
-    <div class="partidos-grid" id="home-partidos">
+    <div class="partidos-grid" id="home-partidos" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">
       {(matches ?? []).map(m => {
         const flag1 = getFlagUrl(m.equipo_local, 80)
         const flag2 = getFlagUrl(m.equipo_visitante, 80)
@@ -153,15 +153,15 @@ if (document.getElementById('home-partidos')) {
 }
 
 @media (max-width: 768px) {
-  .partidos-grid {
-    display: flex;
+  #home-partidos {
+    display: flex !important;
     overflow-x: auto;
     gap: 0.75rem;
     padding-bottom: 0.75rem;
     scrollbar-width: none;
   }
-  .partidos-grid::-webkit-scrollbar { display: none; }
-  .card-link { flex-shrink: 0; width: 176px; }
+  #home-partidos::-webkit-scrollbar { display: none; }
+  #home-partidos .card-link { flex-shrink: 0; width: 176px; }
 }
 
 .card-hora {
