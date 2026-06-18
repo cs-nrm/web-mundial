@@ -5,7 +5,7 @@ import { getFlagUrl } from "../lib/flags.js";
 
 const allPosts = await getArticles(undefined, { sites: [wpSiteGamecastConfig.url] });
 
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
 const posts = (allPosts ?? [])
   .filter(p => p.acf?.fecha?.slice(0, 10) === today)
   .sort((a, b) => (a.acf?.fecha ?? '').localeCompare(b.acf?.fecha ?? ''));
