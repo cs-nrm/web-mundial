@@ -28,6 +28,7 @@ const countryToIso = {
   'marruecos': 'ma', 'senegal': 'sn', 'nigeria': 'ng', 'ghana': 'gh',
   'egipto': 'eg', 'costa de marfil': 'ci', 'tunez': 'tn', 'argelia': 'dz',
   'cabo verde': 'cv', 'guinea': 'gn', 'rd congo': 'cd', 'congo': 'cd',
+  'chequia': 'cz', 'republica checa': 'cz', 'rep. checa': 'cz', 'czech republic': 'cz',
   'japon': 'jp', 'corea del sur': 'kr', 'arabia saudita': 'sa',
   'australia': 'au', 'iran': 'ir', 'qatar': 'qa', 'irak': 'iq',
   'jordania': 'jo', 'nueva zelanda': 'nz', 'uzbekistan': 'uz',
