@@ -4,18 +4,20 @@ import { getFlagUrl } from '../lib/flags.js'
 
 const supabase = createSupabaseAdminClient()
 
-// Solo partidos de hoy en CDMX (+-6h UTC para cubrir el día completo)
 const now = new Date()
 const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
-const todayCdmx = cdmxNow.toISOString().slice(0, 10) // YYYY-MM-DD
+const todayCdmx = cdmxNow.toISOString().slice(0, 10)
 const manana = new Date(cdmxNow.getTime() + 24 * 60 * 60_000).toISOString().slice(0, 10)
 
-const { data: matches = [] } = await supabase
-  .from('df_partidos')
-  .select('*')
-  .gte('fecha_utc', `${todayCdmx}T06:00:00Z`)   // 00:00 CDMX = 06:00 UTC
-  .lt('fecha_utc',  `${manana}T06:00:00Z`)        // fin del día CDMX
-  .order('fecha_utc', { ascending: true })
+const [{ data: matches = [] }, { data: previasRaw = [] }] = await Promise.all([
+  supabase.from('df_partidos').select('*')
+    .gte('fecha_utc', `${todayCdmx}T06:00:00Z`)
+    .lt('fecha_utc',  `${manana}T06:00:00Z`)
+    .order('fecha_utc', { ascending: true }),
+  supabase.from('analisis').select('slug, partido_slug').not('partido_slug', 'is', null),
+])
+
+const previaMap = new Map((previasRaw ?? []).map(a => [a.partido_slug, a.slug]))
 
 function formatHora(fechaUtc: string) {
   return new Date(fechaUtc).toLocaleTimeString('es-MX', {
@@ -39,16 +41,17 @@ function formatHora(fechaUtc: string) {
       {(matches ?? []).map(m => {
         const flag1 = getFlagUrl(m.equipo_local, 80)
         const flag2 = getFlagUrl(m.equipo_visitante, 80)
+        const previaSlug = previaMap.get(m.slug)
         return (
           <a
             href={`/partidos-del-dia/${m.slug}/`}
-            class="flex-shrink-0 w-44 lg:w-auto"
+            class="flex-shrink-0 w-44 lg:w-auto card-link"
             data-match-id={m.match_id}
             data-anim="fade-up"
           >
             <div class={`gamecast-card rounded-xl bg-black text-white p-4 h-full flex flex-col gap-3 justify-between hover:bg-neutral-900 transition-colors border ${m.status === 'en_vivo' ? 'border-red-900' : 'border-transparent'}`}>
               <div class="flex items-center justify-between gap-1">
-                <p class="text-xs text-neutral-400 uppercase tracking-widest">
+                <p class="card-hora">
                   {formatHora(m.fecha_utc)}
                 </p>
                 {m.status === 'en_vivo' && (
@@ -65,17 +68,13 @@ function formatHora(fechaUtc: string) {
                     ? <img src={flag1} alt={m.equipo_local} class="w-12 h-auto rounded-sm shadow" />
                     : <span class="text-2xl">🏳️</span>
                   }
-                  <span class="text-sm font-semibold leading-tight">{m.equipo_local}</span>
+                  <span class="card-team">{m.equipo_local}</span>
                 </div>
 
-                <div class="flex flex-col items-center">
+                <div class="score-col">
                   {m.status !== 'programado'
-                    ? (
-                      <span class="text-white font-bold text-lg goodtime" data-score>
-                        {m.score_local}-{m.score_visitante}
-                      </span>
-                    )
-                    : <span class="text-white font-bold text-lg goodtime">VS</span>
+                    ? <span class="card-score" data-score>{m.score_local}-{m.score_visitante}</span>
+                    : <span class="card-vs">VS</span>
                   }
                 </div>
 
@@ -84,7 +83,7 @@ function formatHora(fechaUtc: string) {
                     ? <img src={flag2} alt={m.equipo_visitante} class="w-12 h-auto rounded-sm shadow" />
                     : <span class="text-2xl">🏳️</span>
                   }
-                  <span class="text-sm font-semibold leading-tight">{m.equipo_visitante}</span>
+                  <span class="card-team">{m.equipo_visitante}</span>
                 </div>
               </div>
 
@@ -92,9 +91,18 @@ function formatHora(fechaUtc: string) {
                 <p class="text-xs text-neutral-400 uppercase tracking-widest truncate">{m.sede}</p>
               )}
 
-              <span class="text-xs text-white font-bold uppercase tracking-wide hover:underline">
-                Minuto a Minuto →
-              </span>
+              <div class="card-footer">
+                <span class="card-minuto">Minuto a Minuto →</span>
+                {previaSlug && (
+                  <a
+                    href={`/resumen-de-analisis/${previaSlug}/`}
+                    class="card-previa"
+                    onclick="event.stopPropagation()"
+                  >
+                    Previa →
+                  </a>
+                )}
+              </div>
             </div>
           </a>
         )
@@ -135,10 +143,88 @@ if (document.getElementById('home-partidos')) {
 </script>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600&display=swap');
+
+.card-hora {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-team {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: white;
+  line-height: 1.2;
+}
+
+.score-col {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-score {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: white;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.card-vs {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.3);
+  white-space: nowrap;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.card-minuto {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+}
+
+.card-previa {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #facc15;
+  text-decoration: none;
+  border: 1px solid rgba(250,204,21,0.4);
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.card-previa:hover { background: rgba(250,204,21,0.15); }
+
 .home-live-badge {
-  font-size: 0.55rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   color: #ea262a;
   text-transform: uppercase;
   display: flex;
@@ -159,8 +245,9 @@ if (document.getElementById('home-partidos')) {
   50%       { opacity: 0.45; }
 }
 .home-final-badge {
-  font-size: 0.55rem;
-  font-weight: 700;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 400;
   color: rgba(255,255,255,0.35);
   text-transform: uppercase;
 }

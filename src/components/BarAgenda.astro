@@ -32,8 +32,7 @@ function formatFechaCorta(fechaUtc: string) {
   return d.toLocaleDateString('es-MX', {
     timeZone: 'UTC',
     day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
+    month: 'short',
   })
 }
 ---
@@ -56,7 +55,10 @@ function formatFechaCorta(fechaUtc: string) {
               {isLive  && <span>EN VIVO{m.minuto ? ` · ${m.minuto}'` : ''}</span>}
               {isDone  && <span>FINAL</span>}
               {!isLive && !isDone && (
-                <span>{formatFechaCorta(m.fecha_utc)} {formatHora(m.fecha_utc)}</span>
+                <>
+                  <span>{formatFechaCorta(m.fecha_utc)}</span>
+                  <span>{formatHora(m.fecha_utc)}</span>
+                </>
               )}
             </div>
 
@@ -216,10 +218,10 @@ if (document.getElementById('bar-agenda')) {
 .bar-status {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px 2px;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
+  gap: 5px;
+  padding: 4px 8px 2px;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.55);
   flex-shrink: 0;
