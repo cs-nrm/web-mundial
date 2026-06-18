@@ -21,6 +21,24 @@ export async function saveEvent(event) {
   if (error) throw error
 }
 
+export async function updateMatchLive({ match_id, status, score_local, score_visitante, minuto }) {
+  const update = { status, score_local, score_visitante }
+  if (minuto != null) update.minuto = minuto
+  if (status === 'finalizado') update.minuto = null
+  const { error } = await supabase
+    .from('df_partidos')
+    .update(update)
+    .eq('match_id', match_id)
+  if (error) console.error('updateMatchLive error:', error.message)
+}
+
+export async function upsertMatchInfo({ match_id, slug, fecha_utc, equipo_local, equipo_visitante }) {
+  const { error } = await supabase
+    .from('df_partidos')
+    .upsert({ match_id, slug, fecha_utc, equipo_local, equipo_visitante }, { onConflict: 'match_id' })
+  if (error) console.error('upsertMatchInfo error:', error.message)
+}
+
 export async function markPublished(id, metricoolResponse) {
   const { error } = await supabase
     .from('goal_posts')

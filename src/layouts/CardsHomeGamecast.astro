@@ -1,86 +1,167 @@
 ---
-import { getArticles } from "../lib/api.js";
-import { wpSiteGamecastConfig } from "../config/sites.js";
-import { getFlagUrl } from "../lib/flags.js";
+import { createSupabaseAdminClient } from '../lib/supabase'
+import { getFlagUrl } from '../lib/flags.js'
 
-const allPosts = await getArticles(undefined, { sites: [wpSiteGamecastConfig.url] });
+const supabase = createSupabaseAdminClient()
 
-const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
-const posts = (allPosts ?? [])
-  .filter(p => p.acf?.fecha?.slice(0, 10) === today)
-  .sort((a, b) => (a.acf?.fecha ?? '').localeCompare(b.acf?.fecha ?? ''));
+// Solo partidos de hoy en CDMX (+-6h UTC para cubrir el día completo)
+const now = new Date()
+const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
+const todayCdmx = cdmxNow.toISOString().slice(0, 10) // YYYY-MM-DD
+const manana = new Date(cdmxNow.getTime() + 24 * 60 * 60_000).toISOString().slice(0, 10)
 
-function formatFecha(fecha: string | null | undefined) {
-  if (!fecha) return null;
-  const d = new Date(fecha.replace(' ', 'T'));
-  return d.toLocaleDateString('es-MX', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
+const { data: matches = [] } = await supabase
+  .from('df_partidos')
+  .select('*')
+  .gte('fecha_utc', `${todayCdmx}T06:00:00Z`)   // 00:00 CDMX = 06:00 UTC
+  .lt('fecha_utc',  `${manana}T06:00:00Z`)        // fin del día CDMX
+  .order('fecha_utc', { ascending: true })
+
+function formatHora(fechaUtc: string) {
+  return new Date(fechaUtc).toLocaleTimeString('es-MX', {
+    timeZone: 'UTC',
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'America/Mexico_City',
-  });
+    hour12: true,
+  })
 }
 ---
 
-<div class="container m-auto">
-  <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold" data-anim="hero-title">Partidos del día</h1>
-  {posts.length === 0 ? (
+<div class="container m-auto px-4">
+  <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold" data-anim="hero-title">
+    Partidos del día
+  </h1>
+
+  {(matches ?? []).length === 0 ? (
     <p class="text-center text-gray-400 py-8">No hay partidos programados para hoy.</p>
   ) : (
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {posts.map((post) => {
-        const pais1 = post.acf?.pais1;
-        const pais2 = post.acf?.pais2;
-        const fecha = post.acf?.fecha;
-        const flag1 = getFlagUrl(pais1, 80);
-        const flag2 = getFlagUrl(pais2, 80);
-        const fechaFormateada = formatFecha(fecha);
-        const sede = post.acf?.sede;
-        const previa = post.acf?.previa;
-
+    <div class="flex gap-4 overflow-x-auto pb-3 lg:grid lg:grid-cols-4 lg:overflow-visible" id="home-partidos">
+      {(matches ?? []).map(m => {
+        const flag1 = getFlagUrl(m.equipo_local, 80)
+        const flag2 = getFlagUrl(m.equipo_visitante, 80)
         return (
-          <a href={`/partidos-del-dia/${post.slug}/`} data-anim="fade-up">
-            <div class="gamecast-card rounded-xl bg-black text-white p-4 h-full flex flex-col gap-3 justify-between hover:bg-neutral-900 transition-colors">
-              {fechaFormateada && (
-                <p class="text-xs text-neutral-400 uppercase tracking-widest">{fechaFormateada}</p>
-              )}
+          <a
+            href={`/partidos-del-dia/${m.slug}/`}
+            class="flex-shrink-0 w-44 lg:w-auto"
+            data-match-id={m.match_id}
+            data-anim="fade-up"
+          >
+            <div class={`gamecast-card rounded-xl bg-black text-white p-4 h-full flex flex-col gap-3 justify-between hover:bg-neutral-900 transition-colors border ${m.status === 'en_vivo' ? 'border-red-900' : 'border-transparent'}`}>
+              <div class="flex items-center justify-between gap-1">
+                <p class="text-xs text-neutral-400 uppercase tracking-widest">
+                  {formatHora(m.fecha_utc)}
+                </p>
+                {m.status === 'en_vivo' && (
+                  <span class="home-live-badge">EN VIVO</span>
+                )}
+                {m.status === 'finalizado' && (
+                  <span class="home-final-badge">Final</span>
+                )}
+              </div>
+
               <div class="flex items-center justify-between gap-2">
                 <div class="flex flex-col items-center gap-1 text-center w-5/12">
                   {flag1
-                    ? <img src={flag1} alt={pais1} class="w-12 h-auto rounded-sm shadow" />
+                    ? <img src={flag1} alt={m.equipo_local} class="w-12 h-auto rounded-sm shadow" />
                     : <span class="text-2xl">🏳️</span>
                   }
-                  <span class="text-sm font-semibold leading-tight">{pais1}</span>
+                  <span class="text-sm font-semibold leading-tight">{m.equipo_local}</span>
                 </div>
-                <span class="text-white font-bold text-lg goodtime">VS</span>
+
+                <div class="flex flex-col items-center">
+                  {m.status !== 'programado'
+                    ? (
+                      <span class="text-white font-bold text-lg goodtime" data-score>
+                        {m.score_local}-{m.score_visitante}
+                      </span>
+                    )
+                    : <span class="text-white font-bold text-lg goodtime">VS</span>
+                  }
+                </div>
+
                 <div class="flex flex-col items-center gap-1 text-center w-5/12">
                   {flag2
-                    ? <img src={flag2} alt={pais2} class="w-12 h-auto rounded-sm shadow" />
+                    ? <img src={flag2} alt={m.equipo_visitante} class="w-12 h-auto rounded-sm shadow" />
                     : <span class="text-2xl">🏳️</span>
                   }
-                  <span class="text-sm font-semibold leading-tight">{pais2}</span>
+                  <span class="text-sm font-semibold leading-tight">{m.equipo_visitante}</span>
                 </div>
               </div>
-              {sede && (
-                <p class="text-xs text-neutral-400 uppercase tracking-widest" set:html={sede}></p>
+
+              {m.sede && (
+                <p class="text-xs text-neutral-400 uppercase tracking-widest truncate">{m.sede}</p>
               )}
-              <div class="flex flex-col gap-1">
-                {previa && (
-                  <span onclick={`event.preventDefault();event.stopPropagation();window.location.href='${previa}'`}
-                    class="text-xs text-[#7af12b] font-bold uppercase tracking-wide cursor-pointer hover:underline">
-                    Previa del partido →
-                  </span>
-                )}
-                <span class="text-xs text-white font-bold uppercase tracking-wide hover:underline">
-                  Minuto a Minuto →
-                </span>
-              </div>
+
+              <span class="text-xs text-white font-bold uppercase tracking-wide hover:underline">
+                Minuto a Minuto →
+              </span>
             </div>
           </a>
-        );
+        )
       })}
     </div>
   )}
+
+  <div class="text-right mt-2">
+    <a href="/partidos-del-dia/" class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+      Ver todos los partidos →
+    </a>
+  </div>
 </div>
+
+<script>
+async function pollHomeScores() {
+  try {
+    const res = await fetch('/api/partidos')
+    if (!res.ok) return
+    const data: any[] = await res.json()
+    const map = new Map(data.map((m: any) => [m.match_id, m]))
+
+    document.querySelectorAll<HTMLElement>('[data-match-id]').forEach(card => {
+      const m = map.get(card.dataset.matchId!)
+      if (!m || m.status === 'programado') return
+
+      const scoreEl = card.querySelector<HTMLElement>('[data-score]')
+      if (scoreEl) {
+        scoreEl.textContent = `${m.score_local}-${m.score_visitante}`
+      }
+    })
+  } catch { /* silent */ }
+}
+
+if (document.getElementById('home-partidos')) {
+  setInterval(pollHomeScores, 30_000)
+}
+</script>
+
+<style>
+.home-live-badge {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #ea262a;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  animation: pulse-home 2s infinite;
+}
+.home-live-badge::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ea262a;
+}
+@keyframes pulse-home {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.home-final-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+}
+</style>

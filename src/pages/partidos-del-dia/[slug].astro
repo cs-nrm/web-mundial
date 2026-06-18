@@ -1,121 +1,212 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import BoxBanner from "../../components/BoxBanner.astro";
-import MoreNews from "../../components/MoreNews.astro";
-import DoubleBox from "../../components/DoubleBox.astro";
-import { wpSiteGamecastConfig } from "../../config/sites.js";
-import { getFlagUrl } from "../../lib/flags.js";
-import LeaderBoard from "../../components/LeaderBoard.astro";
+import Layout from '../../layouts/Layout.astro'
+import BoxBanner from '../../components/BoxBanner.astro'
+import MoreNews from '../../components/MoreNews.astro'
+import DoubleBox from '../../components/DoubleBox.astro'
+import LeaderBoard from '../../components/LeaderBoard.astro'
+import { createSupabaseAdminClient } from '../../lib/supabase'
+import { getFlagUrl } from '../../lib/flags.js'
 
-const { slug } = Astro.params;
+const { slug } = Astro.params
+if (!slug) return Astro.redirect('/partidos-del-dia/')
 
-async function findPostBySlug(slug: string) {
-    try {
-        const parsed = new URL(wpSiteGamecastConfig.url);
-        const fields = parsed.searchParams.get('_fields') || '';
-        if (fields && !fields.includes('content')) {
-            parsed.searchParams.set('_fields', fields + ',content');
-        }
-        parsed.searchParams.set('slug', slug);
+const supabase = createSupabaseAdminClient()
 
-        const res = await fetch(parsed.toString());
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data?.[0] ?? null;
-    } catch (err) {
-        console.error(`gamecast [slug]: error buscando ${slug}`, err);
-        return null;
-    }
-}
+// Buscar el partido más reciente/relevante para este slug
+const { data: matches } = await supabase
+  .from('df_partidos')
+  .select('*')
+  .eq('slug', slug)
+  .order('fecha_utc', { ascending: false })
+  .limit(3)
 
-const post = await findPostBySlug(slug!);
+// Preferir el partido en vivo, luego el más próximo a hoy
+const now = new Date()
+let match = (matches ?? []).find(m => m.status === 'en_vivo')
+  ?? (matches ?? []).reduce((best: any, m: any) => {
+    if (!best) return m
+    const diffBest = Math.abs(new Date(best.fecha_utc).getTime() - now.getTime())
+    const diffM    = Math.abs(new Date(m.fecha_utc).getTime()    - now.getTime())
+    return diffM < diffBest ? m : best
+  }, null)
 
-if (!post) return Astro.redirect('/404');
+if (!match) return Astro.redirect('/partidos-del-dia/')
 
-const pais1 = post.acf?.pais1;
-const pais2 = post.acf?.pais2;
-const flag1 = getFlagUrl(pais1, 160);
-const flag2 = getFlagUrl(pais2, 160);
-const sede = post.acf?.sede;
-const fecha = post.acf?.fecha
-    ? new Date(post.acf.fecha.replace(' ', 'T')).toLocaleDateString('es-MX', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'America/Mexico_City',
-      })
-    : null;
+const flag1 = getFlagUrl(match.equipo_local, 160)
+const flag2 = getFlagUrl(match.equipo_visitante, 160)
 
-const PLACEHOLDER_IMG = 'https://storage.googleapis.com/nrm-web/mundial/balon1.jpg';
-const featuredImage =
-    post.yoast_head_json?.og_image?.[0]?.url ||
-    post._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
-    PLACEHOLDER_IMG;
+const fecha = new Date(match.fecha_utc).toLocaleDateString('es-MX', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'UTC',
+})
+
+const gamecastUrl = `https://enfoquenoticias.com.mx/df/html/v3/minapp/modules/futbol/gamecast/gamecast.html?channel=deportes.futbol.mundial.${match.match_id}&lang=es_LA&hideTournamentsMenu=true&hidePagesMenu=true`
+
+const pageTitle = `${match.equipo_local} vs ${match.equipo_visitante} · La Fiesta del Fútbol`
+const pageDesc  = `Minuto a minuto de ${match.equipo_local} vs ${match.equipo_visitante}${match.sede ? ` en ${match.sede}` : ''}.`
 ---
 
-<Layout
-    title={post.title.rendered}
-    img={featuredImage}
-    tags={post.yoast_head_json}
-    description={post.yoast_head_json?.og_description}
->
-    <section class="w-full py-4 poppins" id="content-gamecast">
-        <div class="container my-12 mx-auto px-4 md:px-12">
-            <LeaderBoard />
-            <!-- Cabecera del partido -->
-            <div class="bg-black text-white rounded-2xl p-6 mb-8 flex flex-col items-center gap-4">
-                {fecha && (
-                    <p class="text-xs uppercase tracking-widest text-neutral-400">{fecha}</p>
-                )}
-                <div class="flex items-center justify-center gap-6 w-full">
-                    <div class="flex flex-col items-center gap-2 w-2/5 text-center">
-                        {flag1
-                            ? <img src={flag1} alt={pais1} class="w-20 h-auto rounded shadow-lg" />
-                            : <span class="text-5xl">🏳️</span>
-                        }
-                        <span class="font-bold text-lg leading-tight">{pais1}</span>
-                    </div>
-                    <span class="goodtime font-bold text-2xl text-white">VS</span>
-                    <div class="flex flex-col items-center gap-2 w-2/5 text-center">
-                        {flag2
-                            ? <img src={flag2} alt={pais2} class="w-20 h-auto rounded shadow-lg" />
-                            : <span class="text-5xl">🏳️</span>
-                        }
-                        <span class="font-bold text-lg leading-tight">{pais2}</span>
-                    </div>
-                </div>
-                {sede && (
-                    <p class="text-xs text-neutral-400 uppercase tracking-widest" set:html={sede}></p>
-                )}
-            </div>
+<Layout title={pageTitle} description={pageDesc}>
+  <section class="w-full py-4 poppins">
+    <div class="container my-12 mx-auto px-4 md:px-12">
+      <LeaderBoard />
 
-            <div class="flex flex-col lg:flex-row gap-8">
-                <article class="nota-interna flex-1 text-lg leading-relaxed text-gray-800 bg-white rounded-xl p-6 shadow-md">
-                    <div class="prose max-w-none" set:html={post.content.rendered} />
-                </article>
+      <!-- Cabecera del partido -->
+      <div class="match-header bg-black text-white rounded-2xl p-6 mb-8">
+        <p class="text-xs uppercase tracking-widest text-neutral-400 text-center mb-4">{fecha}</p>
 
-                <aside class="w-full lg:w-[350px] flex-shrink-0">
-                    <div class="bg-white p-5 rounded-xl sticky top-4">
-                        <BoxBanner />
-                        <div class="my-6 h-px bg-gray-200"></div>
-                        <MoreNews />
-                        <DoubleBox />
-                    </div>
-                </aside>
-            </div>
+        <div class="flex items-center justify-center gap-4 w-full">
+          <!-- Equipo local -->
+          <div class="flex flex-col items-center gap-2 w-5/12 text-center">
+            {flag1
+              ? <img src={flag1} alt={match.equipo_local} class="w-20 h-auto rounded shadow-lg" />
+              : <span class="text-5xl">🏳️</span>
+            }
+            <span class="font-bold text-lg leading-tight">{match.equipo_local}</span>
+          </div>
 
+          <!-- Marcador / VS -->
+          <div class="flex flex-col items-center gap-2 flex-shrink-0" id="live-score-block">
+            {match.status !== 'programado'
+              ? (
+                <>
+                  <span class="goodtime font-bold text-3xl md:text-4xl text-white" id="live-score">
+                    {match.score_local} - {match.score_visitante}
+                  </span>
+                  {match.status === 'en_vivo' && (
+                    <span class="live-badge">EN VIVO</span>
+                  )}
+                  {match.status === 'finalizado' && (
+                    <span class="final-badge">Final</span>
+                  )}
+                </>
+              )
+              : <span class="goodtime font-bold text-2xl text-white">VS</span>
+            }
+          </div>
+
+          <!-- Equipo visitante -->
+          <div class="flex flex-col items-center gap-2 w-5/12 text-center">
+            {flag2
+              ? <img src={flag2} alt={match.equipo_visitante} class="w-20 h-auto rounded shadow-lg" />
+              : <span class="text-5xl">🏳️</span>
+            }
+            <span class="font-bold text-lg leading-tight">{match.equipo_visitante}</span>
+          </div>
         </div>
-    </section>
+
+        {match.sede && (
+          <p class="text-xs text-neutral-400 uppercase tracking-widest text-center mt-4">{match.sede}</p>
+        )}
+        {match.grupo && (
+          <p class="text-xs text-neutral-500 text-center mt-1">{match.grupo}</p>
+        )}
+      </div>
+
+      <!-- Layout con iframe y aside -->
+      <div class="flex flex-col lg:flex-row gap-8">
+        <div class="flex-1 min-w-0">
+          <!-- Iframe minuto a minuto -->
+          <div class="gamecast-wrapper rounded-xl overflow-hidden bg-black">
+            <iframe
+              src={gamecastUrl}
+              title={`Minuto a minuto: ${match.equipo_local} vs ${match.equipo_visitante}`}
+              class="gamecast-iframe"
+              frameborder="0"
+              scrolling="no"
+              allowfullscreen
+            />
+          </div>
+        </div>
+
+        <aside class="w-full lg:w-[350px] flex-shrink-0">
+          <div class="bg-white p-5 rounded-xl sticky top-4">
+            <BoxBanner />
+            <div class="my-6 h-px bg-gray-200"></div>
+            <MoreNews />
+            <DoubleBox />
+          </div>
+        </aside>
+      </div>
+
+    </div>
+  </section>
 </Layout>
 
-<style is:global>
-    .nota-interna p { margin-bottom: 1.5em; }
-    .nota-interna h2 { font-size: 1.5em; font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; }
-    .nota-interna h3 { font-size: 1.25em; font-weight: bold; margin-top: 1.2em; margin-bottom: 0.5em; }
-    .nota-interna ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1.5em; }
-    .nota-interna a { color: #ea262a; text-decoration: underline; }
-    .nota-interna img { max-width: 100%; height: auto; border-radius: 8px; margin: 1em 0; }
-    .nota-interna iframe { max-width: 100%; margin: 1em 0; }
+<!-- Actualizar score en vivo cada 30s -->
+<script define:vars={{ matchId: match.match_id }}>
+async function pollScore() {
+  try {
+    const res = await fetch('/api/partidos')
+    if (!res.ok) return
+    const data = await res.json()
+    const m = data.find((x) => x.match_id === matchId)
+    if (!m) return
+
+    const scoreEl = document.getElementById('live-score')
+    if (scoreEl && m.status !== 'programado') {
+      scoreEl.textContent = `${m.score_local} - ${m.score_visitante}`
+    }
+  } catch { /* silent */ }
+}
+
+setInterval(pollScore, 30_000)
+</script>
+
+<style>
+.match-header {
+  background: linear-gradient(135deg, #0a0a0a 0%, #111 100%);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.live-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ea262a;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: pulse-live 2s infinite;
+}
+.live-badge::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ea262a;
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+.final-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gamecast-wrapper {
+  position: relative;
+  width: 100%;
+}
+.gamecast-iframe {
+  width: 100%;
+  height: 700px;
+  border: none;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .gamecast-iframe { height: 500px; }
+}
 </style>

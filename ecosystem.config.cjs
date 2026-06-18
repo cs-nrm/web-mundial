@@ -28,6 +28,22 @@ module.exports = {
       out_file: "logs/goal-bot.log",
       merge_logs: true,
       time: true
+    },
+    {
+      name: "fixture-sync",
+      script: "./scripts/fixture-sync/index.js",
+      cwd: "/var/www/web-mundial",
+      interpreter: "node",
+      interpreter_args: "--env-file=.env",
+      watch: false,
+      autorestart: true,
+      restart_delay: 10000,
+      max_restarts: 10,
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+      error_file: "logs/fixture-sync-error.log",
+      out_file: "logs/fixture-sync.log",
+      merge_logs: true,
+      time: true
     }
   ]
 };

@@ -1,6 +1,6 @@
 import { fetchLiveMatches } from './fixture.js'
 import { pollMatch } from './ficha.js'
-import { isAlreadyProcessed, saveEvent } from './db.js'
+import { isAlreadyProcessed, saveEvent, updateMatchLive, upsertMatchInfo } from './db.js'
 import { POLL_INTERVAL_LIVE, POLL_INTERVAL_IDLE, STATUS } from './config.js'
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
@@ -31,6 +31,33 @@ async function processMatch(match) {
   }
 
   const { status, teams, newGoals, isHalftime, isKickoff, isFinished } = result
+
+  // Mantener df_partidos con score y status actualizados en cada poll
+  if (teams.teamHome && teams.teamAway) {
+    const dfStatus = isFinished ? 'finalizado'
+      : (status?.value === 'Primer Tiempo' || status?.value === 'Segundo Tiempo' || status?.value === 'Entretiempo') ? 'en_vivo'
+      : 'programado'
+
+    await updateMatchLive({
+      match_id: match.id,
+      status: dfStatus,
+      score_local: teams.scoreHome,
+      score_visitante: teams.scoreAway,
+      minuto: status?.minute ?? null,
+    })
+
+    // Safety net: si el fixture-sync aún no corrió, asegurar que la fila exista
+    if (isKickoff) {
+      const toSlug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').trim()
+      await upsertMatchInfo({
+        match_id: match.id,
+        slug: `${toSlug(teams.teamHome)}-vs-${toSlug(teams.teamAway)}`,
+        fecha_utc: match.kickoffCdmx.toISOString(),
+        equipo_local: teams.teamHome,
+        equipo_visitante: teams.teamAway,
+      })
+    }
+  }
 
   // Guardar evento de inicio de partido
   if (isKickoff) {

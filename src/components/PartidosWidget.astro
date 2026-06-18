@@ -1,0 +1,335 @@
+---
+import { createSupabaseAdminClient } from '../lib/supabase'
+import { getFlagUrl } from '../lib/flags.js'
+
+const supabase = createSupabaseAdminClient()
+
+const now = new Date()
+const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
+const ayer   = new Date(cdmxNow.getTime() - 24 * 60 * 60_000).toISOString().slice(0, 10)
+const manana = new Date(cdmxNow.getTime() + 24 * 60 * 60_000).toISOString().slice(0, 10)
+
+const { data: matches = [] } = await supabase
+  .from('df_partidos')
+  .select('*')
+  .gte('fecha_utc', `${ayer}T06:00:00Z`)
+  .lte('fecha_utc', `${manana}T06:00:00Z`)
+  .order('fecha_utc', { ascending: true })
+
+function formatHora(fechaUtc: string) {
+  return new Date(fechaUtc).toLocaleTimeString('es-MX', {
+    timeZone: 'America/Mexico_City',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+function formatFechaDia(fechaUtc: string) {
+  const d = new Date(fechaUtc)
+  const cdmx = new Date(d.getTime() - 6 * 60 * 60_000)
+  const hoyStr = cdmxNow.toISOString().slice(0, 10)
+  const diaStr = cdmx.toISOString().slice(0, 10)
+  if (diaStr === hoyStr) return 'Hoy'
+  const ayerStr = new Date(cdmxNow.getTime() - 24 * 60 * 60_000).toISOString().slice(0, 10)
+  if (diaStr === ayerStr) return 'Ayer'
+  return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'America/Mexico_City' })
+}
+
+// Agrupar por día CDMX
+const days: Record<string, typeof matches> = {}
+for (const m of (matches ?? [])) {
+  const d = new Date(m.fecha_utc)
+  const cdmx = new Date(d.getTime() - 6 * 60 * 60_000)
+  const key = cdmx.toISOString().slice(0, 10)
+  if (!days[key]) days[key] = []
+  days[key].push(m)
+}
+---
+
+{Object.keys(days).length === 0 ? (
+  <p class="text-center text-gray-400 py-6 text-sm">Sin partidos próximos.</p>
+) : (
+  <div class="partidos-widget" id="partidos-widget">
+    {Object.entries(days).map(([dayKey, dayMatches]) => (
+      <div class="pw-day-group">
+        <p class="pw-day-label">{formatFechaDia(dayMatches[0].fecha_utc)}</p>
+        <div class="pw-scroll">
+          {dayMatches.map(m => (
+            <a
+              href={`/partidos-del-dia/${m.slug}/`}
+              class={`pw-card ${m.status}`}
+              data-match-id={m.match_id}
+            >
+              {m.status === 'en_vivo' && (
+                <span class="pw-live-badge">EN VIVO</span>
+              )}
+              {m.status === 'finalizado' && (
+                <span class="pw-final-badge">Final</span>
+              )}
+              {m.status === 'programado' && (
+                <span class="pw-hora">{formatHora(m.fecha_utc)}</span>
+              )}
+
+              <div class="pw-equipos">
+                <div class="pw-equipo">
+                  {getFlagUrl(m.equipo_local, 80)
+                    ? <img src={getFlagUrl(m.equipo_local, 80) ?? ''} alt={m.equipo_local} class="pw-flag" />
+                    : <span class="pw-no-flag">🏳️</span>
+                  }
+                  <span class="pw-nombre">{m.equipo_local}</span>
+                </div>
+
+                <div class="pw-marcador" data-score>
+                  {m.status !== 'programado'
+                    ? <><span class="pw-score">{m.score_local}</span><span class="pw-dash">-</span><span class="pw-score">{m.score_visitante}</span></>
+                    : <span class="pw-vs goodtime">VS</span>
+                  }
+                </div>
+
+                <div class="pw-equipo">
+                  {getFlagUrl(m.equipo_visitante, 80)
+                    ? <img src={getFlagUrl(m.equipo_visitante, 80) ?? ''} alt={m.equipo_visitante} class="pw-flag" />
+                    : <span class="pw-no-flag">🏳️</span>
+                  }
+                  <span class="pw-nombre">{m.equipo_visitante}</span>
+                </div>
+              </div>
+
+              {m.grupo && <p class="pw-grupo">{m.grupo}</p>}
+            </a>
+          ))}
+        </div>
+      </div>
+    ))}
+    <div class="pw-ver-todos">
+      <a href="/partidos-del-dia/">Ver todos los partidos →</a>
+    </div>
+  </div>
+)}
+
+<script>
+// Polling en vivo cada 30s
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+function updateWidget(matches: any[]) {
+  const map = new Map(matches.map((m: any) => [m.match_id, m]))
+
+  document.querySelectorAll<HTMLElement>('[data-match-id]').forEach(card => {
+    const id = card.dataset.matchId!
+    const m = map.get(id)
+    if (!m) return
+
+    // Actualizar badge de status
+    card.querySelector('.pw-live-badge')?.remove()
+    card.querySelector('.pw-final-badge')?.remove()
+    card.querySelector('.pw-hora')?.remove()
+
+    const scoreEl = card.querySelector('[data-score]')
+    if (!scoreEl) return
+
+    if (m.status === 'en_vivo') {
+      const badge = document.createElement('span')
+      badge.className = 'pw-live-badge'
+      badge.textContent = 'EN VIVO'
+      card.insertBefore(badge, card.querySelector('.pw-equipos'))
+      scoreEl.innerHTML = `<span class="pw-score">${m.score_local}</span><span class="pw-dash">-</span><span class="pw-score">${m.score_visitante}</span>`
+    } else if (m.status === 'finalizado') {
+      const badge = document.createElement('span')
+      badge.className = 'pw-final-badge'
+      badge.textContent = 'Final'
+      card.insertBefore(badge, card.querySelector('.pw-equipos'))
+      scoreEl.innerHTML = `<span class="pw-score">${m.score_local}</span><span class="pw-dash">-</span><span class="pw-score">${m.score_visitante}</span>`
+    }
+
+    card.className = `pw-card ${m.status}`
+  })
+}
+
+async function poll() {
+  try {
+    const res = await fetch('/api/partidos')
+    if (!res.ok) return
+    const data = await res.json()
+    updateWidget(data)
+  } catch { /* silent */ }
+}
+
+if (document.getElementById('partidos-widget')) {
+  pollTimer = setInterval(poll, 30_000)
+}
+</script>
+
+<style>
+.partidos-widget {
+  margin: 1rem 0;
+}
+
+.pw-day-group {
+  margin-bottom: 1.5rem;
+}
+
+.pw-day-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  padding: 0 0.25rem 0.5rem;
+}
+
+.pw-scroll {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.pw-scroll::-webkit-scrollbar { height: 4px; }
+.pw-scroll::-webkit-scrollbar-track { background: transparent; }
+.pw-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 999px; }
+
+.pw-card {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: white;
+  min-width: 160px;
+  max-width: 180px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pw-card:hover {
+  background: #1a1a1a;
+  border-color: rgba(255,255,255,0.18);
+}
+.pw-card.en_vivo {
+  border-color: #ea262a55;
+  background: #1a0a0a;
+}
+
+.pw-live-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ea262a;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  animation: pulse-live 2s infinite;
+}
+.pw-live-badge::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ea262a;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+.pw-final-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+}
+
+.pw-hora {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  font-weight: 600;
+}
+
+.pw-equipos {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.pw-equipo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.pw-flag {
+  width: 36px;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+.pw-no-flag { font-size: 1.5rem; }
+
+.pw-nombre {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  color: rgba(255,255,255,0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60px;
+}
+
+.pw-marcador {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+.pw-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: white;
+  min-width: 14px;
+  text-align: center;
+}
+.pw-dash {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.4);
+}
+.pw-vs {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.35);
+}
+
+.pw-grupo {
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.pw-ver-todos {
+  text-align: right;
+  margin-top: 0.25rem;
+}
+.pw-ver-todos a {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.pw-ver-todos a:hover { color: #ea262a; }
+</style>

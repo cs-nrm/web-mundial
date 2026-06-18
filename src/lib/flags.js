@@ -28,13 +28,20 @@ const countryToIso = {
   'angola': 'ao', 'zimbabue': 'zw', 'etiopia': 'et', 'kenia': 'ke',
   'libia': 'ly', 'congo': 'cd', 'gambia': 'gm', 'guinea bissau': 'gw',
   // Asia y Oceanía
-  'japon': 'jp', 'corea del sur': 'kr', 'arabia saudita': 'sa',
-  'australia': 'au', 'iran': 'ir', 'qatar': 'qa', 'irak': 'iq',
+  'japon': 'jp', 'corea del sur': 'kr', 'rep. de corea': 'kr', 'arabia saudita': 'sa',
+  'australia': 'au', 'iran': 'ir', 'qatar': 'qa', 'catar': 'qa', 'irak': 'iq',
   'jordania': 'jo', 'palestina': 'ps', 'china': 'cn', 'india': 'in',
   'indonesia': 'id', 'vietnam': 'vn', 'tailandia': 'th', 'filipinas': 'ph',
   'malasia': 'my', 'nueva zelanda': 'nz', 'uzbekistan': 'uz',
   'tayikistan': 'tj', 'kirguistan': 'kg', 'oman': 'om', 'bahrain': 'bh',
   'kuwait': 'kw', 'emiratos arabes': 'ae',
+  // Nombres abreviados/alternativos que usa DataFactory
+  'bosnia-herz.': 'ba', 'bosnia herz.': 'ba',
+  'curazao': 'cw',
+  'ee.uu.': 'us', 'ee. uu.': 'us', 'estados unidos': 'us',
+  'rd congo': 'cd', 'r.d. congo': 'cd', 'republica democratica del congo': 'cd',
+  'trinidad y tobago': 'tt', 'guinea ecuatorial': 'gq',
+  'nueva caledonia': 'nc', 'papua nueva guinea': 'pg',
 }
 
 function normalize(name) {

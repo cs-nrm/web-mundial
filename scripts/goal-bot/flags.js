@@ -19,10 +19,15 @@ export const countryToIso = {
   'cabo verde': 'cv', 'guinea': 'gn', 'rd congo': 'cd', 'congo': 'cd',
   'camerun': 'cm', 'sudafrica': 'za',
   // AFC
-  'japon': 'jp', 'corea del sur': 'kr', 'arabia saudita': 'sa',
-  'australia': 'au', 'iran': 'ir', 'qatar': 'qa', 'irak': 'iq',
+  'japon': 'jp', 'corea del sur': 'kr', 'rep. de corea': 'kr', 'arabia saudita': 'sa',
+  'australia': 'au', 'iran': 'ir', 'qatar': 'qa', 'catar': 'qa', 'irak': 'iq',
   'jordania': 'jo', 'nueva zelanda': 'nz', 'uzbekistan': 'uz',
   'indonesia': 'id',
+  // Nombres abreviados/alternativos que usa DataFactory
+  'bosnia-herz.': 'ba', 'bosnia herz.': 'ba', 'bosnia y herzegovina': 'ba',
+  'curazao': 'cw',
+  'ee.uu.': 'us', 'ee. uu.': 'us',
+  'r.d. congo': 'cd', 'republica democratica del congo': 'cd',
 }
 
 export function normalize(name) {

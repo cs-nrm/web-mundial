@@ -1,12 +1,20 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro'
 import { canAccess, EDITOR_ROLES } from '../../../lib/admin'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
 import type { UserRole } from '../../../lib/perfil'
 
 const { role } = Astro.locals
 if (!canAccess(role as UserRole, EDITOR_ROLES)) {
   return Astro.redirect('/admin/analisis')
 }
+
+const supabase = createSupabaseAdminClient()
+const { data: partidos = [] } = await supabase
+  .from('df_partidos')
+  .select('slug, equipo_local, equipo_visitante, fecha_utc')
+  .gte('fecha_utc', new Date(Date.now() - 3 * 24 * 60 * 60_000).toISOString())
+  .order('fecha_utc', { ascending: true })
 ---
 
 <AdminLayout title="Nueva entrada — Resumen de Análisis">
@@ -26,9 +34,17 @@ if (!canAccess(role as UserRole, EDITOR_ROLES)) {
       </div>
 
       <div class="form-group">
-        <label for="partido_slug">Slug del partido (gamecast)</label>
-        <input id="partido_slug" name="partido_slug" type="text" placeholder="ej. iran-vs-nueva-zelanda" />
-        <span class="hint">Opcional. Vincula esta previa con la tarjeta del partido en el inicio.</span>
+        <label for="partido_slug">Partido (opcional)</label>
+        <select id="partido_slug" name="partido_slug">
+          <option value="">— Sin partido asignado —</option>
+          {(partidos ?? []).map(p => {
+            const fecha = new Date(p.fecha_utc).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+            return (
+              <option value={p.slug}>{fecha} · {p.equipo_local} vs {p.equipo_visitante}</option>
+            )
+          })}
+        </select>
+        <span class="hint">Vincula esta previa con la tarjeta del partido.</span>
       </div>
 
       <div class="form-group">
@@ -203,6 +219,18 @@ if (!canAccess(role as UserRole, EDITOR_ROLES)) {
     font-weight: 600;
     color: #444;
   }
+
+  select {
+    border: 1.5px solid #ddd;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    background: white;
+  }
+  select:focus { border-color: var(--rojo); }
 
   input[type=text], input[type=datetime-local] {
     border: 1.5px solid #ddd;

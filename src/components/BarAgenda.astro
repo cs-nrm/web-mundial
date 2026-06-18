@@ -1,0 +1,352 @@
+---
+import { createSupabaseAdminClient } from '../lib/supabase'
+import { getFlagUrl } from '../lib/flags.js'
+
+const supabase = createSupabaseAdminClient()
+
+const now = new Date()
+const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
+const todayCdmx  = cdmxNow.toISOString().slice(0, 10)
+const ayerCdmx        = new Date(cdmxNow.getTime() - 24 * 60 * 60_000).toISOString().slice(0, 10)
+const pasadoMananaCdmx = new Date(cdmxNow.getTime() + 48 * 60 * 60_000).toISOString().slice(0, 10)
+
+// Mostrar ayer + hoy + mañana para que la barra nunca quede vacía
+const { data: matches = [] } = await supabase
+  .from('df_partidos')
+  .select('match_id, slug, equipo_local, equipo_visitante, fecha_utc, status, score_local, score_visitante, grupo, minuto')
+  .gte('fecha_utc', `${ayerCdmx}T06:00:00Z`)
+  .lt('fecha_utc',  `${pasadoMananaCdmx}T06:00:00Z`)
+  .order('fecha_utc', { ascending: true })
+
+function formatHora(fechaUtc: string) {
+  return new Date(fechaUtc).toLocaleTimeString('es-MX', {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
+
+function formatFechaCorta(fechaUtc: string) {
+  const d = new Date(fechaUtc)
+  return d.toLocaleDateString('es-MX', {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+---
+
+{(matches ?? []).length > 0 && (
+  <div class="bar-agenda-wrapper" id="bar-agenda">
+    <button class="bar-nav bar-nav--prev" aria-label="Anterior" onclick="document.getElementById('bar-agenda-scroll').scrollBy({left:-220,behavior:'smooth'})">‹</button>
+
+    <div class="bar-agenda-scroll" id="bar-agenda-scroll">
+      {(matches ?? []).map(m => {
+        const f1 = getFlagUrl(m.equipo_local, 160)
+        const f2 = getFlagUrl(m.equipo_visitante, 160)
+        const isLive = m.status === 'en_vivo'
+        const isDone = m.status === 'finalizado'
+        return (
+          <a href={`/partidos-del-dia/${m.slug}/`} class={`bar-card ${isLive ? 'is-live' : ''} ${isDone ? 'is-done' : ''}`} data-match-id={m.match_id}>
+            <!-- Status -->
+            <div class="bar-status">
+              {isLive  && <span class="bar-live-dot"></span>}
+              {isLive  && <span>EN VIVO{m.minuto ? ` · ${m.minuto}'` : ''}</span>}
+              {isDone  && <span>FINAL</span>}
+              {!isLive && !isDone && (
+                <span>{formatFechaCorta(m.fecha_utc)} {formatHora(m.fecha_utc)}</span>
+              )}
+            </div>
+
+            <!-- Equipos y marcador -->
+            <div class="bar-match">
+              <div class="bar-team">
+                <div class="bar-flag-circle">
+                  {f1
+                    ? <img src={f1} alt={m.equipo_local} />
+                    : <span class="bar-no-flag">🏳️</span>
+                  }
+                </div>
+                <span class="bar-team-name">{m.equipo_local}</span>
+              </div>
+
+              <div class="bar-score" data-score>
+                {!isLive && !isDone
+                  ? <span class="bar-vs">vs</span>
+                  : <>
+                      <b>{m.score_local}</b>
+                      <span class="bar-score-sep">-</span>
+                      <b>{m.score_visitante}</b>
+                    </>
+                }
+              </div>
+
+              <div class="bar-team">
+                <div class="bar-flag-circle">
+                  {f2
+                    ? <img src={f2} alt={m.equipo_visitante} />
+                    : <span class="bar-no-flag">🏳️</span>
+                  }
+                </div>
+                <span class="bar-team-name">{m.equipo_visitante}</span>
+              </div>
+            </div>
+
+            {isLive && (
+              <div class="bar-minuto">Ver minuto a minuto →</div>
+            )}
+          </a>
+        )
+      })}
+    </div>
+
+    <button class="bar-nav bar-nav--next" aria-label="Siguiente" onclick="document.getElementById('bar-agenda-scroll').scrollBy({left:220,behavior:'smooth'})">›</button>
+  </div>
+)}
+
+<script>
+async function pollBarAgenda() {
+  try {
+    const res = await fetch('/api/partidos')
+    if (!res.ok) return
+    const data: any[] = await res.json()
+    const map = new Map(data.map((m: any) => [m.match_id, m]))
+
+    document.querySelectorAll<HTMLElement>('#bar-agenda [data-match-id]').forEach(card => {
+      const m = map.get(card.dataset.matchId!)
+      if (!m) return
+
+      const scoreEl = card.querySelector<HTMLElement>('[data-score]')
+      const statusEl = card.querySelector<HTMLElement>('.bar-status')
+      if (!scoreEl || !statusEl) return
+
+      if (m.status === 'en_vivo') {
+        card.classList.add('is-live')
+        card.classList.remove('is-done')
+        const minLabel = m.minuto ? ` · ${m.minuto}'` : ''
+        statusEl.innerHTML = `<span class="bar-live-dot"></span><span>EN VIVO${minLabel}</span>`
+        scoreEl.innerHTML = `<b>${m.score_local}</b><span class="bar-score-sep">-</span><b>${m.score_visitante}</b>`
+        if (!card.querySelector('.bar-minuto')) {
+          const minEl = document.createElement('div')
+          minEl.className = 'bar-minuto'
+          minEl.textContent = 'Ver minuto a minuto →'
+          card.appendChild(minEl)
+        }
+      } else if (m.status === 'finalizado') {
+        card.classList.remove('is-live')
+        card.classList.add('is-done')
+        statusEl.innerHTML = '<span>FINAL</span>'
+        scoreEl.innerHTML = `<b>${m.score_local}</b><span class="bar-score-sep">-</span><b>${m.score_visitante}</b>`
+        card.querySelector('.bar-minuto')?.remove()
+      }
+    })
+  } catch { /* silent */ }
+}
+
+if (document.getElementById('bar-agenda')) {
+  setInterval(pollBarAgenda, 30_000)
+
+  // Autoscroll
+  const scroll = document.getElementById('bar-agenda-scroll')!
+  let paused = false
+  let direction = 1
+
+  const wrapper = document.getElementById('bar-agenda')!
+  wrapper.addEventListener('mouseenter', () => { paused = true })
+  wrapper.addEventListener('mouseleave', () => { paused = false })
+  wrapper.addEventListener('touchstart', () => { paused = true }, { passive: true })
+  wrapper.addEventListener('touchend',   () => { setTimeout(() => { paused = false }, 2000) }, { passive: true })
+
+  setInterval(() => {
+    if (paused) return
+    const { scrollLeft, scrollWidth, clientWidth } = scroll
+    const atEnd   = scrollLeft + clientWidth >= scrollWidth - 2
+    const atStart = scrollLeft <= 2
+    if (atEnd)   direction = -1
+    if (atStart) direction =  1
+    scroll.scrollBy({ left: direction * 191, behavior: 'smooth' })
+  }, 3000)
+}
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&display=swap');
+
+.bar-agenda-wrapper {
+  font-family: 'Barlow Condensed', sans-serif;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  background: #111;
+  border-bottom: 1px solid #222;
+  height: 130px;
+  overflow: hidden;
+}
+
+.bar-agenda-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  flex: 1;
+}
+.bar-agenda-scroll::-webkit-scrollbar { display: none; }
+
+/* Tarjeta */
+.bar-card {
+  flex-shrink: 0;
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  text-decoration: none;
+  color: white;
+  background: #1a1a1a;
+  border-right: 1px solid #2a2a2a;
+  transition: background 0.15s;
+  overflow: hidden;
+}
+.bar-card:hover { background: #222; }
+.bar-card.is-live { background: #1e0a0a; border-right-color: #3a1010; }
+
+/* Status */
+.bar-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 2px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  flex-shrink: 0;
+}
+.is-live .bar-status { color: #ea262a; }
+
+.bar-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ea262a;
+  flex-shrink: 0;
+  animation: dot-pulse 1.5s infinite;
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* Equipos y marcador */
+.bar-match {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 8px 6px;
+  gap: 4px;
+  min-height: 0;
+}
+
+.bar-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Flag circular */
+.bar-flag-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #333;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bar-flag-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.bar-no-flag { font-size: 1.1rem; line-height: 1; }
+
+.bar-team-name {
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 66px;
+}
+
+/* Marcador */
+.bar-score {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.bar-score b {
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: white;
+  line-height: 1;
+  min-width: 18px;
+  text-align: center;
+}
+.bar-score-sep {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.3);
+  font-weight: 300;
+}
+.bar-vs {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+}
+
+/* Flechas de navegación */
+.bar-nav {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  width: 28px;
+  background: #222;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bar-nav:hover { background: #333; color: white; }
+.bar-nav--prev { border-right: 1px solid #2a2a2a; }
+.bar-nav--next { border-left:  1px solid #2a2a2a; }
+
+/* Texto "Ver minuto a minuto" en tarjetas en vivo */
+.bar-minuto {
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #ea262a;
+  text-align: center;
+  padding: 0 8px 5px;
+  flex-shrink: 0;
+}
+</style>
