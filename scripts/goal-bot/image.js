@@ -1,6 +1,7 @@
 import sharp from 'sharp'
 import { existsSync } from 'fs'
 import { join } from 'path'
+import { getFlagUrl } from './flags.js'
 
 const TEMPLATES = join(process.cwd(), 'public/templates')
 
@@ -11,37 +12,6 @@ const LAYOUT = {
   flagRight: { x: 865 },
   score: { y: 455, fontSize: 110, dashX: 540, leftX: 385, rightX: 695 },
   team:  { y: 570, fontSize: 38 },
-}
-
-// Misma lógica que src/lib/flags.js pero utilizable en Node sin Astro
-const countryToIso = {
-  'mexico': 'mx', 'estados unidos': 'us', 'canada': 'ca', 'costa rica': 'cr',
-  'panama': 'pa', 'honduras': 'hn', 'guatemala': 'gt', 'el salvador': 'sv',
-  'jamaica': 'jm', 'haiti': 'ht',
-  'argentina': 'ar', 'brasil': 'br', 'uruguay': 'uy', 'colombia': 'co',
-  'ecuador': 'ec', 'chile': 'cl', 'paraguay': 'py', 'peru': 'pe', 'venezuela': 've',
-  'espana': 'es', 'francia': 'fr', 'alemania': 'de', 'inglaterra': 'gb-eng',
-  'portugal': 'pt', 'italia': 'it', 'paises bajos': 'nl', 'belgica': 'be',
-  'suiza': 'ch', 'croacia': 'hr', 'serbia': 'rs', 'polonia': 'pl',
-  'turquia': 'tr', 'austria': 'at', 'escocia': 'gb-sct', 'dinamarca': 'dk',
-  'suecia': 'se', 'noruega': 'no', 'ucrania': 'ua', 'georgia': 'ge',
-  'marruecos': 'ma', 'senegal': 'sn', 'nigeria': 'ng', 'ghana': 'gh',
-  'egipto': 'eg', 'costa de marfil': 'ci', 'tunez': 'tn', 'argelia': 'dz',
-  'cabo verde': 'cv', 'guinea': 'gn', 'rd congo': 'cd', 'congo': 'cd',
-  'chequia': 'cz', 'republica checa': 'cz', 'rep. checa': 'cz', 'czech republic': 'cz',
-  'japon': 'jp', 'corea del sur': 'kr', 'arabia saudita': 'sa',
-  'australia': 'au', 'iran': 'ir', 'qatar': 'qa', 'irak': 'iq',
-  'jordania': 'jo', 'nueva zelanda': 'nz', 'uzbekistan': 'uz',
-  'indonesia': 'id', 'sudafrica': 'za',
-}
-
-function normalize(name) {
-  return name?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-}
-
-function getFlagUrl(name) {
-  const iso = countryToIso[normalize(name)]
-  return iso ? `https://flagcdn.com/w320/${iso}.png` : null
 }
 
 async function fetchImage(url) {
