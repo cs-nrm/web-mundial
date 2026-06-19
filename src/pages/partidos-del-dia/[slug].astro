@@ -48,9 +48,72 @@ const gamecastUrl = `https://enfoquenoticias.com.mx/df/html/v3/minapp/modules/fu
 
 const pageTitle = `${match.equipo_local} vs ${match.equipo_visitante} · La Fiesta del Fútbol`
 const pageDesc  = `Minuto a minuto de ${match.equipo_local} vs ${match.equipo_visitante}${match.sede ? ` en ${match.sede}` : ''}.`
+
+const eventStatus = match.status === 'finalizado'
+  ? 'https://schema.org/EventCompleted'
+  : match.status === 'en_vivo'
+    ? 'https://schema.org/EventScheduled'
+    : 'https://schema.org/EventScheduled'
+
+const sportsEventSchema = {
+  "@context": "https://schema.org",
+  "@type": "SportsEvent",
+  "name": `${match.equipo_local} vs ${match.equipo_visitante} — Copa Mundial FIFA 2026`,
+  "description": pageDesc,
+  "startDate": match.fecha_utc,
+  "eventStatus": eventStatus,
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "url": `https://fiestafutbol.com.mx/partidos-del-dia/${match.slug}/`,
+  "image": `https://fiestafutbol.com.mx/favicon/apple-touch-icon.png`,
+  ...(match.sede ? {
+    "location": {
+      "@type": "SportsActivityLocation",
+      "name": match.sede,
+      "address": { "@type": "PostalAddress", "addressCountry": "US" }
+    }
+  } : {}),
+  "competitor": [
+    { "@type": "SportsTeam", "name": match.equipo_local, "sport": "Fútbol" },
+    { "@type": "SportsTeam", "name": match.equipo_visitante, "sport": "Fútbol" }
+  ],
+  ...(match.status !== 'programado' ? {
+    "subjectOf": {
+      "@type": "CreativeWork",
+      "name": `${match.score_local} - ${match.score_visitante}`
+    }
+  } : {}),
+  "organizer": {
+    "@type": "SportsOrganization",
+    "name": "FIFA",
+    "url": "https://www.fifa.com"
+  },
+  "superEvent": {
+    "@type": "SportsEvent",
+    "name": "Copa Mundial de la FIFA 2026",
+    "url": "https://fiestafutbol.com.mx/partidos-del-dia/"
+  },
+  "publisher": {
+    "@id": "https://fiestafutbol.com.mx/#organization"
+  },
+  ...(match.grupo ? { "about": match.grupo } : {})
+}
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://fiestafutbol.com.mx/" },
+    { "@type": "ListItem", "position": 2, "name": "Partidos del día", "item": "https://fiestafutbol.com.mx/partidos-del-dia/" },
+    { "@type": "ListItem", "position": 3, "name": `${match.equipo_local} vs ${match.equipo_visitante}`, "item": `https://fiestafutbol.com.mx/partidos-del-dia/${match.slug}/` }
+  ]
+}
 ---
 
 <Layout title={pageTitle} description={pageDesc}>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(sportsEventSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  </Fragment>
   <section class="w-full py-4 poppins">
     <div class="container my-12 mx-auto px-4 md:px-12">
       <LeaderBoard />

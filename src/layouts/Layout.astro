@@ -65,7 +65,59 @@ const ogImageAbs = Astro.site ? new URL(ogImage, Astro.site).toString() : ogImag
     <meta name="twitter:image" content={ogImageAbs} class="yoast-seo-meta-tag" />
     {pubTime && <meta property="article:published_time" content={pubTime} class="yoast-seo-meta-tag" />}
     {modTime && <meta property="article:modified_time" content={modTime} class="yoast-seo-meta-tag" />}
-    <title>{SITE_TITLE} | {metaTitle}</title>
+    <title>{metaTitle === SITE_TITLE ? SITE_TITLE : `${metaTitle} | ${SITE_TITLE}`}</title>
+
+    <!-- Slot para schema adicional por página -->
+    <slot name="head" />
+
+    <!-- GEO: Structured Data — NewsMediaOrganization + WebSite -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "NewsMediaOrganization",
+          "@id": "https://fiestafutbol.com.mx/#organization",
+          "name": "La Fiesta del Fútbol",
+          "alternateName": "Fiesta Fútbol 2026",
+          "url": "https://fiestafutbol.com.mx",
+          "logo": {
+            "@type": "ImageObject",
+            "@id": "https://fiestafutbol.com.mx/#logo",
+            "url": "https://fiestafutbol.com.mx/favicon/apple-touch-icon.png",
+            "width": 180,
+            "height": 180
+          },
+          "description": "Cobertura completa del Mundial FIFA 2026 en México. Resultados en vivo, estadísticas, análisis y minuto a minuto. Propiedad de NRM Comunicaciones.",
+          "publisher": {
+            "@type": "Organization",
+            "name": "NRM Comunicaciones",
+            "url": "https://www.nrm.com.mx"
+          },
+          "areaServed": "MX",
+          "inLanguage": "es-MX",
+          "knowsAbout": [
+            "Copa Mundial FIFA 2026",
+            "Fútbol mexicano",
+            "Estadísticas de fútbol",
+            "Resultados de partidos en vivo",
+            "Selección Mexicana de Fútbol"
+          ],
+          "sameAs": [
+            "https://es.wikipedia.org/wiki/NRM_Comunicaciones",
+            "https://www.wikidata.org/wiki/Q6036967"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://fiestafutbol.com.mx/#website",
+          "url": "https://fiestafutbol.com.mx",
+          "name": "La Fiesta del Fútbol",
+          "description": "Cobertura completa del Mundial FIFA 2026: partidos del día, estadísticas, grupos, minuto a minuto y análisis.",
+          "publisher": { "@id": "https://fiestafutbol.com.mx/#organization" },
+          "inLanguage": "es-MX"
+        }
+      ]
+    })} />
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->

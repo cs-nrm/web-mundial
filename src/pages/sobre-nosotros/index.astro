@@ -1,0 +1,143 @@
+---
+import Layout from '../../layouts/Layout.astro'
+
+const pageTitle = 'Sobre Nosotros — La Fiesta del Fútbol'
+const pageDesc  = 'La Fiesta del Fútbol es la cobertura más completa del Mundial FIFA 2026 en México. Un proyecto de NRM Comunicaciones, el grupo de radio #1 en el Valle de México desde 1942.'
+
+const orgSchema = {
+  "@context": "https://schema.org",
+  "@type": "NewsMediaOrganization",
+  "@id": "https://fiestafutbol.com.mx/#organization",
+  "name": "La Fiesta del Fútbol",
+  "url": "https://fiestafutbol.com.mx",
+  "description": pageDesc,
+  "foundingOrganization": {
+    "@type": "Organization",
+    "name": "NRM Comunicaciones",
+    "url": "https://www.nrm.com.mx",
+    "foundingDate": "1942",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Prolongación Paseo de la Reforma 115",
+      "addressLocality": "Santa Fe",
+      "addressRegion": "Ciudad de México",
+      "postalCode": "01219",
+      "addressCountry": "MX"
+    },
+    "sameAs": [
+      "https://es.wikipedia.org/wiki/NRM_Comunicaciones",
+      "https://www.wikidata.org/wiki/Q6036967"
+    ]
+  },
+  "areaServed": "MX",
+  "inLanguage": "es-MX",
+  "knowsAbout": [
+    "Copa Mundial FIFA 2026",
+    "Fútbol mexicano",
+    "Estadísticas de fútbol",
+    "Resultados de partidos en vivo",
+    "Selección Mexicana de Fútbol"
+  ]
+}
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://fiestafutbol.com.mx/" },
+    { "@type": "ListItem", "position": 2, "name": "Sobre Nosotros", "item": "https://fiestafutbol.com.mx/sobre-nosotros/" }
+  ]
+}
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  </Fragment>
+
+  <section class="container mx-auto px-4 py-12 max-w-3xl">
+
+    <h1 class="titulos rojo uppercase goodtime text-center text-2xl lg:text-3xl font-bold mb-10">
+      Sobre Nosotros
+    </h1>
+
+    <!-- La Fiesta del Fútbol -->
+    <div class="mb-10">
+      <h2 class="text-xl font-bold text-black mb-3">La Fiesta del Fútbol</h2>
+      <p class="text-gray-700 leading-relaxed mb-4">
+        <strong>La Fiesta del Fútbol</strong> es la plataforma digital oficial de cobertura del
+        <strong>Mundial FIFA 2026</strong> de NRM Comunicaciones. Aquí encontrarás resultados en tiempo real,
+        estadísticas, análisis partido a partido, calendario completo y el minuto a minuto de cada encuentro
+        de la Copa del Mundo que se disputa en México, Estados Unidos y Canadá.
+      </p>
+      <p class="text-gray-700 leading-relaxed">
+        Nuestro equipo editorial combina el rigor periodístico de Enfoque Noticias con la pasión
+        futbolera que caracteriza a las estaciones de NRM Comunicaciones, para ofrecerte la cobertura
+        más completa del torneo en español.
+      </p>
+    </div>
+
+    <!-- NRM Comunicaciones -->
+    <div class="mb-10 bg-gray-900 rounded-xl p-6">
+      <h2 class="text-xl font-bold text-white mb-3">NRM Comunicaciones</h2>
+      <p class="text-gray-300 leading-relaxed mb-4">
+        Fundada en <strong class="text-white">1942</strong>, NRM Comunicaciones es el grupo de radio con mayor audiencia
+        en el Valle de México. Con más de 80 años de trayectoria, opera un conjunto de estaciones que
+        llegan a millones de radioescuchas cada día.
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+        <a href="https://beatdigital.mx" target="_blank" rel="noopener" class="flex flex-col items-center justify-center gap-3 p-6 bg-black rounded-xl hover:opacity-80 transition-opacity text-center min-h-[120px]">
+          <img src="https://storage.googleapis.com/nrm-web/nrm/images/footer/BEAT-2.png" alt="Beat 100.9" class="h-14 object-contain" />
+          <span class="text-sm text-gray-400">Beat 100.9 FM</span>
+        </a>
+        <a href="https://oyedigital.mx" target="_blank" rel="noopener" class="flex flex-col items-center justify-center gap-3 p-6 bg-black rounded-xl hover:opacity-80 transition-opacity text-center min-h-[120px]">
+          <img src="https://storage.googleapis.com/nrm-web/nrm/images/footer/OYE2.png" alt="Oye 89.7" class="h-14 object-contain" />
+          <span class="text-sm text-gray-400">Oye 89.7 FM</span>
+        </a>
+        <a href="https://sabrositadigital.mx" target="_blank" rel="noopener" class="flex flex-col items-center justify-center gap-3 p-6 bg-black rounded-xl hover:opacity-80 transition-opacity text-center min-h-[120px]">
+          <img src="https://storage.googleapis.com/nrm-web/nrm/images/footer/sabrosita.png" alt="Sabrosita" class="h-14 object-contain" />
+          <span class="text-sm text-gray-400">Sabrosita</span>
+        </a>
+        <a href="https://stereociendigital.mx" target="_blank" rel="noopener" class="flex flex-col items-center justify-center gap-3 p-6 bg-black rounded-xl hover:opacity-80 transition-opacity text-center min-h-[120px]">
+          <img src="https://storage.googleapis.com/nrm-web/nrm/images/footer/stereo.png" alt="Stereo Cien" class="h-14 object-contain" />
+          <span class="text-sm text-gray-400">Stereo Cien 100.1</span>
+        </a>
+        <a href="https://enfoquenoticias.com.mx" target="_blank" rel="noopener" class="flex flex-col items-center justify-center gap-3 p-6 bg-black rounded-xl hover:opacity-80 transition-opacity text-center min-h-[120px]">
+          <img src="https://storage.googleapis.com/nrm-web/nrm/images/footer/enfoque-footer.png" alt="Enfoque Noticias" class="h-14 object-contain" />
+          <span class="text-sm text-gray-400">Enfoque Noticias</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Misión editorial -->
+    <div class="mb-10">
+      <h2 class="text-xl font-bold text-black mb-3">Misión editorial</h2>
+      <p class="text-gray-700 leading-relaxed mb-4">
+        Nos comprometemos a ofrecer información precisa, oportuna e imparcial sobre el Mundial FIFA 2026.
+        Los resultados y estadísticas son obtenidos directamente del proveedor oficial de datos deportivos
+        <strong>DataFactory</strong>. El contenido editorial es producido y verificado por el equipo de
+        NRM Comunicaciones.
+      </p>
+      <p class="text-gray-700 leading-relaxed">
+        Para correcciones, aclaraciones o solicitudes de información, escríbenos a través de
+        <a href="https://nrm.com.mx/contacto/" target="_blank" rel="noopener" class="text-red-600 hover:underline">
+          nrm.com.mx/contacto
+        </a>.
+      </p>
+    </div>
+
+    <!-- Datos de contacto -->
+    <div class="border-t border-gray-200 pt-8 text-sm text-gray-500">
+      <p><strong>NRM Comunicaciones S.A. de C.V.</strong></p>
+      <p>Prolongación Paseo de la Reforma 115, Santa Fe</p>
+      <p>Ciudad de México, C.P. 01219</p>
+      <p class="mt-2">
+        <a href="/aviso-de-privacidad/" class="hover:text-red-500 transition-colors">Aviso de privacidad</a>
+        <span class="mx-2">·</span>
+        <a href="/terminos-y-condiciones/" class="hover:text-red-500 transition-colors">Términos y condiciones</a>
+      </p>
+    </div>
+
+  </section>
+</Layout>
