@@ -18,6 +18,8 @@ const [{ data: matches = [] }, { data: previasRaw = [] }] = await Promise.all([
 ])
 
 const previaMap = new Map((previasRaw ?? []).map(a => [a.partido_slug, a.slug]))
+const n = (matches ?? []).length || 1
+const cardPct = `${(100 / n).toFixed(4)}%`
 
 function formatHora(fechaUtc: string) {
   return new Date(fechaUtc).toLocaleTimeString('es-MX', {
@@ -37,7 +39,7 @@ function formatHora(fechaUtc: string) {
   {(matches ?? []).length === 0 ? (
     <p class="text-center text-gray-400 py-8">No hay partidos programados para hoy.</p>
   ) : (
-    <div class="partidos-grid" id="home-partidos" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;">
+    <div id="home-partidos" style="display:flex;">
       {(matches ?? []).map(m => {
         const flag1 = getFlagUrl(m.equipo_local, 80)
         const flag2 = getFlagUrl(m.equipo_visitante, 80)
@@ -48,22 +50,17 @@ function formatHora(fechaUtc: string) {
             class="card-link"
             data-match-id={m.match_id}
             data-anim="fade-up"
+            style={`width:${cardPct};padding:0 6px;flex-shrink:0;`}
           >
             <div class={`gamecast-card rounded-xl bg-black text-white p-4 h-full flex flex-col gap-3 justify-between hover:bg-neutral-900 transition-colors border ${m.status === 'en_vivo' ? 'border-red-900' : 'border-transparent'}`}>
               <div class="flex items-center justify-between gap-1">
-                <p class="card-hora">
-                  {formatHora(m.fecha_utc)}
-                </p>
-                {m.status === 'en_vivo' && (
-                  <span class="home-live-badge">EN VIVO</span>
-                )}
-                {m.status === 'finalizado' && (
-                  <span class="home-final-badge">Final</span>
-                )}
+                <p class="card-hora">{formatHora(m.fecha_utc)}</p>
+                {m.status === 'en_vivo' && <span class="home-live-badge">EN VIVO</span>}
+                {m.status === 'finalizado' && <span class="home-final-badge">Final</span>}
               </div>
 
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex flex-col items-center gap-1 text-center w-5/12">
+              <div class="flex items-center justify-between gap-1">
+                <div class="flex flex-col items-center gap-1 text-center" style="flex:1;min-width:0;">
                   {flag1
                     ? <img src={flag1} alt={m.equipo_local} class="w-12 h-auto rounded-sm shadow" />
                     : <span class="text-2xl">🏳️</span>
@@ -71,14 +68,14 @@ function formatHora(fechaUtc: string) {
                   <span class="card-team">{m.equipo_local}</span>
                 </div>
 
-                <div class="score-col">
+                <div style="flex-shrink:0;padding:0 4px;">
                   {m.status !== 'programado'
                     ? <span class="card-score" data-score>{m.score_local}-{m.score_visitante}</span>
                     : <span class="card-vs">VS</span>
                   }
                 </div>
 
-                <div class="flex flex-col items-center gap-1 text-center w-5/12">
+                <div class="flex flex-col items-center gap-1 text-center" style="flex:1;min-width:0;">
                   {flag2
                     ? <img src={flag2} alt={m.equipo_visitante} class="w-12 h-auto rounded-sm shadow" />
                     : <span class="text-2xl">🏳️</span>
@@ -91,19 +88,16 @@ function formatHora(fechaUtc: string) {
                 <p class="text-xs text-neutral-400 uppercase tracking-widest truncate">{m.sede}</p>
               )}
 
-              <div class="card-footer">
+              <div style="display:flex;flex-direction:column;gap:0.3rem;">
                 <span class="card-minuto">Minuto a Minuto →</span>
                 {previaSlug && (
                   <a
                     href={`/resumen-de-analisis/${previaSlug}/`}
                     class="card-previa"
                     onclick="event.stopPropagation()"
-                  >
-                    Previa →
-                  </a>
+                  >Previa →</a>
                 )}
               </div>
-
             </div>
           </a>
         )
@@ -125,36 +119,26 @@ async function pollHomeScores() {
     if (!res.ok) return
     const data: any[] = await res.json()
     const map = new Map(data.map((m: any) => [m.match_id, m]))
-
     document.querySelectorAll<HTMLElement>('[data-match-id]').forEach(card => {
       const m = map.get(card.dataset.matchId!)
       if (!m || m.status === 'programado') return
-
       const scoreEl = card.querySelector<HTMLElement>('[data-score]')
-      if (scoreEl) {
-        scoreEl.textContent = `${m.score_local}-${m.score_visitante}`
-      }
+      if (scoreEl) scoreEl.textContent = `${m.score_local}-${m.score_visitante}`
     })
   } catch { /* silent */ }
 }
-
-if (document.getElementById('home-partidos')) {
-  setInterval(pollHomeScores, 30_000)
-}
+if (document.getElementById('home-partidos')) setInterval(pollHomeScores, 30_000)
 </script>
 
-<style>
+<style is:global>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600&display=swap');
 
+#home-partidos { scrollbar-width: none; }
+#home-partidos::-webkit-scrollbar { display: none; }
+
 @media (max-width: 700px) {
-  #home-partidos {
-    display: flex !important;
-    overflow-x: auto !important;
-    scrollbar-width: none;
-    padding-bottom: 0.5rem;
-  }
-  #home-partidos::-webkit-scrollbar { display: none; }
-  #home-partidos .card-link { flex: 0 0 200px !important; }
+  #home-partidos { overflow-x: auto; }
+  #home-partidos > .card-link { width: 200px !important; }
 }
 
 .card-hora {
@@ -165,7 +149,6 @@ if (document.getElementById('home-partidos')) {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-
 .card-team {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 0.85rem;
@@ -174,15 +157,9 @@ if (document.getElementById('home-partidos')) {
   letter-spacing: 0.02em;
   color: white;
   line-height: 1.2;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
-
-.score-col {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
 .card-score {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 1.6rem;
@@ -191,7 +168,6 @@ if (document.getElementById('home-partidos')) {
   white-space: nowrap;
   line-height: 1;
 }
-
 .card-vs {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 1.2rem;
@@ -199,13 +175,6 @@ if (document.getElementById('home-partidos')) {
   color: rgba(255,255,255,0.3);
   white-space: nowrap;
 }
-
-.card-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
 .card-minuto {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 0.75rem;
@@ -214,7 +183,6 @@ if (document.getElementById('home-partidos')) {
   letter-spacing: 0.05em;
   color: white;
 }
-
 .card-previa {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 0.75rem;
@@ -241,8 +209,7 @@ if (document.getElementById('home-partidos')) {
 .home-live-badge::before {
   content: '';
   display: inline-block;
-  width: 4px;
-  height: 4px;
+  width: 4px; height: 4px;
   border-radius: 50%;
   background: #ea262a;
 }

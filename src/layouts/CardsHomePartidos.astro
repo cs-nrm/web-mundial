@@ -1,0 +1,309 @@
+---
+import { createSupabaseAdminClient } from '../lib/supabase'
+import { getFlagUrl } from '../lib/flags.js'
+
+const supabase = createSupabaseAdminClient()
+
+const now = new Date()
+const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
+const todayCdmx = cdmxNow.toISOString().slice(0, 10)
+const manana = new Date(cdmxNow.getTime() + 24 * 60 * 60_000).toISOString().slice(0, 10)
+
+const [{ data: matches = [] }, { data: previasRaw = [] }] = await Promise.all([
+  supabase.from('df_partidos').select('*')
+    .gte('fecha_utc', `${todayCdmx}T06:00:00Z`)
+    .lt('fecha_utc',  `${manana}T06:00:00Z`)
+    .order('fecha_utc', { ascending: true }),
+  supabase.from('analisis').select('slug, partido_slug').not('partido_slug', 'is', null),
+])
+
+const previaMap = new Map((previasRaw ?? []).map(a => [a.partido_slug, a.slug]))
+
+function formatHora(fechaUtc: string) {
+  return new Date(fechaUtc).toLocaleTimeString('es-MX', {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+---
+
+<div class="container mx-auto px-4">
+  <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold" data-anim="hero-title">
+    Partidos del día
+  </h1>
+
+  {(matches ?? []).length === 0 ? (
+    <p class="text-center text-gray-400 py-8">No hay partidos programados para hoy.</p>
+  ) : (
+    <div id="phoy-row">
+      {(matches ?? []).map(m => {
+        const flag1 = getFlagUrl(m.equipo_local, 80)
+        const flag2 = getFlagUrl(m.equipo_visitante, 80)
+        const previaSlug = previaMap.get(m.slug)
+        const isVivo = m.status === 'en_vivo'
+        const isFinal = m.status === 'finalizado'
+        return (
+          <div
+            class={`phoy-card${isVivo ? ' phoy-vivo' : ''}`}
+            data-href={`/partidos-del-dia/${m.slug}/`}
+            data-match-id={m.match_id}
+            data-anim="fade-up"
+          >
+            <div class="phoy-header">
+              <span class="phoy-hora">{formatHora(m.fecha_utc)}</span>
+              {isVivo  && <span class="phoy-badge-vivo">EN VIVO</span>}
+              {isFinal && <span class="phoy-badge-final">Final</span>}
+            </div>
+
+            <div class="phoy-teams">
+              <div class="phoy-team">
+                {flag1
+                  ? <img src={flag1} alt={m.equipo_local} class="phoy-flag" />
+                  : <span>🏳️</span>
+                }
+                <span class="phoy-nombre">{m.equipo_local}</span>
+              </div>
+              <div class="phoy-score">
+                {m.status !== 'programado'
+                  ? <span class="phoy-marcador" data-score>{m.score_local}-{m.score_visitante}</span>
+                  : <span class="phoy-vs">VS</span>
+                }
+              </div>
+              <div class="phoy-team">
+                {flag2
+                  ? <img src={flag2} alt={m.equipo_visitante} class="phoy-flag" />
+                  : <span>🏳️</span>
+                }
+                <span class="phoy-nombre">{m.equipo_visitante}</span>
+              </div>
+            </div>
+
+            {m.sede && <p class="phoy-sede">{m.sede}</p>}
+
+            <div class="phoy-links">
+              <span class="phoy-minuto">Minuto a Minuto →</span>
+              {previaSlug && (
+                <a
+                  href={`/resumen-de-analisis/${previaSlug}/`}
+                  class="phoy-previa"
+                >Previa →</a>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )}
+
+  <div class="text-right mt-2">
+    <a href="/partidos-del-dia/" class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+      Ver todos los partidos →
+    </a>
+  </div>
+</div>
+
+<script>
+// Navegar al partido al hacer click en la card (excepto si el click fue en un <a> interno)
+document.querySelectorAll<HTMLElement>('.phoy-card[data-href]').forEach(card => {
+  card.addEventListener('click', e => {
+    if ((e.target as HTMLElement).closest('a')) return
+    window.location.href = card.dataset.href!
+  })
+})
+
+// Polling de marcadores
+async function phoyPoll() {
+  try {
+    const res = await fetch('/api/partidos')
+    if (!res.ok) return
+    const data: any[] = await res.json()
+    const map = new Map(data.map((m: any) => [m.match_id, m]))
+    document.querySelectorAll<HTMLElement>('[data-match-id]').forEach(card => {
+      const m = map.get(card.dataset.matchId!)
+      if (!m || m.status === 'programado') return
+      const el = card.querySelector<HTMLElement>('[data-score]')
+      if (el) el.textContent = `${m.score_local}-${m.score_visitante}`
+    })
+  } catch {}
+}
+if (document.getElementById('phoy-row')) setInterval(phoyPoll, 30_000)
+</script>
+
+<style is:global>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600&display=swap');
+
+/* ── contenedor ─────────────────────────────── */
+#phoy-row {
+  display: flex;
+  width: 100%;
+  scrollbar-width: none;
+}
+#phoy-row::-webkit-scrollbar { display: none; }
+
+/* ── tarjeta ────────────────────────────────── */
+.phoy-card {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 10px;
+  margin: 0 4px;
+  background: #000;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.phoy-card:first-child { margin-left: 0; }
+.phoy-card:last-child  { margin-right: 0; }
+.phoy-card:hover { background: #111; }
+.phoy-vivo { border-color: #7f1d1d; }
+
+/* ── header ─────────────────────────────────── */
+.phoy-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.phoy-hora {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── equipos ────────────────────────────────── */
+.phoy-teams {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.phoy-team {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.phoy-flag {
+  width: 44px;
+  height: auto;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  display: block;
+}
+.phoy-nombre {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #fff;
+  line-height: 1.2;
+  word-break: break-word;
+}
+.phoy-score {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+}
+.phoy-marcador {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #fff;
+  white-space: nowrap;
+  line-height: 1;
+}
+.phoy-vs {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.3);
+  white-space: nowrap;
+}
+
+/* ── sede ───────────────────────────────────── */
+.phoy-sede {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── links ──────────────────────────────────── */
+.phoy-links {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.phoy-minuto {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+.phoy-previa {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4ade80;
+  text-decoration: none;
+}
+.phoy-previa:hover { text-decoration: underline; }
+
+/* ── badges ─────────────────────────────────── */
+.phoy-badge-vivo {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #ea262a;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  animation: phoy-pulse 2s infinite;
+}
+.phoy-badge-vivo::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ea262a;
+}
+@keyframes phoy-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.phoy-badge-final {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+}
+
+/* ── mobile ─────────────────────────────────── */
+@media (max-width: 700px) {
+  #phoy-row { overflow-x: auto; }
+  .phoy-card { flex: 0 0 200px; }
+}
+</style>

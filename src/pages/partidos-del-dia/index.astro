@@ -7,12 +7,11 @@ import { getFlagUrl } from '../../lib/flags.js'
 
 const supabase = createSupabaseAdminClient()
 
-// Ventana de 3 días en CDMX (ayer, hoy, mañana)
 const now = new Date()
 const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
 const ayer         = new Date(cdmxNow.getTime() - 24 * 60 * 60_000).toISOString().slice(0, 10)
-const manana       = new Date(cdmxNow.getTime() + 24 * 60 * 60_000).toISOString().slice(0, 10)
 const pasadoManana = new Date(cdmxNow.getTime() + 48 * 60 * 60_000).toISOString().slice(0, 10)
+const manana       = new Date(cdmxNow.getTime() + 24 * 60 * 60_000).toISOString().slice(0, 10)
 
 const [{ data: matches = [] }, { data: previasRaw = [] }] = await Promise.all([
   supabase.from('df_partidos').select('*')
@@ -22,7 +21,6 @@ const [{ data: matches = [] }, { data: previasRaw = [] }] = await Promise.all([
   supabase.from('analisis').select('slug, partido_slug').not('partido_slug', 'is', null),
 ])
 
-// Mapa partido_slug → slug de análisis para lookup O(1)
 const previaMap = new Map((previasRaw ?? []).map(a => [a.partido_slug, a.slug]))
 
 function formatFecha(fechaUtc: string) {
@@ -47,7 +45,6 @@ function diaLabel(fechaUtc: string) {
   return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Mexico_City' })
 }
 
-// Agrupar por día
 const days: Record<string, typeof matches> = {}
 for (const m of (matches ?? [])) {
   const cdmx = new Date(new Date(m.fecha_utc).getTime() - 6 * 60 * 60_000)
@@ -71,82 +68,64 @@ for (const m of (matches ?? [])) {
           <p class="text-center text-gray-400 py-16">Sin partidos para estos días.</p>
         ) : (
           Object.entries(days).map(([dayKey, dayMatches]) => (
-            <div class="mb-10" id={`partidos-widget`}>
-              <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4 px-1">
-                {diaLabel(dayMatches[0].fecha_utc)}
-              </h2>
-              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div class="mb-10">
+              <h2 class="pd-dia-label">{diaLabel(dayMatches[0].fecha_utc)}</h2>
+              <div class="pd-grid">
                 {dayMatches.map(m => {
                   const flag1 = getFlagUrl(m.equipo_local, 80)
                   const flag2 = getFlagUrl(m.equipo_visitante, 80)
+                  const previaSlug = previaMap.get(m.slug)
+                  const isVivo = m.status === 'en_vivo'
+                  const isFinal = m.status === 'finalizado'
                   return (
-                    <a
-                      href={`/partidos-del-dia/${m.slug}/`}
-                      class="group"
+                    <div
+                      class={`pd-card${isVivo ? ' pd-vivo' : ''}`}
+                      data-href={`/partidos-del-dia/${m.slug}/`}
                       data-match-id={m.match_id}
                     >
-                      <div class={`gamecast-card rounded-xl bg-black text-white p-5 h-full flex flex-col gap-3 justify-between hover:bg-neutral-900 transition-colors border ${m.status === 'en_vivo' ? 'border-red-800' : 'border-transparent'}`}>
-                        <div class="flex items-center justify-between">
-                          <p class="text-xs text-neutral-400 uppercase tracking-widest">
-                            {formatFecha(m.fecha_utc)}
-                          </p>
-                          {m.status === 'en_vivo' && (
-                            <span class="live-pill">EN VIVO</span>
-                          )}
-                          {m.status === 'finalizado' && (
-                            <span class="final-pill">Final</span>
-                          )}
+                      <div class="pd-top">
+                        <p class="pd-fecha">{formatFecha(m.fecha_utc)}</p>
+                        {isVivo  && <span class="pd-badge-vivo">EN VIVO</span>}
+                        {isFinal && <span class="pd-badge-final">Final</span>}
+                      </div>
+
+                      <div class="pd-teams">
+                        <div class="pd-team">
+                          {flag1
+                            ? <img src={flag1} alt={m.equipo_local} class="pd-flag" />
+                            : <span class="text-3xl">🏳️</span>
+                          }
+                          <span class="pd-nombre">{m.equipo_local}</span>
                         </div>
 
-                        <div class="flex items-center justify-between gap-2">
-                          <div class="flex flex-col items-center gap-2 text-center w-5/12">
-                            {flag1
-                              ? <img src={flag1} alt={m.equipo_local} class="w-14 h-auto rounded-sm shadow" />
-                              : <span class="text-3xl">🏳️</span>
-                            }
-                            <span class="text-sm font-semibold leading-tight">{m.equipo_local}</span>
-                          </div>
-
-                          <div class="flex flex-col items-center gap-1">
-                            {m.status !== 'programado'
-                              ? (
-                                <span class="goodtime font-bold text-2xl text-white">
-                                  {m.score_local} - {m.score_visitante}
-                                </span>
-                              )
-                              : <span class="goodtime font-bold text-xl text-white">VS</span>
-                            }
-                          </div>
-
-                          <div class="flex flex-col items-center gap-2 text-center w-5/12">
-                            {flag2
-                              ? <img src={flag2} alt={m.equipo_visitante} class="w-14 h-auto rounded-sm shadow" />
-                              : <span class="text-3xl">🏳️</span>
-                            }
-                            <span class="text-sm font-semibold leading-tight">{m.equipo_visitante}</span>
-                          </div>
+                        <div class="pd-score">
+                          {m.status !== 'programado'
+                            ? <span class="pd-marcador" data-score>{m.score_local} - {m.score_visitante}</span>
+                            : <span class="pd-vs">VS</span>
+                          }
                         </div>
 
-                        {m.sede && (
-                          <p class="text-xs text-neutral-400 uppercase tracking-widest">{m.sede}</p>
-                        )}
-
-                        <div class="flex items-center justify-between gap-2 mt-1">
-                          <span class="text-xs text-white font-bold uppercase tracking-wide hover:underline">
-                            Minuto a Minuto →
-                          </span>
-                          {previaMap.has(m.slug) && (
-                            <a
-                              href={`/resumen-de-analisis/${previaMap.get(m.slug)}/`}
-                              class="previa-link"
-                              onclick="event.stopPropagation()"
-                            >
-                              Previa →
-                            </a>
-                          )}
+                        <div class="pd-team">
+                          {flag2
+                            ? <img src={flag2} alt={m.equipo_visitante} class="pd-flag" />
+                            : <span class="text-3xl">🏳️</span>
+                          }
+                          <span class="pd-nombre">{m.equipo_visitante}</span>
                         </div>
                       </div>
-                    </a>
+
+                      {m.sede && <p class="pd-sede">{m.sede}</p>}
+
+                      <div class="pd-links">
+                        <span class="pd-minuto">Minuto a Minuto →</span>
+                        {previaSlug && (
+                          <a
+                            href={`/resumen-de-analisis/${previaSlug}/`}
+                            class="pd-previa"
+                          >Previa →</a>
+                        )}
+                      </div>
+                    </div>
                   )
                 })}
               </div>
@@ -165,33 +144,176 @@ for (const m of (matches ?? [])) {
 </Layout>
 
 <script>
-// Polling de scores en vivo cada 30s
+document.querySelectorAll<HTMLElement>('.pd-card[data-href]').forEach(card => {
+  card.addEventListener('click', e => {
+    if ((e.target as HTMLElement).closest('a')) return
+    window.location.href = card.dataset.href!
+  })
+})
+
 async function pollScores() {
   try {
     const res = await fetch('/api/partidos')
     if (!res.ok) return
-    const matches: any[] = await res.json()
-    const map = new Map(matches.map((m: any) => [m.match_id, m]))
-
+    const data: any[] = await res.json()
+    const map = new Map(data.map((m: any) => [m.match_id, m]))
     document.querySelectorAll<HTMLElement>('[data-match-id]').forEach(card => {
       const m = map.get(card.dataset.matchId!)
-      if (!m) return
-
-      const scoreEl = card.querySelector<HTMLElement>('.goodtime')
-      if (!scoreEl) return
-
-      if (m.status !== 'programado') {
-        scoreEl.textContent = `${m.score_local} - ${m.score_visitante}`
-      }
+      if (!m || m.status === 'programado') return
+      const el = card.querySelector<HTMLElement>('[data-score]')
+      if (el) el.textContent = `${m.score_local} - ${m.score_visitante}`
     })
-  } catch { /* silent */ }
+  } catch {}
 }
-
 setInterval(pollScores, 30_000)
 </script>
 
-<style>
-.live-pill {
+<style is:global>
+/* ── grilla de días ─────────────────────────── */
+.pd-dia-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  margin-bottom: 1rem;
+  padding: 0 2px;
+}
+.pd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+/* ── tarjeta ────────────────────────────────── */
+.pd-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px;
+  background: #000;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: white;
+}
+.pd-card:hover { background: #111; }
+.pd-vivo { border-color: #7f1d1d; }
+
+/* ── encabezado ─────────────────────────────── */
+.pd-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pd-fecha {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+/* ── equipos ────────────────────────────────── */
+.pd-teams {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pd-team {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.pd-flag {
+  width: 52px;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.5);
+  display: block;
+}
+.pd-nombre {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #fff;
+  line-height: 1.2;
+  word-break: break-word;
+}
+.pd-score {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+.pd-marcador {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  line-height: 1;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+.pd-vs {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.3);
+  white-space: nowrap;
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
+/* ── sede ───────────────────────────────────── */
+.pd-sede {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── links ──────────────────────────────────── */
+.pd-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pd-minuto {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  white-space: nowrap;
+}
+.pd-previa {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4ade80;
+  text-decoration: none;
+  border: 1px solid rgba(74,222,128,0.4);
+  border-radius: 4px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.pd-previa:hover { background: rgba(74,222,128,0.1); }
+
+/* ── badges ─────────────────────────────────── */
+.pd-badge-vivo {
   font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -199,42 +321,29 @@ setInterval(pollScores, 30_000)
   text-transform: uppercase;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  animation: pulse-live 2s infinite;
+  gap: 3px;
+  white-space: nowrap;
+  animation: pd-pulse 2s infinite;
+  flex-shrink: 0;
 }
-.live-pill::before {
+.pd-badge-vivo::before {
   content: '';
   display: inline-block;
-  width: 5px;
-  height: 5px;
+  width: 5px; height: 5px;
   border-radius: 50%;
   background: #ea262a;
 }
-@keyframes pulse-live {
+@keyframes pd-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
 }
-
-.previa-link {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #facc15;
-  text-decoration: none;
-  border: 1px solid rgba(250,204,21,0.4);
-  border-radius: 4px;
-  padding: 2px 6px;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.previa-link:hover { background: rgba(250,204,21,0.15); }
-
-.final-pill {
+.pd-badge-final {
   font-size: 0.6rem;
   font-weight: 700;
   color: rgba(255,255,255,0.3);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 </style>

@@ -17,7 +17,7 @@ import Super from "../components/Super.astro";
 import BillBoard from "../components/BillBoard.astro";
 import Modal from "../components/Modal.astro";
 import CardsHomeTres from "../layouts/CardsHomeTres.astro";
-import CardsHomeGamecast from "../layouts/CardsHomeGamecast.astro";
+import CardsHomePartidos from "../layouts/CardsHomePartidos.astro";
 import ConteoRegresivo from "../components/ConteoRegresivo.astro";
 
 
@@ -36,7 +36,7 @@ if (posts.length > 0) {
     <Expandible />
     <section><CardsHomeTres posts={posts} /></section>
 
-    <section><CardsHomeGamecast /></section>
+    <section><CardsHomePartidos /></section>
     <!--section><CardsHomeOtroMundial /></section>
     <section><CardsHomeMundialfacil /></section-->
     <Super />
