@@ -1,0 +1,294 @@
+---
+import { createSupabaseAdminClient } from '../../lib/supabase'
+import { getFlagUrl } from '../../lib/flags.js'
+
+const supabase = createSupabaseAdminClient()
+
+const now = new Date()
+const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
+const todayCdmx = cdmxNow.toISOString().slice(0, 10)
+const manana = new Date(cdmxNow.getTime() + 24 * 60 * 60_000).toISOString().slice(0, 10)
+
+const [{ data: matches = [] }, { data: previasRaw = [] }] = await Promise.all([
+  supabase.from('df_partidos').select('*')
+    .gte('fecha_utc', `${todayCdmx}T06:00:00Z`)
+    .lt('fecha_utc',  `${manana}T06:00:00Z`)
+    .order('fecha_utc', { ascending: true }),
+  supabase.from('analisis').select('slug, partido_slug').not('partido_slug', 'is', null),
+])
+
+const previaMap = new Map((previasRaw ?? []).map((a: any) => [a.partido_slug, a.slug]))
+
+function formatHora(fechaUtc: string) {
+  return new Date(fechaUtc).toLocaleTimeString('es-MX', {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+const BASE = 'https://fiestafutbol.com.mx'
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Partidos del día — La Fiesta del Fútbol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #000; width: 100%; overflow-x: hidden; }
+    body { padding: 10px 12px; font-family: 'Barlow Condensed', sans-serif; }
+
+    #phoy-row {
+      display: flex;
+      width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      gap: 0;
+    }
+    #phoy-row::-webkit-scrollbar { display: none; }
+
+    .phoy-card {
+      flex: 1 1 0;
+      min-width: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 8px;
+      margin: 0 4px;
+      background: #111;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+    }
+    .phoy-card:first-child { margin-left: 0; }
+    .phoy-card:last-child  { margin-right: 0; }
+    .phoy-card:hover { background: #1a1a1a; }
+    .phoy-vivo { border-color: #7f1d1d; }
+
+    .phoy-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .phoy-hora {
+      font-size: 0.72rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.45);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .phoy-teams {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .phoy-team {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+    .phoy-flag {
+      width: 36px;
+      height: auto;
+      border-radius: 3px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+      display: block;
+    }
+    .phoy-nombre {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: #fff;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .phoy-score {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 3px;
+    }
+    .phoy-marcador {
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: #fff;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .phoy-vs {
+      font-size: 1rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.3);
+      white-space: nowrap;
+    }
+
+    .phoy-sede {
+      font-size: 0.62rem;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .phoy-links {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .phoy-minuto {
+      font-size: 0.68rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(255,255,255,0.6);
+    }
+    .phoy-previa {
+      font-size: 0.68rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #4ade80;
+      text-decoration: none;
+    }
+    .phoy-previa:hover { text-decoration: underline; }
+
+    .phoy-badge-vivo {
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: #ea262a;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      animation: phoy-pulse 2s infinite;
+    }
+    .phoy-badge-vivo::before {
+      content: '';
+      display: inline-block;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: #ea262a;
+    }
+    @keyframes phoy-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    .phoy-badge-final {
+      font-size: 0.58rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+    }
+
+    .empty {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  {(matches ?? []).length === 0
+    ? <p class="empty">No hay partidos programados para hoy.</p>
+    : (
+      <div id="phoy-row">
+        {(matches ?? []).map(m => {
+          const flag1 = getFlagUrl(m.equipo_local, 80)
+          const flag2 = getFlagUrl(m.equipo_visitante, 80)
+          const previaSlug = previaMap.get(m.slug)
+          const isVivo = m.status === 'en_vivo'
+          const isFinal = m.status === 'finalizado'
+          return (
+            <a
+              class={`phoy-card${isVivo ? ' phoy-vivo' : ''}`}
+              href={`${BASE}/partidos-del-dia/${m.slug}/`}
+              target="_blank"
+              rel="noopener"
+              data-match-id={m.match_id}
+            >
+              <div class="phoy-header">
+                <span class="phoy-hora">{formatHora(m.fecha_utc)}</span>
+                {isVivo  && <span class="phoy-badge-vivo">EN VIVO</span>}
+                {isFinal && <span class="phoy-badge-final">Final</span>}
+              </div>
+
+              <div class="phoy-teams">
+                <div class="phoy-team">
+                  {flag1
+                    ? <img src={flag1} alt={m.equipo_local} class="phoy-flag" />
+                    : <span>🏳️</span>
+                  }
+                  <span class="phoy-nombre">{m.equipo_local}</span>
+                </div>
+                <div class="phoy-score">
+                  {m.status !== 'programado'
+                    ? <span class="phoy-marcador" data-score>{m.score_local}-{m.score_visitante}</span>
+                    : <span class="phoy-vs">VS</span>
+                  }
+                </div>
+                <div class="phoy-team">
+                  {flag2
+                    ? <img src={flag2} alt={m.equipo_visitante} class="phoy-flag" />
+                    : <span>🏳️</span>
+                  }
+                  <span class="phoy-nombre">{m.equipo_visitante}</span>
+                </div>
+              </div>
+
+              {m.sede && <p class="phoy-sede">{m.sede}</p>}
+
+              <div class="phoy-links">
+                <span class="phoy-minuto">Minuto a Minuto →</span>
+                {previaSlug && (
+                  <span class="phoy-previa">Previa →</span>
+                )}
+              </div>
+            </a>
+          )
+        })}
+      </div>
+    )
+  }
+
+  <script>
+    // Polling de marcadores en vivo
+    async function phoyPoll() {
+      try {
+        const res = await fetch('https://fiestafutbol.com.mx/api/partidos')
+        if (!res.ok) return
+        const data = await res.json()
+        const map = new Map(data.map((m) => [m.match_id, m]))
+        document.querySelectorAll('[data-match-id]').forEach(card => {
+          const m = map.get(card.dataset.matchId)
+          if (!m || m.status === 'programado') return
+          const el = card.querySelector('[data-score]')
+          if (el) el.textContent = `${m.score_local}-${m.score_visitante}`
+        })
+      } catch {}
+    }
+    if (document.getElementById('phoy-row')) setInterval(phoyPoll, 30_000)
+  </script>
+
+</body>
+</html>
