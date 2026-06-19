@@ -1,9 +1,15 @@
 import { fetchLiveMatches } from './fixture.js'
 import { pollMatch } from './ficha.js'
 import { isAlreadyProcessed, saveEvent, updateMatchLive, upsertMatchInfo } from './db.js'
+import { autoPublish } from './publisher.js'
 import { POLL_INTERVAL_LIVE, POLL_INTERVAL_IDLE, STATUS } from './config.js'
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
+
+async function saveAndPublish(eventData) {
+  const saved = await saveEvent(eventData)
+  if (saved) autoPublish(saved).catch(e => log(`[publisher] Error: ${e.message}`))
+}
 
 // Estado por partido: incidencias ya vistas + si ya se posteó el entretiempo
 const matchStates = {}
@@ -65,7 +71,7 @@ async function processMatch(match) {
     const alreadySaved = await isAlreadyProcessed(incidenceId)
     if (!alreadySaved) {
       log(`INICIO detectado — ${teams.teamHome} vs ${teams.teamAway}`)
-      await saveEvent({
+      await saveAndPublish({
         incidence_id: incidenceId,
         match_id: match.id,
         event_type: 'inicio',
@@ -86,7 +92,7 @@ async function processMatch(match) {
     const alreadySaved = await isAlreadyProcessed(incidenceId)
     if (!alreadySaved) {
       log(`MEDIO TIEMPO detectado — ${teams.teamHome} ${teams.scoreHome}-${teams.scoreAway} ${teams.teamAway}`)
-      await saveEvent({
+      await saveAndPublish({
         incidence_id: incidenceId,
         match_id: match.id,
         event_type: 'medio_tiempo',
@@ -108,7 +114,7 @@ async function processMatch(match) {
     const alreadySaved = await isAlreadyProcessed(incidenceId)
     if (!alreadySaved) {
       log(`FINAL detectado — ${teams.teamHome} ${teams.scoreHome}-${teams.scoreAway} ${teams.teamAway}`)
-      await saveEvent({
+      await saveAndPublish({
         incidence_id: incidenceId,
         match_id: match.id,
         event_type: 'final',

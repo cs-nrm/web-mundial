@@ -3,8 +3,6 @@ import AdminLayout from '../../../layouts/AdminLayout.astro'
 import { createSupabaseAdminClient } from '../../../lib/supabase'
 import { canAccess, SOCIAL_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
-// @ts-ignore
-import { captionInstagram, captionTwitter, captionFacebook } from '../../../../scripts/goal-bot/captions.js'
 import { getFlagUrl } from '../../../lib/flags.js'
 
 if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
@@ -12,14 +10,13 @@ if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
 }
 
 const supabase = createSupabaseAdminClient()
-const [{ data: events = [] }, { data: rawHandles = [] }] = await Promise.all([
-  supabase.from('goal_posts').select('*').neq('status', 'descartado').order('created_at', { ascending: false }).limit(200),
-  supabase.from('social_handles').select('team_name, ig, tw'),
+const [{ data: events = [] }, { data: configRow }] = await Promise.all([
+  supabase.from('goal_posts').select('*').neq('status', 'descartado').order('created_at', { ascending: false }).limit(300),
+  supabase.from('social_config').select('auto_publish').eq('id', 'main').maybeSingle(),
 ])
-const normalizeKey = (s: string) => s?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\.+$/, '').trim()
-const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [normalizeKey(h.team_name), { ig: h.ig, tw: h.tw }]))
+const autoPublish: boolean = configRow?.auto_publish ?? true
 
-// Agrupar por partido, eventos en orden cronológico dentro de cada grupo
+// Agrupar por partido
 const matchMap = new Map<string, { teamHome: string; teamAway: string; matchId: string; events: any[] }>()
 for (const ev of events ?? []) {
   const key = ev.match_id ?? `${ev.team_home}-${ev.team_away}`
@@ -32,12 +29,18 @@ const matchGroups = [...matchMap.values()]
 matchGroups.forEach(g => g.events.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
 
 const counts = {
-  pendiente: events?.filter(e => e.status === 'pendiente').length ?? 0,
-  publicado:  events?.filter(e => e.status === 'publicado').length  ?? 0,
-  error:      events?.filter(e => e.status === 'error').length      ?? 0,
+  publicado: events?.filter(e => e.status === 'publicado').length ?? 0,
+  error:     events?.filter(e => e.status === 'error').length      ?? 0,
+  pendiente: events?.filter(e => e.status === 'pendiente').length  ?? 0,
 }
 
-function formatDate(iso: string) {
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleString('es-MX', {
+    timeZone: 'America/Mexico_City',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+function fmtFull(iso: string) {
   return new Date(iso).toLocaleString('es-MX', {
     timeZone: 'America/Mexico_City',
     dateStyle: 'short',
@@ -46,42 +49,64 @@ function formatDate(iso: string) {
 }
 
 const EVENT_LABEL: Record<string, string> = {
-  gol:         '⚽ Gol',
-  inicio:      '🟢 Inicio',
-  medio_tiempo:'🔵 Medio Tiempo',
-  final:       '🏁 Final',
+  gol:          '⚽ Gol',
+  inicio:       '🟢 Inicio',
+  medio_tiempo: '🔵 Medio tiempo',
+  final:        '🏁 Final',
 }
 ---
 
-<AdminLayout title="Social — Publicación Automática">
-  <div class="social-page pending-only" id="social-page">
+<AdminLayout title="Social — Publicaciones automáticas">
+  <div class="log-page" id="log-page">
 
     <div class="page-header">
       <div class="header-top">
-        <p class="page-desc">Eventos detectados por el bot. Ajusta los textos y envía como <strong>borrador</strong> a Metricool para revisar antes de publicar.</p>
+        <div>
+          <h2 class="page-title">Publicaciones en redes sociales</h2>
+          <p class="page-desc" id="mode-desc">
+            {autoPublish
+              ? 'Modo automático activo: los eventos se publican en cuanto se detectan.'
+              : 'Modo manual: los eventos quedan en cola hasta que los publiques.'}
+          </p>
+        </div>
         <div class="header-actions">
           <span class="last-update" id="last-update">Actualizado ahora</span>
           <button class="btn-reload" onclick="location.reload()">↺ Recargar</button>
         </div>
       </div>
-      <div class="toolbar">
-        <div class="stat-pills">
-          <span class="pill pill-pending" id="pill-pending">{counts.pendiente} pendiente{counts.pendiente !== 1 ? 's' : ''}</span>
-          <span class="pill pill-done">{counts.publicado} publicado{counts.publicado !== 1 ? 's' : ''}</span>
-          {counts.error > 0 && <span class="pill pill-error">{counts.error} con error</span>}
-        </div>
-        <button class="btn-filter" id="filter-toggle" onclick="toggleFilter()">Ver todos</button>
+
+      <!-- Toggle modo automático -->
+      <div class="auto-toggle-row">
+        <span class="toggle-label">Modo automático</span>
+        <button
+          id="auto-toggle"
+          class={`toggle-btn ${autoPublish ? 'on' : 'off'}`}
+          data-state={autoPublish ? 'on' : 'off'}
+          onclick="toggleAutoMode()"
+          title={autoPublish ? 'Desactivar publicación automática' : 'Activar publicación automática'}
+        >
+          <span class="toggle-track">
+            <span class="toggle-thumb"></span>
+          </span>
+          <span class="toggle-text" id="toggle-text">{autoPublish ? 'Activado' : 'Desactivado'}</span>
+        </button>
+      </div>
+
+      <div class="stat-pills">
+        <span class="pill pill-done">✅ {counts.publicado} publicado{counts.publicado !== 1 ? 's' : ''}</span>
+        {counts.error > 0 && <span class="pill pill-error">⚠ {counts.error} con error</span>}
+        {counts.pendiente > 0 && <span class="pill pill-pending">⏳ {counts.pendiente} en cola</span>}
       </div>
     </div>
 
     <div id="new-events-banner" style="display:none" class="new-events-banner">
-      <span id="new-events-text">Hay nuevos eventos</span>
+      <span id="new-events-text">Nuevos eventos</span>
       <button onclick="location.reload()">Ver ahora</button>
     </div>
 
     {matchGroups.length === 0 && (
       <div class="empty-state">
-        <p>No hay eventos aún. El bot se encargará de detectarlos cuando haya partidos en vivo.</p>
+        <p>Sin registros aún. Los posts aparecerán aquí automáticamente cuando haya partidos en vivo.</p>
       </div>
     )}
 
@@ -94,126 +119,61 @@ const EVENT_LABEL: Record<string, string> = {
               const f2 = getFlagUrl(group.teamAway, 40)
               return (
                 <>
-                  {f1
-                    ? <img src={f1} alt={group.teamHome} class="group-flag" />
-                    : <span class="group-flag-missing" title={`Sin bandera: ${group.teamHome}`}>🏳️</span>
-                  }
+                  {f1 ? <img src={f1} alt={group.teamHome} class="group-flag" /> : '🏳️'}
                   {group.teamHome}
                   <span class="vs">vs</span>
-                  {f2
-                    ? <img src={f2} alt={group.teamAway} class="group-flag" />
-                    : <span class="group-flag-missing" title={`Sin bandera: ${group.teamAway}`}>🏳️</span>
-                  }
+                  {f2 ? <img src={f2} alt={group.teamAway} class="group-flag" /> : '🏳️'}
                   {group.teamAway}
                 </>
               )
             })()}
           </span>
           <div class="group-right">
-            <span class="group-count">
-              {group.events.filter(e => e.status === 'pendiente').length > 0
-                ? `${group.events.filter(e => e.status === 'pendiente').length} pendiente${group.events.filter(e => e.status === 'pendiente').length > 1 ? 's' : ''}`
-                : 'todos publicados'}
+            <span class={`group-badge ${group.events.some(e => e.status === 'error') ? 'badge-error' : group.events.every(e => e.status === 'publicado') ? 'badge-done' : 'badge-mixed'}`}>
+              {group.events.filter(e => e.status === 'publicado').length}/{group.events.length} publicados
             </span>
             <span class="group-chevron">▾</span>
           </div>
         </div>
 
-        <div class="events-grid">
+        <div class="events-list">
           {group.events.map(ev => (
-            <div class="event-card" data-id={ev.id} data-status={ev.status}>
-
-              <div class="card-header">
+            <div class={`event-row status-${ev.status}`} data-id={ev.id}>
+              <div class="row-left">
                 <span class={`badge-type type-${ev.event_type}`}>
                   {EVENT_LABEL[ev.event_type] ?? ev.event_type}
                 </span>
-                <span class={`badge-status status-${ev.status}`}>
-                  {ev.status === 'pendiente' ? 'Pendiente' : ev.status === 'publicado' ? 'Publicado' : 'Error'}
-                </span>
-                <span class="event-date">{formatDate(ev.created_at)}</span>
+                {ev.event_type === 'gol' && ev.player_name && (
+                  <span class="row-player">{ev.player_name}{ev.minute > 0 ? ` ${ev.minute}'` : ''}</span>
+                )}
+                {ev.score_home !== undefined && (
+                  <span class="row-score">{ev.score_home}–{ev.score_away}</span>
+                )}
               </div>
 
-              {ev.event_type === 'gol' && (
-                <div class="goal-detail">
-                  {ev.player_name && <span class="player">{ev.player_name}</span>}
-                  {ev.minute > 0 && <span class="minute">min. {ev.minute}'</span>}
-                  {ev.goal_type && <span class="goal-type">{ev.goal_type}</span>}
-                  {ev.score_home !== undefined && (
-                    <span class="goal-score">{ev.score_home} - {ev.score_away}</span>
-                  )}
-                </div>
-              )}
-
-              {ev.event_type !== 'gol' && ev.score_home !== undefined && (
-                <div class="score-line">{ev.score_home} - {ev.score_away}</div>
-              )}
-
-              {ev.status === 'publicado' && ev.published_at && (
-                <div class="published-info">✅ Publicado el {formatDate(ev.published_at)}</div>
-              )}
-
-              {ev.status === 'error' && ev.error_detail && (
-                <div class="error-info">
-                  ⚠️ {typeof ev.error_detail === 'string'
-                    ? (ev.error_detail.length > 120 ? ev.error_detail.slice(0, 120) + '…' : ev.error_detail)
-                    : JSON.stringify(ev.error_detail).slice(0, 120) + '…'}
-                </div>
-              )}
-
-              {ev.status !== 'publicado' && (
-                <div class="card-actions">
-
-                  <button class="btn-preview" data-id={ev.id} onclick="previewImage(this)">
-                    Ver imagen
+              <div class="row-right">
+                {ev.status === 'publicado' && (
+                  <span class="status-ok">✅ {fmtTime(ev.published_at ?? ev.created_at)}</span>
+                )}
+                {ev.status === 'pendiente' && autoPublish && (
+                  <span class="status-pending">⏳ publicando…</span>
+                )}
+                {ev.status === 'pendiente' && !autoPublish && (
+                  <button class="btn-publish-manual" data-id={ev.id} onclick="manualPublish(this)">
+                    Publicar
                   </button>
-
-                  <div class="preview-area" id={`preview-${ev.id}`} style="display:none">
-                    <img class="preview-img" src="" alt="Preview" loading="lazy" />
-                  </div>
-
-                  <div class="captions-grid">
-                    <div class="caption-col">
-                      <div class="caption-label">📸 Instagram</div>
-                      <textarea
-                        class="caption-input"
-                        id={`caption-ig-${ev.id}`}
-                        placeholder="Texto para Instagram…"
-                        rows="8"
-                      >{captionInstagram(ev, handlesMap)}</textarea>
-                    </div>
-                    <div class="caption-col">
-                      <div class="caption-label">🐦 X / Twitter</div>
-                      <textarea
-                        class="caption-input"
-                        id={`caption-tw-${ev.id}`}
-                        placeholder="Texto para X / Twitter…"
-                        rows="8"
-                      >{captionTwitter(ev, handlesMap)}</textarea>
-                    </div>
-                    <div class="caption-col">
-                      <div class="caption-label">👥 Facebook</div>
-                      <textarea
-                        class="caption-input"
-                        id={`caption-fb-${ev.id}`}
-                        placeholder="Texto para Facebook…"
-                        rows="8"
-                      >{captionFacebook(ev, handlesMap)}</textarea>
-                    </div>
-                  </div>
-
-                  <div class="action-row">
-                    <button class="btn-publish" data-id={ev.id} onclick="publishPost(this)">
-                      {ev.status === 'error' ? '⟳ Reintentar publicación' : '📤 Publicar en Redes Sociales'}
-                    </button>
-                    <button class="btn-discard" data-id={ev.id} onclick="discardPost(this)">
-                      Descartar
+                )}
+                {ev.status === 'error' && (
+                  <div class="error-row">
+                    <span class="status-err" title={typeof ev.error_detail === 'string' ? ev.error_detail : JSON.stringify(ev.error_detail)}>
+                      ⚠ Error {fmtFull(ev.created_at)}
+                    </span>
+                    <button class="btn-retry" data-id={ev.id} onclick="retryPublish(this)">
+                      Reintentar
                     </button>
                   </div>
-
-                  <div class="feedback" id={`feedback-${ev.id}`}></div>
-                </div>
-              )}
-
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -227,210 +187,128 @@ const EVENT_LABEL: Record<string, string> = {
 function toggleGroup(header) {
   var group = header.closest('.match-group')
   var chevron = header.querySelector('.group-chevron')
-  var isCollapsed = group.classList.toggle('collapsed')
-  chevron.textContent = isCollapsed ? '▸' : '▾'
+  group.classList.toggle('collapsed')
+  chevron.textContent = group.classList.contains('collapsed') ? '▸' : '▾'
 }
 
-function toggleFilter() {
-  var page = document.getElementById('social-page')
-  var btn = document.getElementById('filter-toggle')
-  var isPendingOnly = page.classList.toggle('pending-only')
-  btn.textContent = isPendingOnly ? 'Ver todos' : 'Solo pendientes'
-
-  // Ocultar grupos donde todos los eventos están publicados cuando estamos en modo pendiente
-  document.querySelectorAll('.match-group').forEach(function(group) {
-    if (isPendingOnly) {
-      var hasVisible = group.querySelectorAll('.event-card:not([data-status="publicado"])').length > 0
-      group.style.display = hasVisible ? '' : 'none'
-    } else {
-      group.style.display = ''
-    }
-  })
-}
-
-async function previewImage(btn) {
-  var id = btn.dataset.id
-  var area = document.getElementById('preview-' + id)
-  var img = area.querySelector('img')
-
+async function toggleAutoMode() {
+  var btn = document.getElementById('auto-toggle')
+  var isOn = btn.dataset.state === 'on'
   btn.disabled = true
-  btn.textContent = 'Generando…'
-
   try {
-    var res = await fetch('/api/admin/social/preview', {
+    var res = await fetch('/api/admin/social/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventId: id }),
+      body: JSON.stringify({ auto_publish: !isOn }),
     })
-
-    if (!res.ok) {
-      var err = await res.json().catch(function() { return { error: 'Error desconocido' } })
-      btn.textContent = '⚠ ' + (err.error || 'Error')
-      btn.disabled = false
-      return
-    }
-
-    var blob = await res.blob()
-    img.src = URL.createObjectURL(blob)
-    area.style.display = 'block'
-    btn.textContent = 'Actualizar preview'
-    btn.disabled = false
+    if (res.ok) location.reload()
+    else btn.disabled = false
   } catch (e) {
-    btn.textContent = '⚠ Error de red'
     btn.disabled = false
   }
 }
 
-async function publishPost(btn) {
+async function manualPublish(btn) {
   var id = btn.dataset.id
-  var captionIg = document.getElementById('caption-ig-' + id)?.value ?? ''
-  var captionTw = document.getElementById('caption-tw-' + id)?.value ?? ''
-  var captionFb = document.getElementById('caption-fb-' + id)?.value ?? ''
-  var feedback = document.getElementById('feedback-' + id)
-
   btn.disabled = true
-  btn.textContent = 'Enviando a Metricool…'
-  feedback.textContent = ''
-  feedback.className = 'feedback'
+  btn.textContent = 'Publicando…'
+  try {
+    var res = await fetch('/api/admin/social/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId: id }),
+    })
+    var data = await res.json().catch(function() { return {} })
+    var row = document.querySelector('.event-row[data-id="' + id + '"]')
+    if (res.ok) {
+      if (row) {
+        row.className = 'event-row status-publicado'
+        row.setAttribute('data-status', 'publicado')
+        var right = row.querySelector('.row-right')
+        if (right) right.innerHTML = '<span class="status-ok">✅ ahora</span>'
+      }
+    } else {
+      btn.disabled = false
+      btn.textContent = 'Publicar'
+      alert('Error: ' + (data.error || res.status))
+    }
+  } catch (e) {
+    btn.disabled = false
+    btn.textContent = 'Publicar'
+  }
+}
+
+async function retryPublish(btn) {
+  var id = btn.dataset.id
+  btn.disabled = true
+  btn.textContent = 'Publicando…'
 
   try {
     var res = await fetch('/api/admin/social/publish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventId: id, captionIg, captionTw, captionFb }),
-    })
-
-    var data = await res.json().catch(function() { return {} })
-
-    if (!res.ok) {
-      feedback.textContent = '⚠ ' + (data.error || 'Error ' + res.status)
-      feedback.className = 'feedback feedback-error'
-      btn.disabled = false
-      btn.textContent = '⟳ Reintentar'
-      return
-    }
-
-    feedback.textContent = '✅ Publicado correctamente'
-    feedback.className = 'feedback feedback-ok'
-
-    var card = document.querySelector('.event-card[data-id="' + id + '"]')
-    if (card) {
-      card.dataset.status = 'publicado'
-      var statusBadge = card.querySelector('.badge-status')
-      if (statusBadge) {
-        statusBadge.textContent = 'Publicado'
-        statusBadge.className = 'badge-status status-publicado'
-      }
-      var actions = card.querySelector('.card-actions')
-      if (actions) actions.style.display = 'none'
-    }
-
-    // Actualizar contador del encabezado del grupo
-    var group = card?.closest('.match-group')
-    if (group) {
-      var remaining = group.querySelectorAll('.event-card[data-status="pendiente"], .event-card[data-status="error"]').length
-      var countEl = group.querySelector('.group-count')
-      if (countEl) countEl.textContent = remaining > 0 ? remaining + ' pendiente' + (remaining > 1 ? 's' : '') : 'todos publicados'
-    }
-  } catch (e) {
-    feedback.textContent = '⚠ Error de red'
-    feedback.className = 'feedback feedback-error'
-    btn.disabled = false
-    btn.textContent = '⟳ Reintentar'
-  }
-}
-
-async function discardPost(btn) {
-  var id = btn.dataset.id
-  if (!confirm('¿Descartar este evento? No se publicará y desaparecerá de la lista.')) return
-
-  btn.disabled = true
-  btn.textContent = 'Descartando…'
-
-  try {
-    var res = await fetch('/api/admin/social/discard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ eventId: id }),
     })
+    var data = await res.json().catch(function() { return {} })
 
-    if (!res.ok) {
-      btn.disabled = false
-      btn.textContent = 'Descartar'
-      alert('No se pudo descartar')
-      return
-    }
-
-    // Eliminar la card del DOM
-    var card = document.querySelector('.event-card[data-id="' + id + '"]')
-    if (card) {
-      var group = card.closest('.match-group')
-      card.remove()
-
-      // Si el grupo quedó vacío, quitarlo también
-      if (group && group.querySelectorAll('.event-card').length === 0) {
-        group.remove()
-      } else if (group) {
-        // Actualizar contador
-        var remaining = group.querySelectorAll('.event-card[data-status="pendiente"], .event-card[data-status="error"]').length
-        var countEl = group.querySelector('.group-count')
-        if (countEl) countEl.textContent = remaining > 0 ? remaining + ' pendiente' + (remaining > 1 ? 's' : '') : 'todos publicados'
+    var row = document.querySelector('.event-row[data-id="' + id + '"]')
+    if (res.ok) {
+      if (row) {
+        row.className = 'event-row status-publicado'
+        var errorRow = row.querySelector('.error-row')
+        if (errorRow) errorRow.outerHTML = '<span class="status-ok">✅ ahora</span>'
       }
+    } else {
+      btn.disabled = false
+      btn.textContent = 'Reintentar'
+      alert('Error: ' + (data.error || res.status))
     }
   } catch (e) {
     btn.disabled = false
-    btn.textContent = 'Descartar'
+    btn.textContent = 'Reintentar'
   }
 }
 
-// Auto-polling: revisa nuevos eventos cada 30 segundos
+// Polling: avisar si hay nuevos eventos
 ;(function () {
-  var pageLoadedAt = new Date().toISOString()
+  var since = new Date().toISOString()
   var banner = document.getElementById('new-events-banner')
   var bannerText = document.getElementById('new-events-text')
   var lastUpdate = document.getElementById('last-update')
 
   function updateTimestamp() {
-    var now = new Date()
-    var h = String(now.getHours()).padStart(2, '0')
-    var m = String(now.getMinutes()).padStart(2, '0')
+    var d = new Date()
+    var h = String(d.getHours()).padStart(2, '0')
+    var m = String(d.getMinutes()).padStart(2, '0')
     if (lastUpdate) lastUpdate.textContent = 'Actualizado ' + h + ':' + m
   }
 
-  function checkNewEvents() {
-    fetch('/api/admin/social/events?since=' + encodeURIComponent(pageLoadedAt))
-      .then(function (r) { return r.json() })
-      .then(function (data) {
+  function poll() {
+    fetch('/api/admin/social/events?since=' + encodeURIComponent(since))
+      .then(function(r) { return r.json() })
+      .then(function(d) {
         updateTimestamp()
-        var newEvs = data.events || []
-        if (newEvs.length > 0 && banner) {
-          var label = newEvs.length === 1
-            ? '1 nuevo evento detectado'
-            : newEvs.length + ' nuevos eventos detectados'
-          if (bannerText) bannerText.textContent = label
+        if ((d.events || []).length > 0 && banner) {
+          bannerText.textContent = d.events.length + ' nuevo' + (d.events.length > 1 ? 's eventos' : ' evento')
           banner.style.display = 'flex'
         }
       })
-      .catch(function () {})
+      .catch(function() {})
   }
 
-  setInterval(checkNewEvents, 30_000)
+  setInterval(poll, 30_000)
 })()
 </script>
 
 <style>
-  .social-page { max-width: 960px; }
-
-  /* Ocultar eventos publicados en modo "solo pendientes" */
-  .pending-only .event-card[data-status="publicado"] { display: none; }
+  .log-page { max-width: 860px; }
 
   .page-header {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
   }
-
   .header-top {
     display: flex;
     align-items: flex-start;
@@ -438,16 +316,24 @@ async function discardPost(btn) {
     gap: 1rem;
     flex-wrap: wrap;
   }
-
+  .page-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 0.25rem;
+  }
+  .page-desc {
+    color: #64748b;
+    font-size: 0.82rem;
+    margin: 0;
+  }
   .header-actions {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex-shrink: 0;
   }
-
   .last-update { font-size: 0.72rem; color: #9ca3af; }
-
   .btn-reload {
     background: #f3f4f6;
     border: 1px solid #d1d5db;
@@ -459,43 +345,79 @@ async function discardPost(btn) {
   }
   .btn-reload:hover { background: #e5e7eb; }
 
-  .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
   .stat-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-
-  .pill {
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-  .pill-pending { background: #fef3c7; color: #92400e; }
+  .pill { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
   .pill-done    { background: #d1fae5; color: #065f46; }
   .pill-error   { background: #fee2e2; color: #991b1b; }
+  .pill-pending { background: #fef3c7; color: #92400e; }
 
-  .btn-filter {
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
+  /* Toggle modo automático */
+  .auto-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.6rem;
+  }
+  .toggle-label {
+    font-size: 0.85rem;
+    font-weight: 600;
     color: #374151;
-    padding: 0.3rem 0.9rem;
-    border-radius: 0.35rem;
+  }
+  .toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  .toggle-btn:disabled { opacity: 0.6; cursor: default; }
+  .toggle-track {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border-radius: 999px;
+    background: #d1d5db;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-btn.on .toggle-track { background: #16a34a; }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+  }
+  .toggle-btn.on .toggle-thumb { transform: translateX(20px); }
+  .toggle-text {
     font-size: 0.8rem;
     font-weight: 600;
-    cursor: pointer;
   }
-  .btn-filter:hover { background: #e5e7eb; }
+  .toggle-btn.on .toggle-text  { color: #16a34a; }
+  .toggle-btn.off .toggle-text { color: #9ca3af; }
 
-  .page-desc {
-    color: #64748b;
-    font-size: 0.875rem;
-    line-height: 1.5;
+  .btn-publish-manual {
+    background: #EA262A;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.75rem;
+    border-radius: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
   }
+  .btn-publish-manual:hover:not(:disabled) { background: #c91f23; }
+  .btn-publish-manual:disabled { opacity: 0.6; cursor: default; }
 
   .new-events-banner {
     background: #fef3c7;
@@ -515,13 +437,12 @@ async function discardPost(btn) {
     background: #f59e0b;
     color: white;
     border: none;
-    padding: 0.35rem 0.9rem;
+    padding: 0.3rem 0.8rem;
     border-radius: 0.35rem;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 700;
     cursor: pointer;
   }
-  .new-events-banner button:hover { background: #d97706; }
 
   .empty-state {
     background: white;
@@ -533,10 +454,7 @@ async function discardPost(btn) {
     font-size: 0.9rem;
   }
 
-  /* --- Grupos por partido --- */
-  .match-group {
-    margin-bottom: 1.5rem;
-  }
+  .match-group { margin-bottom: 1.25rem; }
 
   .match-group-header {
     display: flex;
@@ -546,274 +464,100 @@ async function discardPost(btn) {
     background: #1a1a2e;
     border-radius: 0.6rem 0.6rem 0 0;
     color: white;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
     user-select: none;
   }
   .match-group-header:hover { background: #2a2a4e; }
-
-  .match-group.collapsed .match-group-header {
-    border-radius: 0.6rem;
-  }
-  .match-group.collapsed .events-grid { display: none; }
+  .match-group.collapsed .match-group-header { border-radius: 0.6rem; }
+  .match-group.collapsed .events-list { display: none; }
 
   .group-teams {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    flex-wrap: wrap;
   }
-  .group-teams .vs {
-    font-weight: 400;
-    opacity: 0.6;
-    margin: 0 0.2em;
-  }
+  .group-teams .vs { font-weight: 400; opacity: 0.6; margin: 0 0.2em; }
   .group-flag {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%; object-fit: cover;
     border: 2px solid rgba(255,255,255,0.15);
   }
-  .group-flag-missing {
-    font-size: 1.1rem;
-    line-height: 1;
-    opacity: 0.5;
-    cursor: help;
-  }
-
-  .group-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .group-count {
-    font-size: 0.72rem;
+  .group-right { display: flex; align-items: center; gap: 0.5rem; }
+  .group-badge {
+    font-size: 0.7rem;
     font-weight: 600;
-    background: rgba(255,255,255,0.15);
-    padding: 0.2rem 0.6rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 999px;
   }
+  .badge-done  { background: rgba(209,250,229,0.25); color: #a7f3d0; }
+  .badge-error { background: rgba(254,202,202,0.25); color: #fca5a5; }
+  .badge-mixed { background: rgba(255,255,255,0.15); color: #e5e7eb; }
+  .group-chevron { font-size: 1rem; opacity: 0.7; }
 
-  .group-chevron {
-    font-size: 1rem;
-    opacity: 0.8;
-  }
-
-  .events-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+  .events-list {
     border: 1px solid #e5e7eb;
     border-top: none;
     border-radius: 0 0 0.6rem 0.6rem;
     overflow: hidden;
-  }
-
-  .event-card {
     background: white;
-    padding: 1rem 1.25rem;
+  }
+
+  .event-row {
     display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
     border-bottom: 1px solid #f3f4f6;
-  }
-  .event-card:last-child { border-bottom: none; }
-  .event-card[data-status="publicado"] { opacity: 0.65; }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .badge-type, .badge-status {
-    padding: 0.2rem 0.6rem;
-    border-radius: 0.35rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-  }
-
-  .type-gol         { background: #fef9c3; color: #713f12; }
-  .type-inicio      { background: #dcfce7; color: #14532d; }
-  .type-medio_tiempo{ background: #dbeafe; color: #1e3a8a; }
-  .type-final       { background: #f3e8ff; color: #581c87; }
-
-  .status-pendiente { background: #fef3c7; color: #92400e; }
-  .status-publicado { background: #d1fae5; color: #065f46; }
-  .status-error     { background: #fee2e2; color: #991b1b; }
-
-  .event-date {
-    font-size: 0.7rem;
-    color: #9ca3af;
-    margin-left: auto;
-  }
-
-  .goal-detail {
     font-size: 0.82rem;
-    color: #374151;
+  }
+  .event-row:last-child { border-bottom: none; }
+  .event-row.status-publicado { background: #f0fdf4; }
+  .event-row.status-error     { background: #fff7f7; }
+  .event-row.status-pendiente { background: #fffbeb; }
+
+  .row-left {
     display: flex;
-    gap: 0.5rem;
     align-items: center;
+    gap: 0.5rem;
     flex-wrap: wrap;
   }
-  .player { font-weight: 600; }
-  .minute {
-    background: #f3f4f6;
-    padding: 0.1rem 0.4rem;
-    border-radius: 0.25rem;
-    font-weight: 600;
-    font-size: 0.72rem;
-  }
-  .goal-type {
-    color: #6b7280;
-    font-style: italic;
-    font-size: 0.75rem;
-  }
-  .goal-score {
-    font-weight: 800;
-    color: #EA262A;
-    font-size: 0.9rem;
-  }
 
-  .score-line {
-    font-size: 1rem;
-    font-weight: 800;
-    color: #EA262A;
+  .badge-type {
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 700;
   }
+  .type-gol          { background: #fef9c3; color: #713f12; }
+  .type-inicio       { background: #dcfce7; color: #14532d; }
+  .type-medio_tiempo { background: #dbeafe; color: #1e3a8a; }
+  .type-final        { background: #f3e8ff; color: #581c87; }
 
-  .published-info {
-    font-size: 0.78rem;
-    color: #065f46;
-    background: #d1fae5;
-    padding: 0.35rem 0.6rem;
-    border-radius: 0.4rem;
-  }
+  .row-player { color: #374151; font-weight: 600; }
+  .row-score  { color: #EA262A; font-weight: 800; }
 
-  .error-info {
-    font-size: 0.78rem;
+  .row-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+  .status-ok      { color: #065f46; font-size: 0.78rem; font-weight: 600; }
+  .status-pending { color: #92400e; font-size: 0.78rem; }
+  .status-err     { color: #991b1b; font-size: 0.78rem; cursor: help; }
+
+  .error-row { display: flex; align-items: center; gap: 0.5rem; }
+
+  .btn-retry {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
     color: #991b1b;
-    background: #fee2e2;
-    padding: 0.35rem 0.6rem;
-    border-radius: 0.4rem;
-  }
-
-  .card-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid #f3f4f6;
-  }
-
-  .btn-preview {
-    align-self: flex-start;
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    padding: 0.35rem 0.8rem;
-    border-radius: 0.4rem;
-    font-size: 0.78rem;
-    cursor: pointer;
-  }
-  .btn-preview:hover:not(:disabled) { background: #e5e7eb; }
-  .btn-preview:disabled { opacity: 0.6; cursor: default; }
-
-  .preview-area { margin: 0.25rem 0; }
-  .preview-img {
-    max-width: 100%;
-    width: 280px;
-    border-radius: 0.5rem;
-    border: 1px solid #e5e7eb;
-    display: block;
-  }
-
-  .captions-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.75rem;
-  }
-
-  @media (max-width: 720px) {
-    .captions-grid { grid-template-columns: 1fr; }
-  }
-
-  .caption-col {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .caption-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #6b7280;
-  }
-
-  .caption-input {
-    width: 100%;
-    border: 1px solid #d1d5db;
-    border-radius: 0.4rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.82rem;
-    font-family: inherit;
-    resize: vertical;
-    color: #1a1a2e;
-    line-height: 1.5;
-    box-sizing: border-box;
-  }
-  .caption-input:focus {
-    outline: none;
-    border-color: #EA262A;
-    box-shadow: 0 0 0 2px rgba(234,38,42,0.1);
-  }
-
-  .action-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-discard {
-    background: none;
-    border: 1px solid #d1d5db;
-    color: #9ca3af;
-    padding: 0.5rem 0.9rem;
-    border-radius: 0.4rem;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .btn-discard:hover:not(:disabled) { color: #ef4444; border-color: #fca5a5; }
-  .btn-discard:disabled { opacity: 0.5; cursor: default; }
-
-  .btn-publish {
-    align-self: flex-start;
-    background: #EA262A;
-    color: white;
-    border: none;
-    padding: 0.5rem 1.1rem;
-    border-radius: 0.4rem;
-    font-size: 0.85rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 0.35rem;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
+    white-space: nowrap;
   }
-  .btn-publish:hover:not(:disabled) { background: #c91f23; }
-  .btn-publish:disabled { opacity: 0.6; cursor: default; }
-
-  .feedback {
-    font-size: 0.8rem;
-    min-height: 1.2em;
-  }
-  .feedback-ok    { color: #065f46; }
-  .feedback-error { color: #991b1b; }
+  .btn-retry:hover:not(:disabled) { background: #fee2e2; }
+  .btn-retry:disabled { opacity: 0.5; cursor: default; }
 </style>

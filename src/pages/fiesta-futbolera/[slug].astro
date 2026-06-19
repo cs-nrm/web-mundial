@@ -62,6 +62,11 @@ const featuredImage =
 
 const canonicalUrl = `https://fiestafutbol.com.mx/fiesta-futbolera/${slug}/`
 const authorName = post.yoast_head_json?.author || "Redacción La Fiesta del Fútbol"
+const authorWpSlug = post._embedded?.author?.[0]?.slug
+const authorSlug = authorWpSlug || authorName
+  .toLowerCase()
+  .normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
 const newsArticleSchema = {
   "@context": "https://schema.org",
@@ -82,6 +87,7 @@ const newsArticleSchema = {
   "author": {
     "@type": "Person",
     "name": authorName,
+    "url": `https://fiestafutbol.com.mx/autor/${authorSlug}/`,
     "worksFor": { "@id": "https://fiestafutbol.com.mx/#organization" }
   },
   "publisher": { "@id": "https://fiestafutbol.com.mx/#organization" },
@@ -117,7 +123,7 @@ const breadcrumbSchema = {
                 <div
                     class="roboto flex items-center justify-between text-sm uppercase text-zinc-600 border-b border-zinc-400"
                 >
-                    <p class="text-zinc-500"> {post.yoast_head_json?.author || "Redacción"}</p>
+                    <a href={`/autor/${authorSlug}/`} class="text-zinc-500 hover:text-red-600 transition-colors">{authorName}</a>
                     <p class="text-zinc-500">
                         {
                             new Date(post.date).toLocaleDateString("es-MX", {

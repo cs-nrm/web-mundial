@@ -283,8 +283,8 @@ Hacer visible la autoridad real que NRM Comunicaciones ya tiene.
 | # | Acción | Archivo | Estado |
 |---|---|---|---|
 | 3.1 | Crear página `/sobre-nosotros/` con info de NRM + misión editorial | `src/pages/sobre-nosotros/index.astro` | ✅ Implementado |
-| 3.2 | Crear páginas de autor `/autor/[slug]/` con bio y credenciales | `src/pages/autor/[slug].astro` | ⏳ Pendiente |
-| 3.3 | Agregar bylines enlazados en artículos | `src/pages/fiesta-futbolera/[slug].astro` | ⏳ Pendiente |
+| 3.2 | Crear páginas de autor `/autor/[slug]/` con bio y credenciales | `src/pages/autor/[slug].astro` | ✅ Implementado |
+| 3.3 | Agregar bylines enlazados en artículos | `src/pages/fiesta-futbolera/[slug].astro` | ✅ Implementado |
 | 3.4 | Editar Wikipedia de NRM para incluir fiestafutbol.com.mx | Wikipedia ES | ⏳ Manual |
 
 ---

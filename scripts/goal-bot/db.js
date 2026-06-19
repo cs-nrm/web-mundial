@@ -15,10 +15,13 @@ export async function isAlreadyProcessed(incidenceId) {
 }
 
 export async function saveEvent(event) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('goal_posts')
     .insert(event)
+    .select()
+    .single()
   if (error) throw error
+  return data
 }
 
 export async function updateMatchLive({ match_id, status, score_local, score_visitante, minuto }) {

@@ -1,0 +1,135 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { wpSitesConfig, wpSiteEnfoqueConfig } from '../../config/sites.js'
+
+const { slug } = Astro.params
+
+const allSiteUrls = [
+  ...wpSitesConfig.map(s => s.url),
+  wpSiteEnfoqueConfig.url,
+]
+
+// Fetch posts from all WP sites in parallel, larger batch to find author
+async function fetchAllPosts() {
+  const results = await Promise.all(
+    allSiteUrls.map(async (url) => {
+      try {
+        const res = await fetch(`${url}&per_page=100`)
+        if (!res.ok) return []
+        return await res.json()
+      } catch {
+        return []
+      }
+    })
+  )
+  return results.flat()
+}
+
+const allPosts = await fetchAllPosts()
+
+// Match posts to this author slug
+const authorPosts = allPosts.filter(p => {
+  const wpSlug = p._embedded?.author?.[0]?.slug
+  const nameSlug = (p.yoast_head_json?.author || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return wpSlug === slug || nameSlug === slug
+})
+
+if (authorPosts.length === 0) {
+  return Astro.redirect('/404')
+}
+
+// Get author profile from the first matching post
+const wpAuthor = authorPosts[0]._embedded?.author?.[0]
+const authorName  = wpAuthor?.name || authorPosts[0].yoast_head_json?.author || slug
+const authorBio   = wpAuthor?.description || ''
+const authorAvatar = wpAuthor?.avatar_urls?.['96'] || wpAuthor?.avatar_urls?.['48'] || ''
+
+const pageTitle = `${authorName} — La Fiesta del Fútbol`
+const pageDesc  = authorBio
+  ? `Artículos de ${authorName}: ${authorBio.slice(0, 120)}`
+  : `Artículos de ${authorName} en La Fiesta del Fútbol. Cobertura del Mundial FIFA 2026.`
+
+const personSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": authorName,
+  "url": `https://fiestafutbol.com.mx/autor/${slug}/`,
+  ...(authorBio ? { "description": authorBio } : {}),
+  ...(authorAvatar ? { "image": authorAvatar } : {}),
+  "worksFor": { "@id": "https://fiestafutbol.com.mx/#organization" }
+}
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://fiestafutbol.com.mx/" },
+    { "@type": "ListItem", "position": 2, "name": "Autores", "item": "https://fiestafutbol.com.mx/autor/" },
+    { "@type": "ListItem", "position": 3, "name": authorName, "item": `https://fiestafutbol.com.mx/autor/${slug}/` }
+  ]
+}
+---
+
+<Layout title={pageTitle} description={pageDesc}>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+  </Fragment>
+
+  <section class="container mx-auto px-4 py-12 max-w-4xl">
+
+    <!-- Perfil del autor -->
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-12 pb-8 border-b border-gray-200">
+      {authorAvatar
+        ? <img src={authorAvatar} alt={authorName} class="w-24 h-24 rounded-full object-cover ring-4 ring-red-100 flex-shrink-0" />
+        : <div class="w-24 h-24 rounded-full bg-red-600 flex items-center justify-center text-white text-3xl font-bold flex-shrink-0">
+            {authorName.charAt(0).toUpperCase()}
+          </div>
+      }
+      <div class="text-center sm:text-left">
+        <h1 class="text-2xl lg:text-3xl font-bold text-black mb-2">{authorName}</h1>
+        <p class="text-sm text-red-600 font-medium mb-3 uppercase tracking-wide">NRM Comunicaciones</p>
+        {authorBio && <p class="text-gray-600 leading-relaxed max-w-xl">{authorBio}</p>}
+      </div>
+    </div>
+
+    <!-- Artículos del autor -->
+    <div>
+      <h2 class="text-lg font-bold text-black mb-6 uppercase tracking-wide">
+        Artículos ({authorPosts.length})
+      </h2>
+      <div class="grid gap-6 sm:grid-cols-2">
+        {authorPosts.map(p => {
+          const img = p.yoast_head_json?.og_image?.[0]?.url
+            || p._embedded?.['wp:featuredmedia']?.[0]?.source_url
+            || 'https://storage.googleapis.com/nrm-web/sabrosita/resources/img/img_sabrosita.jpg'
+          const title = p.title.rendered.replace(/<[^>]+>/g, '')
+          const excerpt = p.excerpt?.rendered?.replace(/<[^>]+>/g, '').slice(0, 100) || ''
+          const fecha = new Date(p.date).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
+          return (
+            <a href={`/fiesta-futbolera/${p.slug}/`} class="group flex gap-4 bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <img src={img} alt={title} class="w-28 h-28 object-cover flex-shrink-0" />
+              <div class="py-3 pr-3 flex flex-col justify-between">
+                <p class="font-semibold text-sm text-black group-hover:text-red-600 transition-colors leading-snug line-clamp-3">{title}</p>
+                <p class="text-xs text-gray-400 mt-2">{fecha}</p>
+              </div>
+            </a>
+          )
+        })}
+      </div>
+    </div>
+
+  </section>
+</Layout>
+
+<style is:global>
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
