@@ -113,6 +113,7 @@ const pageDesc  = `Minuto a minuto de ${match.equipo_local} vs ${match.equipo_vi
           <!-- Iframe minuto a minuto -->
           <div class="gamecast-wrapper rounded-xl overflow-hidden bg-black">
             <iframe
+              id="gamecast-frame"
               src={gamecastUrl}
               title={`Minuto a minuto: ${match.equipo_local} vs ${match.equipo_visitante}`}
               class="gamecast-iframe"
@@ -155,6 +156,20 @@ async function pollScore() {
 }
 
 setInterval(pollScore, 30_000)
+</script>
+
+<script>
+// Si el iframe de DataFactory emite su altura real vía postMessage, la aplicamos
+window.addEventListener('message', (e) => {
+  const frame = document.getElementById('gamecast-frame') as HTMLIFrameElement | null
+  if (!frame) return
+  // DataFactory envía { type: 'resize', height: N } o simplemente un número
+  const data = e.data
+  let h = 0
+  if (typeof data === 'number') h = data
+  else if (data && typeof data === 'object') h = data.height ?? data.h ?? 0
+  if (h > 400) frame.style.height = h + 'px'
+})
 </script>
 
 <style>
@@ -201,12 +216,12 @@ setInterval(pollScore, 30_000)
 }
 .gamecast-iframe {
   width: 100%;
-  height: 700px;
+  height: 1600px;
   border: none;
   display: block;
 }
 
 @media (max-width: 640px) {
-  .gamecast-iframe { height: 500px; }
+  .gamecast-iframe { height: 1400px; }
 }
 </style>
