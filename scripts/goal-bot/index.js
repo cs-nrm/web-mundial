@@ -1,6 +1,6 @@
 import { fetchLiveMatches } from './fixture.js'
 import { pollMatch } from './ficha.js'
-import { isAlreadyProcessed, saveEvent, updateMatchLive, upsertMatchInfo } from './db.js'
+import { isAlreadyProcessed, updateMatchLive, upsertMatchInfo, saveEvent } from './db.js'
 import { autoPublish } from './publisher.js'
 import { POLL_INTERVAL_LIVE, POLL_INTERVAL_IDLE, STATUS } from './config.js'
 
@@ -140,7 +140,7 @@ async function processMatch(match) {
       : (goal.teamId === teams.teamHomeId ? teams.teamHome : teams.teamAway)
 
     log(`GOL detectado — ${goal.playerName} (${goal.goalType}) min ${goal.minute} | ${teams.teamHome} ${teams.scoreHome}-${teams.scoreAway} ${teams.teamAway}`)
-    await saveEvent({
+    await saveAndPublish({
       incidence_id: goal.incidenceId,
       match_id: match.id,
       event_type: 'gol',

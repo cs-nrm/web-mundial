@@ -5,6 +5,7 @@ module.exports = {
       script: "./dist/server/entry.mjs",
       cwd: "/var/www/web-mundial",
       interpreter: "node",
+      interpreter_args: "--env-file=.env",
       env: {
         NODE_ENV: "production",
         HOST: "127.0.0.1",
