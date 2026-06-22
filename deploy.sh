@@ -16,11 +16,10 @@ npm run build
 if [ $? -eq 0 ]; then
   echo "✅ Build exitoso. Reiniciando servidor..."
   
-  # 4. Reiniciar PM2
-  pm2 reload web-mundial || pm2 restart web-mundial
-  # Los scripts no requieren build — reiniciar directo para tomar cambios
-  pm2 restart goal-bot 2>/dev/null || echo "⚠️  goal-bot no está corriendo (inicia con: pm2 start ecosystem.config.cjs --only goal-bot)"
-  pm2 restart fixture-sync 2>/dev/null || echo "⚠️  fixture-sync no está corriendo (inicia con: pm2 start ecosystem.config.cjs --only fixture-sync)"
+  # 4. Recargar PM2 (zero-downtime, toma nuevos archivos y .env)
+  pm2 reload web-mundial
+  pm2 reload goal-bot 2>/dev/null || echo "⚠️  goal-bot no está corriendo (inicia con: pm2 start ecosystem.config.cjs --only goal-bot)"
+  pm2 reload fixture-sync 2>/dev/null || echo "⚠️  fixture-sync no está corriendo (inicia con: pm2 start ecosystem.config.cjs --only fixture-sync)"
 
   echo "🚀 ¡Despliegue completado!"
 else
