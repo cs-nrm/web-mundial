@@ -117,7 +117,7 @@ async function notifySuccess(event) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `✅ ${label}\n${match}`,
+      text: `✅ [Posteado exitosamente] ${label}\n${match}`,
     }),
     signal: AbortSignal.timeout(10_000),
   }).catch(e => console.error('[telegram] Error notificación éxito:', e.message))
@@ -140,7 +140,7 @@ async function notifyTelegram(event, errorMsg) {
   const match = `${event.team_home} ${score} ${event.team_away}`.trim()
   const err   = errorMsg?.slice(0, 150) || 'Error desconocido'
 
-  const text = `⚠️ *Error al publicar* (2 intentos fallidos)\n\n${label}\n${match}\n\n\`${err}\``
+  const text = `❌ [ERROR] *No se pudo publicar* (2 intentos fallidos)\n\n${label}\n${match}\n\n\`${err}\``
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
