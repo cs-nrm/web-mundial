@@ -1,0 +1,545 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro'
+import { canAccess, ANUNCIOS_ROLES } from '../../../lib/admin'
+import type { UserRole } from '../../../lib/perfil'
+import { createSupabaseAdminClient } from '../../../lib/supabase'
+
+const { role } = Astro.locals
+if (!canAccess(role as UserRole, ANUNCIOS_ROLES)) return Astro.redirect('/admin')
+
+const supabase = createSupabaseAdminClient()
+
+const hoy    = new Date()
+const hace30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+const desdeParam   = Astro.url.searchParams.get('desde')   ?? hace30.toISOString().slice(0, 10)
+const hastaParam   = Astro.url.searchParams.get('hasta')   ?? hoy.toISOString().slice(0, 10)
+const clienteParam = Astro.url.searchParams.get('cliente') ?? ''
+
+const desdeISO  = new Date(desdeParam + 'T00:00:00').toISOString()
+const hastaISO  = new Date(hastaParam + 'T23:59:59').toISOString()
+const rpcClient = clienteParam || null
+
+const [
+  { data: clients },
+  { data: rawSlot,      error: slotError },
+  { data: rawDaily,     error: dailyError },
+  { data: rawPages },
+  { data: rawCreStats },
+  { data: allCreatives },
+] = await Promise.all([
+  supabase.from('ad_clients').select('id, name').order('name'),
+  supabase.rpc('get_ad_stats_by_slot',     { desde_ts: desdeISO, hasta_ts: hastaISO }),
+  supabase.rpc('get_ad_stats_daily',        { desde_ts: desdeISO, hasta_ts: hastaISO, filter_client: rpcClient }),
+  supabase.rpc('get_ad_top_pages',          { desde_ts: desdeISO, hasta_ts: hastaISO, filter_client: rpcClient, top_n: 10 }),
+  supabase.rpc('get_ad_stats_by_creative',  { desde_ts: desdeISO, hasta_ts: hastaISO, filter_client: rpcClient }),
+  supabase.from('ad_creatives').select('id, client_id, slot_type, type, src, alt').eq('active', true),
+])
+
+const needsMigration = !!dailyError
+
+// ── SLOT TABLE ─────────────────────────────────────────────────────────────
+const SLOT_LABELS: Record<string, string> = {
+  leaderboard: 'LeaderBoard', expandible: 'Expandible',
+  boxbanner: 'BoxBanner', super: 'Super', doublebox: 'DoubleBox',
+}
+const SLOT_ORDER = ['leaderboard','expandible','boxbanner','super','doublebox']
+const clientMap  = Object.fromEntries((clients ?? []).map((c: any) => [c.id, c.name]))
+
+type SlotStat  = { slotKey: string; label: string; imp: number; clk: number }
+type ClientRow = { id: string; name: string; slots: SlotStat[]; totalImp: number; totalClk: number }
+
+const grouped: Record<string, ClientRow> = {}
+for (const s of (rawSlot ?? []) as any[]) {
+  if (clienteParam && s.client_id !== clienteParam) continue
+  const cid = s.client_id
+  if (!grouped[cid]) grouped[cid] = { id: cid, name: clientMap[cid] ?? cid, slots: [], totalImp: 0, totalClk: 0 }
+  const imp = Number(s.imp_count), clk = Number(s.clk_count)
+  grouped[cid].slots.push({ slotKey: s.slot_type, label: SLOT_LABELS[s.slot_type] ?? s.slot_type, imp, clk })
+  grouped[cid].totalImp += imp
+  grouped[cid].totalClk += clk
+}
+for (const g of Object.values(grouped)) {
+  g.slots.sort((a, b) => (SLOT_ORDER.indexOf(a.slotKey) === -1 ? 99 : SLOT_ORDER.indexOf(a.slotKey)) - (SLOT_ORDER.indexOf(b.slotKey) === -1 ? 99 : SLOT_ORDER.indexOf(b.slotKey)))
+}
+const slotRows  = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'es'))
+const grandImp  = slotRows.reduce((s, r) => s + r.totalImp, 0)
+const grandClk  = slotRows.reduce((s, r) => s + r.totalClk, 0)
+
+function ctr(imp: number, clk: number) { return imp > 0 ? ((clk / imp) * 100).toFixed(1) + '%' : '—' }
+
+// ── DAILY CHART ─────────────────────────────────────────────────────────────
+type DS = { dia: string; imp: number; clk: number }
+const daily: DS[] = ((rawDaily ?? []) as any[]).map(d => ({
+  dia: String(d.dia),
+  imp: Number(d.imp_count),
+  clk: Number(d.clk_count),
+}))
+
+const maxImp  = Math.max(...daily.map(d => d.imp), 1)
+const maxCtrV = Math.max(...daily.map(d => d.imp > 0 ? d.clk / d.imp : 0), 0.001)
+
+// SVG layout
+const SW = 900, SH = 200
+const PL = 60, PR = 55, PT = 15, PB = 35
+const iW = SW - PL - PR, iH = SH - PT - PB
+const ND = daily.length || 1
+const slW = iW / ND
+const bW  = Math.max(slW * 0.65, 2)
+const LE  = ND > 25 ? 7 : ND > 15 ? 4 : ND > 8 ? 2 : 1
+
+const MONTHS = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+function fmtDia(dia: string) {
+  const [, m, d] = dia.split('-')
+  return `${parseInt(d)} ${MONTHS[parseInt(m)]}`
+}
+function fmtK(n: number) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n) }
+
+const ctrLine = daily.map((d, i) => {
+  const x = PL + i * slW + slW / 2
+  const c = d.imp > 0 ? d.clk / d.imp : 0
+  const y = PT + iH - (c / maxCtrV) * iH
+  return `${x.toFixed(1)},${y.toFixed(1)}`
+}).join(' ')
+
+const yImp = [0, 0.25, 0.5, 0.75, 1.0].map(f => ({ v: fmtK(Math.round(maxImp * f)), y: PT + iH * (1 - f) }))
+const yCtr = [0, 0.25, 0.5, 0.75, 1.0].map(f => ({ v: (maxCtrV * f * 100).toFixed(1) + '%', y: PT + iH * (1 - f) }))
+
+// ── TOP PAGES ────────────────────────────────────────────────────────────────
+type PS = { url: string; imp: number; clk: number }
+const pages: PS[] = ((rawPages ?? []) as any[]).map(p => ({ url: String(p.page_url), imp: Number(p.imp_count), clk: Number(p.clk_count) }))
+const maxPI = Math.max(...pages.map(p => p.imp), 1)
+
+// ── CREATIVES ────────────────────────────────────────────────────────────────
+type CS = { creativeId: string; clientId: string; slot: string; imp: number; clk: number }
+const creStats: CS[] = ((rawCreStats ?? []) as any[]).map(c => ({
+  creativeId: String(c.creative_id), clientId: String(c.client_id),
+  slot: String(c.slot_type), imp: Number(c.imp_count), clk: Number(c.clk_count),
+}))
+const creMetaMap: Record<string, any> = Object.fromEntries((allCreatives ?? []).map((c: any) => [c.id, c]))
+
+// CSV (slot breakdown)
+const csvRows = slotRows.flatMap(c => c.slots.map(s => [c.name, s.label, s.imp, s.clk, ctr(s.imp, s.clk)]))
+---
+
+<AdminLayout title="Estadísticas — Publicidad">
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <a href="/admin/ads" class="back-link">← Publicidad</a>
+      <h2 class="section-title">Estadísticas de anuncios</h2>
+    </div>
+    <button id="btn-csv" class="btn-csv">↓ Descargar CSV</button>
+  </div>
+
+  <!-- Aviso de migración -->
+  {needsMigration && (
+    <div class="alert-sql">
+      <strong>Faltan 3 funciones SQL.</strong> Ejecuta esto en el editor SQL de Supabase y recarga:
+      <pre class="sql-block">{`-- 1. Tendencia diaria
+CREATE OR REPLACE FUNCTION get_ad_stats_daily(desde_ts timestamptz, hasta_ts timestamptz, filter_client uuid DEFAULT NULL)
+RETURNS TABLE(dia date, imp_count bigint, clk_count bigint) LANGUAGE sql SECURITY DEFINER AS $$
+  SELECT dia, COALESCE(i.n,0), COALESCE(c.n,0)
+  FROM (SELECT DATE(created_at) AS dia, COUNT(*)::bigint AS n FROM ad_impressions
+        WHERE created_at BETWEEN desde_ts AND hasta_ts AND (filter_client IS NULL OR client_id=filter_client) GROUP BY 1) i
+  FULL JOIN (SELECT DATE(created_at) AS dia, COUNT(*)::bigint AS n FROM ad_clicks
+             WHERE created_at BETWEEN desde_ts AND hasta_ts AND (filter_client IS NULL OR client_id=filter_client) GROUP BY 1) c
+  USING (dia) ORDER BY dia; $$;
+
+-- 2. Top páginas
+CREATE OR REPLACE FUNCTION get_ad_top_pages(desde_ts timestamptz, hasta_ts timestamptz, filter_client uuid DEFAULT NULL, top_n int DEFAULT 10)
+RETURNS TABLE(page_url text, imp_count bigint, clk_count bigint) LANGUAGE sql SECURITY DEFINER AS $$
+  SELECT page_url, COALESCE(i.n,0), COALESCE(c.n,0)
+  FROM (SELECT page_url, COUNT(*)::bigint AS n FROM ad_impressions
+        WHERE created_at BETWEEN desde_ts AND hasta_ts AND (filter_client IS NULL OR client_id=filter_client) GROUP BY page_url) i
+  FULL JOIN (SELECT page_url, COUNT(*)::bigint AS n FROM ad_clicks
+             WHERE created_at BETWEEN desde_ts AND hasta_ts AND (filter_client IS NULL OR client_id=filter_client) GROUP BY page_url) c
+  USING (page_url) ORDER BY COALESCE(i.n,0) DESC LIMIT top_n; $$;
+
+-- 3. Por creatividad
+CREATE OR REPLACE FUNCTION get_ad_stats_by_creative(desde_ts timestamptz, hasta_ts timestamptz, filter_client uuid DEFAULT NULL)
+RETURNS TABLE(creative_id uuid, client_id uuid, slot_type text, imp_count bigint, clk_count bigint) LANGUAGE sql SECURITY DEFINER AS $$
+  SELECT creative_id, client_id, slot_type, COALESCE(i.n,0), COALESCE(c.n,0)
+  FROM (SELECT creative_id, client_id, slot_type, COUNT(*)::bigint AS n FROM ad_impressions
+        WHERE created_at BETWEEN desde_ts AND hasta_ts AND (filter_client IS NULL OR client_id=filter_client) GROUP BY 1,2,3) i
+  FULL JOIN (SELECT creative_id, client_id, slot_type, COUNT(*)::bigint AS n FROM ad_clicks
+             WHERE created_at BETWEEN desde_ts AND hasta_ts AND (filter_client IS NULL OR client_id=filter_client) GROUP BY 1,2,3) c
+  USING (creative_id, client_id, slot_type) ORDER BY COALESCE(i.n,0) DESC; $$;`}</pre>
+    </div>
+  )}
+
+  <!-- Filtros -->
+  <form method="get" class="filters-bar">
+    <div class="filter-group">
+      <label>Cliente</label>
+      <select name="cliente">
+        <option value="">Todos</option>
+        {(clients ?? []).map((c: any) => (
+          <option value={c.id} selected={clienteParam === c.id}>{c.name}</option>
+        ))}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Desde</label>
+      <input type="date" name="desde" value={desdeParam} />
+    </div>
+    <div class="filter-group">
+      <label>Hasta</label>
+      <input type="date" name="hasta" value={hastaParam} />
+    </div>
+    <button type="submit" class="btn-aplicar">Aplicar</button>
+  </form>
+
+  <!-- ── SECCIÓN 1: POR SLOT ─────────────────────────────────────────── -->
+  <div class="card">
+    <h3 class="card-title">Impresiones y clicks por slot</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Cliente</th><th>Slot</th>
+          <th class="num-th">Impresiones</th><th class="num-th">Clicks</th><th class="num-th">CTR</th>
+        </tr>
+      </thead>
+      <tbody>
+        {!slotError && slotRows.length === 0 && (
+          <tr><td colspan="5" class="empty">Sin datos para el período seleccionado.</td></tr>
+        )}
+        {slotRows.map(c => (
+          <>
+            {c.slots.map((s, i) => (
+              <tr class="data-row">
+                <td class="client-cell">
+                  {i === 0 ? <strong class="client-name">{c.name}</strong> : <span class="client-cont"></span>}
+                </td>
+                <td class="slot-cell">{s.label}</td>
+                <td class="num">{s.imp.toLocaleString('es-MX')}</td>
+                <td class="num">{s.clk.toLocaleString('es-MX')}</td>
+                <td class="num">{ctr(s.imp, s.clk)}</td>
+              </tr>
+            ))}
+            <tr class="subtotal-row">
+              <td></td>
+              <td class="subtotal-label">Total {c.name}</td>
+              <td class="num">{c.totalImp.toLocaleString('es-MX')}</td>
+              <td class="num">{c.totalClk.toLocaleString('es-MX')}</td>
+              <td class="num">{ctr(c.totalImp, c.totalClk)}</td>
+            </tr>
+          </>
+        ))}
+        {slotRows.length > 0 && (
+          <tr class="grand-row">
+            <td colspan="2" class="grand-label">Total general</td>
+            <td class="num">{grandImp.toLocaleString('es-MX')}</td>
+            <td class="num">{grandClk.toLocaleString('es-MX')}</td>
+            <td class="num">{ctr(grandImp, grandClk)}</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── SECCIÓN 2: TENDENCIA DIARIA ────────────────────────────────── -->
+  {!needsMigration && (
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Tendencia diaria</h3>
+        <div class="legend">
+          <span class="leg-imp">■ Impresiones</span>
+          <span class="leg-ctr">— CTR%</span>
+        </div>
+      </div>
+      {daily.length === 0 ? (
+        <p class="empty">Sin datos para el período.</p>
+      ) : (
+        <div class="chart-wrap">
+          <svg viewBox={`0 0 ${SW} ${SH}`} width="100%" style="display:block;">
+            <!-- Grid + left Y axis (impressions) -->
+            {yImp.map(g => (
+              <>
+                <line x1={PL} y1={g.y} x2={SW - PR} y2={g.y} stroke="#f0f0f0" stroke-width="1"/>
+                <text x={PL - 6} y={g.y + 4} text-anchor="end" font-size="10" fill="#9ca3af">{g.v}</text>
+              </>
+            ))}
+            <!-- Right Y axis (CTR%) -->
+            {yCtr.map(g => (
+              <text x={SW - PR + 6} y={g.y + 4} text-anchor="start" font-size="10" fill="#f59e0b">{g.v}</text>
+            ))}
+            <!-- Axis lines -->
+            <line x1={PL} y1={PT} x2={PL} y2={PT + iH} stroke="#e5e7eb" stroke-width="1"/>
+            <line x1={PL} y1={PT + iH} x2={SW - PR} y2={PT + iH} stroke="#e5e7eb" stroke-width="1"/>
+
+            <!-- Bars -->
+            {daily.map((d, i) => {
+              const bH  = maxImp > 0 ? Math.max((d.imp / maxImp) * iH, d.imp > 0 ? 1 : 0) : 0
+              const bX  = PL + i * slW + (slW - bW) / 2
+              const bY  = PT + iH - bH
+              const cx  = PL + i * slW + slW / 2
+              const ctrPct = d.imp > 0 ? ((d.clk / d.imp) * 100).toFixed(1) : '0'
+              const showLabel = i % LE === 0
+              return (
+                <>
+                  <rect x={bX} y={bY} width={bW} height={bH} fill="#6366f1" rx="2" opacity="0.85">
+                    <title>{fmtDia(d.dia)}: {d.imp.toLocaleString('es-MX')} imp · {d.clk.toLocaleString('es-MX')} clicks · CTR {ctrPct}%</title>
+                  </rect>
+                  {showLabel && (
+                    <text x={cx} y={PT + iH + 18} text-anchor="middle" font-size="9" fill="#9ca3af">{fmtDia(d.dia)}</text>
+                  )}
+                </>
+              )
+            })}
+
+            <!-- CTR line -->
+            {daily.length > 1 && (
+              <polyline points={ctrLine} fill="none" stroke="#f59e0b" stroke-width="2" stroke-linejoin="round"/>
+            )}
+            {daily.map((d, i) => {
+              const c = d.imp > 0 ? d.clk / d.imp : 0
+              const cx = PL + i * slW + slW / 2
+              const cy = PT + iH - (c / maxCtrV) * iH
+              const ctrPct = d.imp > 0 ? ((d.clk / d.imp) * 100).toFixed(1) : '0'
+              return (
+                <circle cx={cx} cy={cy} r="3" fill="#f59e0b">
+                  <title>{fmtDia(d.dia)}: CTR {ctrPct}%</title>
+                </circle>
+              )
+            })}
+          </svg>
+        </div>
+      )}
+    </div>
+  )}
+
+  <!-- ── SECCIÓN 3: TOP PÁGINAS ──────────────────────────────────────── -->
+  {!needsMigration && (
+    <div class="card">
+      <h3 class="card-title">Top 10 páginas por impresiones</h3>
+      {pages.length === 0 ? (
+        <p class="empty">Sin datos para el período.</p>
+      ) : (
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Página</th>
+              <th class="num-th">Impresiones</th>
+              <th class="num-th">Clicks</th>
+              <th class="num-th">CTR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pages.map(p => {
+              const pct = Math.round((p.imp / maxPI) * 100)
+              return (
+                <tr class="data-row">
+                  <td class="page-cell">
+                    <div class="page-bar" style={`width:${pct}%`}></div>
+                    <span class="page-url">{p.url === '/' ? '/ (Home)' : p.url}</span>
+                  </td>
+                  <td class="num">{p.imp.toLocaleString('es-MX')}</td>
+                  <td class="num">{p.clk.toLocaleString('es-MX')}</td>
+                  <td class="num">{ctr(p.imp, p.clk)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )}
+
+  <!-- ── SECCIÓN 4: POR CREATIVIDAD ─────────────────────────────────── -->
+  {!needsMigration && (
+    <div class="card">
+      <h3 class="card-title">Por creatividad</h3>
+      {creStats.length === 0 ? (
+        <p class="empty">Sin datos para el período.</p>
+      ) : (
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Creatividad</th>
+              <th>Cliente</th>
+              <th>Slot</th>
+              <th class="num-th">Impresiones</th>
+              <th class="num-th">Clicks</th>
+              <th class="num-th">CTR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {creStats.map(cs => {
+              const meta = creMetaMap[cs.creativeId]
+              return (
+                <tr class="data-row">
+                  <td class="creative-cell">
+                    {meta?.type === 'image' && meta?.src
+                      ? <img src={meta.src} alt={meta.alt ?? ''} class="creative-thumb" />
+                      : <span class="html-badge">HTML</span>
+                    }
+                  </td>
+                  <td class="muted-sm">{clientMap[cs.clientId] ?? '—'}</td>
+                  <td class="muted-sm">{SLOT_LABELS[cs.slot] ?? cs.slot}</td>
+                  <td class="num">{cs.imp.toLocaleString('es-MX')}</td>
+                  <td class="num">{cs.clk.toLocaleString('es-MX')}</td>
+                  <td class="num ctr-pill" data-ctr={cs.imp > 0 ? ((cs.clk / cs.imp) * 100) : 0}>{ctr(cs.imp, cs.clk)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )}
+
+</AdminLayout>
+
+<script define:vars={{ csvRows, desdeParam, hastaParam }}>
+document.getElementById('btn-csv').onclick = () => {
+  const header = ['Cliente','Slot','Impresiones','Clicks','CTR']
+  const csv = [header, ...csvRows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+    .join('\r\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `anuncios-${desdeParam}-${hastaParam}.csv`
+  a.click()
+}
+
+// Color CTR pills: verde si >3%, amarillo si >1%, gris si <1%
+document.querySelectorAll('.ctr-pill').forEach(el => {
+  const v = parseFloat(el.dataset.ctr ?? '0')
+  el.style.color = v >= 3 ? '#16a34a' : v >= 1 ? '#d97706' : '#9ca3af'
+  el.style.fontWeight = v >= 1 ? '700' : '400'
+})
+</script>
+
+<style>
+/* ── Layout ──────────────────────────────────────────────── */
+.toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
+}
+.toolbar-left { display: flex; align-items: center; gap: 0.75rem; }
+.back-link    { color: #6b7280; font-size: 0.85rem; text-decoration: none; }
+.back-link:hover { color: var(--rojo); }
+.section-title { font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+.btn-csv {
+  background: #1d4ed8; color: white; border: none;
+  padding: 0.5rem 1.1rem; border-radius: 6px;
+  font-size: 0.875rem; font-weight: 600; cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-csv:hover { opacity: 0.88; }
+
+/* ── Alert ───────────────────────────────────────────────── */
+.alert-sql {
+  background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
+  padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.875rem; color: #92400e;
+}
+.alert-sql strong { display: block; margin-bottom: 0.5rem; }
+.sql-block {
+  background: #1e293b; color: #e2e8f0; border-radius: 6px;
+  padding: 0.75rem 1rem; font-size: 0.72rem; overflow-x: auto;
+  margin-top: 0.5rem; white-space: pre; font-family: monospace; line-height: 1.5;
+}
+
+/* ── Filters ─────────────────────────────────────────────── */
+.filters-bar {
+  display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap;
+  background: white; border-radius: 8px; padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+.filter-group         { display: flex; flex-direction: column; gap: 0.25rem; }
+.filter-group label   { font-size: 0.75rem; font-weight: 600; color: #6b7280; }
+.filter-group select,
+.filter-group input[type="date"] {
+  border: 1.5px solid #d1d5db; border-radius: 6px;
+  padding: 0.45rem 0.75rem; font-size: 0.875rem;
+  outline: none; background: white; color: #111;
+}
+.filter-group select:focus,
+.filter-group input[type="date"]:focus { border-color: var(--rojo); }
+.btn-aplicar {
+  background: var(--rojo); color: white; border: none;
+  padding: 0.5rem 1.25rem; border-radius: 6px;
+  font-size: 0.875rem; font-weight: 600; cursor: pointer;
+}
+.btn-aplicar:hover { opacity: 0.9; }
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+  background: white; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 1.5rem;
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem 0.5rem;
+}
+.card-title {
+  font-size: 0.9rem; font-weight: 700; color: #1e293b;
+  margin: 0; padding: 1rem 1.25rem 0.75rem;
+}
+.card-header .card-title { padding: 0; }
+.legend { display: flex; gap: 1rem; font-size: 0.78rem; }
+.leg-imp { color: #6366f1; font-weight: 600; }
+.leg-ctr { color: #f59e0b; font-weight: 600; }
+
+/* ── Chart ───────────────────────────────────────────────── */
+.chart-wrap { padding: 0 1rem 1rem; }
+
+/* ── Tables ──────────────────────────────────────────────── */
+.data-table            { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.data-table th {
+  background: #f9fafb; padding: 0.6rem 1rem;
+  font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #6b7280; text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+.num-th            { text-align: right !important; }
+.data-table td     { padding: 0.65rem 1rem; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.data-row:hover td { background: #fafafa; }
+
+.client-cell   { font-size: 0.875rem; }
+.client-name   { font-weight: 700; color: #111827; }
+.client-cont   { display: block; width: 12px; border-left: 2px solid #e5e7eb; height: 1.2rem; margin-left: 8px; }
+.slot-cell     { color: #374151; padding-left: 1.5rem !important; }
+.num           { text-align: right; font-variant-numeric: tabular-nums; color: #374151; }
+.muted-sm      { font-size: 0.825rem; color: #6b7280; }
+.empty         { text-align: center; color: #9ca3af; padding: 2rem !important; }
+
+.subtotal-row td     { background: #f9fafb; border-bottom: 2px solid #e5e7eb; padding: 0.5rem 1rem; }
+.subtotal-label      { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; }
+.subtotal-row .num   { font-weight: 600; }
+
+.grand-row td        { background: #1e293b; padding: 0.75rem 1rem; }
+.grand-label         { font-weight: 700; color: #f1f5f9; }
+.grand-row .num      { font-weight: 700; color: #f1f5f9; }
+
+/* ── Pages ───────────────────────────────────────────────── */
+.page-cell {
+  position: relative; min-width: 280px; max-width: 420px;
+  overflow: hidden;
+}
+.page-bar {
+  position: absolute; inset: 0; background: #eff6ff;
+  border-radius: 0; transition: width 0.3s; z-index: 0;
+}
+.page-url {
+  position: relative; z-index: 1;
+  font-size: 0.8rem; color: #374151; font-family: monospace;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: block; max-width: 400px;
+}
+
+/* ── Creatives ───────────────────────────────────────────── */
+.creative-thumb {
+  width: 60px; height: 36px; object-fit: contain;
+  border: 1px solid #e5e7eb; border-radius: 4px; background: #f9fafb;
+  display: block;
+}
+.html-badge {
+  display: inline-block; background: #e0e7ff; color: #4338ca;
+  font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem;
+  border-radius: 4px; font-family: monospace;
+}
+</style>

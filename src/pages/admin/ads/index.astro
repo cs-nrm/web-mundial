@@ -35,6 +35,7 @@ for (const s of stats ?? []) {
       <button id="btn-refresh" class="btn-secondary" title="Actualizar datos">
         <span id="refresh-icon">↻</span> Actualizar
       </button>
+      <a href="/admin/ads/estadisticas" class="btn-stats">Estadísticas →</a>
       <button id="btn-nuevo" class="btn-primary">+ Nuevo cliente</button>
     </div>
   </div>
@@ -169,6 +170,8 @@ document.querySelectorAll<HTMLButtonElement>('.toggle-btn').forEach(btn => {
 .btn-primary:hover { opacity:0.9; }
 .btn-secondary { background:#f3f4f6; color:#374151; border:1px solid #d1d5db; padding:0.5rem 1rem; border-radius:6px; font-size:0.875rem; cursor:pointer; }
 .btn-edit { font-size:0.8rem; color:var(--rojo); font-weight:600; text-decoration:none; }
+.btn-stats { font-size:0.875rem; color:#1d4ed8; font-weight:600; text-decoration:none; border:1px solid #bfdbfe; background:#eff6ff; padding:0.45rem 0.85rem; border-radius:6px; }
+.btn-stats:hover { background:#dbeafe; }
 .data-table { width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
 .data-table th { background:#f9fafb; padding:0.75rem 1rem; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#6b7280; text-align:left; border-bottom:1px solid #e5e7eb; }
 .data-table td { padding:0.85rem 1rem; border-bottom:1px solid #f3f4f6; font-size:0.9rem; }
