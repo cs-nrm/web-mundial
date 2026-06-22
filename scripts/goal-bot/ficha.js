@@ -30,10 +30,22 @@ function parseTeams(xml) {
   }
 }
 
-function parseGoals(xml, seenIds) {
+function parseGoals(xml, seenIds, seenGoalsData) {
   const deletedIds = new Set(
     (xml.match(/<DeletedIncidence\b[^>]*\/>/g) ?? []).map(t => attr(t, 'incidenceId'))
   )
+
+  // Goles ya publicados que ahora aparecen como eliminados (anulados por VAR)
+  const annulledGoals = []
+  for (const id of seenIds) {
+    if (deletedIds.has(id) && !seenGoalsData.get(id)?.annulled) {
+      const data = seenGoalsData.get(id)
+      if (data) {
+        annulledGoals.push({ incidenceId: id, ...data })
+        seenGoalsData.set(id, { ...data, annulled: true })
+      }
+    }
+  }
 
   const newGoals = []
   const incidences = xml.match(/<Incidence\b.*?\/>/gs) ?? []
@@ -46,17 +58,18 @@ function parseGoals(xml, seenIds) {
     if (!id || seenIds.has(id) || deletedIds.has(id)) continue
 
     seenIds.add(id)
-    newGoals.push({
-      incidenceId: id,
+    const goalData = {
       goalType: type,
       playerName: attr(tag, 'playerName'),
       teamId: attr(tag, 'teamId'),
       minute: parseInt(attr(tag, 'minutes') || '0'),
       assistName: attr(tag, 'assistanceBy') || null,
-    })
+    }
+    seenGoalsData.set(id, goalData)
+    newGoals.push({ incidenceId: id, ...goalData })
   }
 
-  return newGoals
+  return { newGoals, annulledGoals }
 }
 
 export async function pollMatch(matchId, state) {
@@ -66,7 +79,7 @@ export async function pollMatch(matchId, state) {
 
   const status = parseStatus(xml)
   const teams = parseTeams(xml)
-  const newGoals = parseGoals(xml, state.seenIncidenceIds)
+  const { newGoals, annulledGoals } = parseGoals(xml, state.seenIncidenceIds, state.seenGoalsData)
 
   // Detectar inicio de partido (Primer Tiempo, solo una vez)
   const isKickoff =
@@ -83,5 +96,5 @@ export async function pollMatch(matchId, state) {
 
   const isFinished = status?.value === STATUS.FINALIZADO
 
-  return { status, teams, newGoals, isKickoff, isHalftime, isFinished }
+  return { status, teams, newGoals, annulledGoals, isKickoff, isHalftime, isFinished }
 }

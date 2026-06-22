@@ -160,6 +160,27 @@ async function notifyTelegram(event, errorMsg) {
   }).catch(e => console.error('[telegram] Error enviando notificación:', e.message))
 }
 
+export async function notifyVarAnnulment(goal, teams) {
+  const token  = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return
+
+  const player = goal.playerName ? ` — ${goal.playerName}` : ''
+  const minute = goal.minute ? ` (${goal.minute}')` : ''
+  const match  = `${teams.teamHome} ${teams.scoreHome}–${teams.scoreAway} ${teams.teamAway}`
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: `🚨 *GOL ANULADO POR VAR*${player}${minute}\n${match}\n\n⚠️ Entra a las redes sociales a borrarlo manualmente.`,
+      parse_mode: 'Markdown',
+    }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch(e => console.error('[telegram] Error notificación VAR:', e.message))
+}
+
 async function isAutoPublishEnabled() {
   const supabase = getSupabase()
   const { data } = await supabase

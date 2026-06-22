@@ -1,7 +1,7 @@
 import { fetchLiveMatches } from './fixture.js'
 import { pollMatch } from './ficha.js'
 import { isAlreadyProcessed, updateMatchLive, upsertMatchInfo, saveEvent } from './db.js'
-import { autoPublish } from './publisher.js'
+import { autoPublish, notifyVarAnnulment } from './publisher.js'
 import { POLL_INTERVAL_LIVE, POLL_INTERVAL_IDLE, STATUS } from './config.js'
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
@@ -16,7 +16,7 @@ const matchStates = {}
 
 function getMatchState(matchId) {
   if (!matchStates[matchId]) {
-    matchStates[matchId] = { seenIncidenceIds: new Set(), halftimePosted: false, kickoffPosted: false, finishedPosted: false }
+    matchStates[matchId] = { seenIncidenceIds: new Set(), seenGoalsData: new Map(), halftimePosted: false, kickoffPosted: false, finishedPosted: false }
   }
   return matchStates[matchId]
 }
@@ -36,7 +36,7 @@ async function processMatch(match) {
     return false
   }
 
-  const { status, teams, newGoals, isHalftime, isKickoff, isFinished } = result
+  const { status, teams, newGoals, annulledGoals, isHalftime, isKickoff, isFinished } = result
 
   // Mantener df_partidos con score y status actualizados en cada poll
   if (teams.teamHome && teams.teamAway) {
@@ -127,6 +127,12 @@ async function processMatch(match) {
         score_away: teams.scoreAway,
       })
     }
+  }
+
+  // Notificar goles anulados por VAR
+  for (const goal of annulledGoals) {
+    log(`GOL ANULADO detectado — ${goal.playerName} min ${goal.minute}`)
+    notifyVarAnnulment(goal, teams).catch(e => log(`[telegram] Error VAR notify: ${e.message}`))
   }
 
   // Guardar eventos de gol
