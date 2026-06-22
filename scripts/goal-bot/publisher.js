@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { generateImage } from './image.js'
 import { captionInstagram, captionTwitter, captionFacebook } from './captions.js'
-import { markPublished, markError } from './db.js'
+import { markPublished, markError, updateStatusDetail } from './db.js'
 
 const STORAGE_BUCKET = 'social-posts'
 const MAX_ATTEMPTS   = 2
@@ -54,8 +54,114 @@ async function postToMetricool(text, imageUrl, network) {
   return { ok: res.ok, status: res.status, data: await res.json().catch(() => ({})) }
 }
 
+const PROGRESS_LABELS = {
+  recibido:        'EVENTO RECIBIDO...',
+  generando_imagen:'EVENTO RECIBIDO\nGENERANDO IMAGEN...',
+  posteando:       'EVENTO RECIBIDO\nIMAGEN GENERADA\nPOSTEANDO...',
+  publicado:       'EVENTO RECIBIDO\nIMAGEN GENERADA\nPOSTEANDO\n\n[Posteado exitosamente]',
+}
+
+async function sendProgressMessage(event) {
+  const token  = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return null
+
+  const label = {
+    gol:          `Gol${event.player_name ? ` de ${event.player_name}` : ''}${event.minute ? ` (${event.minute}')` : ''}`,
+    inicio:       'Inicio de partido',
+    medio_tiempo: 'Medio tiempo',
+    final:        'Final del partido',
+  }[event.event_type] ?? event.event_type
+
+  const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
+  const match = `${event.team_home}${score} vs ${event.team_away}`
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `${label}\n${match}\n\n${PROGRESS_LABELS.recibido}`,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    })
+    const data = await res.json()
+    return data.ok ? { messageId: data.result.message_id, chatId } : null
+  } catch { return null }
+}
+
+async function editProgressMessage(chatId, messageId, step, event, extra = '') {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return
+
+  const label = {
+    gol:          `Gol${event.player_name ? ` de ${event.player_name}` : ''}${event.minute ? ` (${event.minute}')` : ''}`,
+    inicio:       'Inicio de partido',
+    medio_tiempo: 'Medio tiempo',
+    final:        'Final del partido',
+  }[event.event_type] ?? event.event_type
+
+  const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
+  const match = `${event.team_home}${score} vs ${event.team_away}`
+  const body  = PROGRESS_LABELS[step] ?? step
+
+  await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text: `${label}\n${match}\n\n${body}${extra}`,
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true,
+    }),
+    signal: AbortSignal.timeout(5_000),
+  }).catch(() => {})
+}
+
+async function editProgressMessageError(chatId, messageId, errorObj, event) {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return
+
+  const label = {
+    gol:          `Gol${event.player_name ? ` de ${event.player_name}` : ''}${event.minute ? ` (${event.minute}')` : ''}`,
+    inicio:       'Inicio de partido',
+    medio_tiempo: 'Medio tiempo',
+    final:        'Final del partido',
+  }[event.event_type] ?? event.event_type
+
+  const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
+  const match = `${event.team_home}${score} vs ${event.team_away}`
+  const steps = {
+    imagen:    'EVENTO RECIBIDO\nGENERANDO IMAGEN: ERROR\nPOSTEANDO: —',
+    storage:   'EVENTO RECIBIDO\nIMAGEN GENERADA\nSUBIENDO A STORAGE: ERROR',
+    metricool: 'EVENTO RECIBIDO\nIMAGEN GENERADA\nPOSTEANDO: ERROR',
+  }
+  const stepLog = steps[errorObj?.step] ?? 'EVENTO RECIBIDO: ERROR'
+  const err = errorObj?.message?.slice(0, 150) || 'Error desconocido'
+
+  await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text: `[ERROR] ${label}\n${match}\n\n${stepLog}\n\n\`${err}\``,
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [[
+          { text: 'Reintentar', callback_data: `retry:${event.id}` },
+          { text: 'Ignorar',    callback_data: `ignore:${event.id}` },
+        ]],
+      },
+    }),
+    signal: AbortSignal.timeout(5_000),
+  }).catch(() => {})
+}
+
 // Intento puro — lanza error con paso fallido, no toca la DB de estado
-async function publishEventOnce(event) {
+async function publishEventOnce(event, onProgress = () => {}) {
   const supabase = getSupabase()
 
   const { data: rawHandles = [] } = await supabase
@@ -71,6 +177,7 @@ async function publishEventOnce(event) {
   const textFb = captionFacebook(event, handlesMap)
 
   // Paso 1: Generar imagen
+  onProgress('generando_imagen')
   let imageBuffer
   try {
     imageBuffer = await generateImage(event)
@@ -95,6 +202,7 @@ async function publishEventOnce(event) {
   const imageUrl = urlData.publicUrl
 
   // Paso 3: Postear a Metricool
+  onProgress('posteando')
   let resIg, resTw, resFb
   try {
     ;[resIg, resTw, resFb] = await Promise.all([
@@ -226,17 +334,32 @@ export async function autoPublish(event) {
     return false
   }
 
+  // Enviar mensaje inicial de progreso a Telegram
+  const tg = await sendProgressMessage(event)
+  await updateStatusDetail(event.id, 'recibido').catch(() => {})
+
+  const onProgress = (step) => {
+    updateStatusDetail(event.id, step).catch(() => {})
+    if (tg) editProgressMessage(tg.chatId, tg.messageId, step, event).catch(() => {})
+  }
+
   let lastError = null
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const { imageUrl } = await withTimeout(publishEventOnce(event), TIMEOUT_MS)
+      const { imageUrl } = await withTimeout(publishEventOnce(event, onProgress), TIMEOUT_MS)
       console.log(`[publisher] ✅ Evento ${event.id} publicado (intento ${attempt}/${MAX_ATTEMPTS})`)
-      await notifySuccess(event, imageUrl)
+      await updateStatusDetail(event.id, null).catch(() => {})
+      if (tg) {
+        const imgLine = imageUrl ? `\n[Ver imagen](${imageUrl})` : ''
+        await editProgressMessage(tg.chatId, tg.messageId, 'publicado', event, imgLine)
+      } else {
+        await notifySuccess(event, imageUrl)
+      }
       return true
     } catch (err) {
       lastError = err
-      console.error(`[publisher] Intento ${attempt}/${MAX_ATTEMPTS} fallido para evento ${event.id}: ${err.message}`)
+      console.error(`[publisher] Intento ${attempt}/${MAX_ATTEMPTS} fallido: ${err.message}`)
       if (attempt < MAX_ATTEMPTS) {
         console.log(`[publisher] Reintentando en ${RETRY_DELAY_MS / 1000}s…`)
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
@@ -246,6 +369,10 @@ export async function autoPublish(event) {
 
   // Ambos intentos fallaron
   await markError(event.id, lastError.message)
-  await notifyTelegram(event, lastError)
+  if (tg) {
+    await editProgressMessageError(tg.chatId, tg.messageId, lastError, event)
+  } else {
+    await notifyTelegram(event, lastError)
+  }
   return false
 }

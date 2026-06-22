@@ -156,7 +156,12 @@ const EVENT_LABEL: Record<string, string> = {
                   <span class="status-ok">✅ {fmtTime(ev.published_at ?? ev.created_at)}</span>
                 )}
                 {ev.status === 'pendiente' && autoPublish && (
-                  <span class="status-pending">⏳ publicando…</span>
+                  <span class="status-pending">{
+                    ev.status_detail === 'generando_imagen' ? '⏳ Generando imagen…' :
+                    ev.status_detail === 'posteando'        ? '⏳ Posteando…' :
+                    ev.status_detail === 'recibido'         ? '⏳ Evento recibido…' :
+                    '⏳ Publicando…'
+                  }</span>
                 )}
                 {ev.status === 'pendiente' && !autoPublish && (
                   <button class="btn-publish-manual" data-id={ev.id} onclick="manualPublish(this)">

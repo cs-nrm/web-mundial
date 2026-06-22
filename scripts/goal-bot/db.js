@@ -42,6 +42,10 @@ export async function upsertMatchInfo({ match_id, slug, fecha_utc, equipo_local,
   if (error) console.error('upsertMatchInfo error:', error.message)
 }
 
+export async function updateStatusDetail(id, detail) {
+  await supabase.from('goal_posts').update({ status_detail: detail }).eq('id', id)
+}
+
 export async function markPublished(id, metricoolResponse) {
   const { error } = await supabase
     .from('goal_posts')
