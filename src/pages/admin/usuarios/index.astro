@@ -15,10 +15,17 @@ const porPagina = 50
 
 const adminClient = createSupabaseAdminClient()
 
-// Traer TODOS los usuarios de auth de una sola vez, ordenar por más recientes
-const { data: authData } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
-const authUsers = (authData?.users ?? [])
-  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+// Traer TODOS los usuarios paginando (máx 1000 por página)
+const authUsers: Awaited<ReturnType<typeof adminClient.auth.admin.listUsers>>['data']['users'] = []
+let page = 1
+while (true) {
+  const { data: pageData, error } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 })
+  if (error || !pageData?.users?.length) break
+  authUsers.push(...pageData.users)
+  if (!pageData.nextPage) break
+  page++
+}
+authUsers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
 // Traer perfiles para cruzar roles y nombres (en lotes: .in() con cientos de ids
 // puede exceder el límite de tamaño de la query string y fallar silenciosamente)
