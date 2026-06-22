@@ -56,9 +56,9 @@ async function postToMetricool(text, imageUrl, network) {
 
 const PROGRESS_LABELS = {
   recibido:        'EVENTO RECIBIDO...',
-  generando_imagen:'EVENTO RECIBIDO\nGENERANDO IMAGEN...',
-  posteando:       'EVENTO RECIBIDO\nIMAGEN GENERADA\nPOSTEANDO...',
-  publicado:       'EVENTO RECIBIDO\nIMAGEN GENERADA\nPOSTEANDO\n\n[Posteado exitosamente]',
+  generando_imagen:'✓ EVENTO RECIBIDO\nGENERANDO IMAGEN...',
+  posteando:       '✓ EVENTO RECIBIDO\n✓ IMAGEN GENERADA\nPOSTEANDO...',
+  publicado:       '✓ EVENTO RECIBIDO\n✓ IMAGEN GENERADA\n✓ POSTEADO EXITOSAMENTE',
 }
 
 async function sendProgressMessage(event) {
@@ -134,11 +134,11 @@ async function editProgressMessageError(chatId, messageId, errorObj, event) {
   const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
   const match = `${event.team_home}${score} vs ${event.team_away}`
   const steps = {
-    imagen:    'EVENTO RECIBIDO\nGENERANDO IMAGEN: ERROR\nPOSTEANDO: —',
-    storage:   'EVENTO RECIBIDO\nIMAGEN GENERADA\nSUBIENDO A STORAGE: ERROR',
-    metricool: 'EVENTO RECIBIDO\nIMAGEN GENERADA\nPOSTEANDO: ERROR',
+    imagen:    '✓ EVENTO RECIBIDO\n✗ GENERANDO IMAGEN\n— POSTEANDO',
+    storage:   '✓ EVENTO RECIBIDO\n✓ IMAGEN GENERADA\n✗ SUBIENDO A STORAGE',
+    metricool: '✓ EVENTO RECIBIDO\n✓ IMAGEN GENERADA\n✗ POSTEANDO',
   }
-  const stepLog = steps[errorObj?.step] ?? 'EVENTO RECIBIDO: ERROR'
+  const stepLog = steps[errorObj?.step] ?? '✗ EVENTO RECIBIDO'
   const err = errorObj?.message?.slice(0, 150) || 'Error desconocido'
 
   await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
@@ -247,7 +247,7 @@ async function notifySuccess(event, imageUrl) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `[Posteado exitosamente] ${label}\n${match}\n\nEvento recibido: OK\nImagen generada: OK\nPublicado en IG, TW, FB: OK${imgLine}`,
+      text: `[Posteado exitosamente] ${label}\n${match}\n\n✓ Evento recibido\n✓ Imagen generada\n✓ Publicado en IG, TW, FB${imgLine}`,
       parse_mode: 'Markdown',
       disable_web_page_preview: true,
     }),
@@ -273,11 +273,11 @@ async function notifyTelegram(event, errorObj) {
   const err   = errorObj?.message?.slice(0, 150) || 'Error desconocido'
 
   const steps = {
-    imagen:    `Evento recibido: OK\nImagen generada: ERROR\nPublicado en redes: —`,
-    storage:   `Evento recibido: OK\nImagen generada: OK\nSubida a storage: ERROR`,
-    metricool: `Evento recibido: OK\nImagen generada: OK\nPublicado en redes: ERROR`,
+    imagen:    `✓ Evento recibido\n✗ Imagen generada\n— Publicado en redes`,
+    storage:   `✓ Evento recibido\n✓ Imagen generada\n✗ Subida a storage`,
+    metricool: `✓ Evento recibido\n✓ Imagen generada\n✗ Publicado en redes`,
   }
-  const stepLog = steps[errorObj?.step] ?? `Evento recibido: ERROR`
+  const stepLog = steps[errorObj?.step] ?? `✗ Evento recibido`
   const text = `[ERROR] *No se pudo publicar* (2 intentos)\n\n${label}\n${match}\n\n${stepLog}\n\n\`${err}\``
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
