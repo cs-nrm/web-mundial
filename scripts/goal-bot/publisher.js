@@ -54,7 +54,7 @@ async function postToMetricool(text, imageUrl, network) {
   return { ok: res.ok, status: res.status, data: await res.json().catch(() => ({})) }
 }
 
-// Intento puro — lanza error si algo falla, no toca la DB de estado
+// Intento puro — lanza error con paso fallido, no toca la DB de estado
 async function publishEventOnce(event) {
   const supabase = getSupabase()
 
@@ -70,34 +70,55 @@ async function publishEventOnce(event) {
   const textTw = captionTwitter(event, handlesMap)
   const textFb = captionFacebook(event, handlesMap)
 
-  // Generar imagen
-  const imageBuffer = await generateImage(event)
+  // Paso 1: Generar imagen
+  let imageBuffer
+  try {
+    imageBuffer = await generateImage(event)
+  } catch (e) {
+    const err = new Error(e.message)
+    err.step = 'imagen'
+    throw err
+  }
 
-  // Subir a Storage
+  // Paso 2: Subir a Storage
   const filename = `${event.id}-${Date.now()}.jpg`
   const { error: uploadErr } = await supabase.storage
     .from(STORAGE_BUCKET)
     .upload(filename, imageBuffer, { contentType: 'image/jpeg', upsert: false })
-  if (uploadErr) throw new Error(`Storage: ${uploadErr.message}`)
+  if (uploadErr) {
+    const err = new Error(`Storage: ${uploadErr.message}`)
+    err.step = 'storage'
+    throw err
+  }
 
   const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filename)
   const imageUrl = urlData.publicUrl
 
-  // Postear a Metricool
-  const [resIg, resTw, resFb] = await Promise.all([
-    postToMetricool(textIg, imageUrl, 'INSTAGRAM'),
-    postToMetricool(textTw, imageUrl, 'TWITTER'),
-    postToMetricool(textFb, imageUrl, 'FACEBOOK'),
-  ])
+  // Paso 3: Postear a Metricool
+  let resIg, resTw, resFb
+  try {
+    ;[resIg, resTw, resFb] = await Promise.all([
+      postToMetricool(textIg, imageUrl, 'INSTAGRAM'),
+      postToMetricool(textTw, imageUrl, 'TWITTER'),
+      postToMetricool(textFb, imageUrl, 'FACEBOOK'),
+    ])
+  } catch (e) {
+    const err = new Error(e.message)
+    err.step = 'metricool'
+    throw err
+  }
 
   if (!resIg.ok || !resTw.ok || !resFb.ok) {
-    throw new Error(`Metricool: ${JSON.stringify({ ig: resIg.data, tw: resTw.data, fb: resFb.data }).slice(0, 200)}`)
+    const err = new Error(`Metricool: ${JSON.stringify({ ig: resIg.data, tw: resTw.data, fb: resFb.data }).slice(0, 200)}`)
+    err.step = 'metricool'
+    throw err
   }
 
   await markPublished(event.id, { ig: resIg.data, tw: resTw.data, fb: resFb.data })
+  return { imageUrl }
 }
 
-async function notifySuccess(event) {
+async function notifySuccess(event, imageUrl) {
   const token  = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
   if (!token || !chatId) return
@@ -111,20 +132,23 @@ async function notifySuccess(event) {
 
   const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
   const match = `${event.team_home}${score} vs ${event.team_away}`
+  const imgLine = imageUrl ? `\n🖼 [Ver imagen](${imageUrl})` : ''
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `✅ [Posteado exitosamente] ${label}\n${match}`,
+      text: `✅ [Posteado exitosamente] ${label}\n${match}\n\n📥 Evento recibido ✓\n🖼 Imagen generada ✓\n📤 Publicado en IG, TW, FB ✓${imgLine}`,
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true,
     }),
     signal: AbortSignal.timeout(10_000),
   }).catch(e => console.error('[telegram] Error notificación éxito:', e.message))
 }
 
 // Notificación Telegram con botones inline
-async function notifyTelegram(event, errorMsg) {
+async function notifyTelegram(event, errorObj) {
   const token  = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
   if (!token || !chatId) return
@@ -138,9 +162,15 @@ async function notifyTelegram(event, errorMsg) {
 
   const score = event.score_home !== undefined ? `${event.score_home}–${event.score_away}` : ''
   const match = `${event.team_home} ${score} ${event.team_away}`.trim()
-  const err   = errorMsg?.slice(0, 150) || 'Error desconocido'
+  const err   = errorObj?.message?.slice(0, 150) || 'Error desconocido'
 
-  const text = `❌ [ERROR] *No se pudo publicar* (2 intentos fallidos)\n\n${label}\n${match}\n\n\`${err}\``
+  const steps = {
+    imagen:    `📥 Evento recibido ✓\n🖼 Imagen generada ✗\n📤 Publicado en redes —`,
+    storage:   `📥 Evento recibido ✓\n🖼 Imagen generada ✓\n📤 Subida a storage ✗`,
+    metricool: `📥 Evento recibido ✓\n🖼 Imagen generada ✓\n📤 Publicado en redes ✗`,
+  }
+  const stepLog = steps[errorObj?.step] ?? `📥 Evento recibido ✗`
+  const text = `❌ [ERROR] *No se pudo publicar* (2 intentos)\n\n${label}\n${match}\n\n${stepLog}\n\n\`${err}\``
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
@@ -200,9 +230,9 @@ export async function autoPublish(event) {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      await withTimeout(publishEventOnce(event), TIMEOUT_MS)
+      const { imageUrl } = await withTimeout(publishEventOnce(event), TIMEOUT_MS)
       console.log(`[publisher] ✅ Evento ${event.id} publicado (intento ${attempt}/${MAX_ATTEMPTS})`)
-      await notifySuccess(event)
+      await notifySuccess(event, imageUrl)
       return true
     } catch (err) {
       lastError = err
@@ -216,6 +246,6 @@ export async function autoPublish(event) {
 
   // Ambos intentos fallaron
   await markError(event.id, lastError.message)
-  await notifyTelegram(event, lastError.message)
+  await notifyTelegram(event, lastError)
   return false
 }
