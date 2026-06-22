@@ -61,6 +61,16 @@ if (tab === 'album') {
     : { data: [] }
   const cardIds = (cards ?? []).map(c => c.id)
 
+  // Códigos por carta
+  const { data: codesRows } = cardIds.length
+    ? await supabase.from('codes').select('card_id, code').in('card_id', cardIds)
+    : { data: [] }
+  const codesByCard: Record<string, string[]> = {}
+  for (const r of (codesRows ?? [])) {
+    if (!codesByCard[r.card_id]) codesByCard[r.card_id] = []
+    codesByCard[r.card_id].push(r.code)
+  }
+
   // user_cards de esas cards (paginado para no quedar truncado en 1000)
   const uc = cardIds.length
     ? await fetchAll<{ user_id: string; card_id: string; redeemed_at: string }>(
@@ -92,11 +102,11 @@ if (tab === 'album') {
   for (const c of (cards ?? [])) {
     cardAlbumName[c.id] = albums?.find(a => a.id === c.album_id)?.name ?? '?'
   }
-  const cardMap: Record<string, { name: string; album: string; posicion: number; count: number; firstAt: string }> = {}
+  const cardMap: Record<string, { name: string; album: string; posicion: number; count: number; firstAt: string; codes: string[] }> = {}
   for (const r of uc) {
     if (!cardMap[r.card_id]) {
       const card = (cards ?? []).find(c => c.id === r.card_id)
-      cardMap[r.card_id] = { name: card?.name ?? '?', album: cardAlbumName[r.card_id] ?? '?', posicion: card?.posicion ?? 0, count: 0, firstAt: r.redeemed_at ?? '' }
+      cardMap[r.card_id] = { name: card?.name ?? '?', album: cardAlbumName[r.card_id] ?? '?', posicion: card?.posicion ?? 0, count: 0, firstAt: r.redeemed_at ?? '', codes: codesByCard[r.card_id] ?? [] }
     }
     cardMap[r.card_id].count++
     if (r.redeemed_at && (!cardMap[r.card_id].firstAt || r.redeemed_at < cardMap[r.card_id].firstAt)) {
@@ -421,6 +431,7 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
                   <th>#</th>
                   <th>Carta</th>
                   {estacion === 'todas' && <th>Álbum</th>}
+                  <th>Código</th>
                   <th>Primer canje</th>
                   <th>Canjes</th>
                 </tr>
@@ -431,6 +442,7 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
                     <td class="pos">{i + 1}</td>
                     <td>{r.name}</td>
                     {estacion === 'todas' && <td class="muted">{r.album}</td>}
+                    <td class="code-cell">{(r.codes ?? []).length > 0 ? (r.codes as string[]).join(', ') : '—'}</td>
                     <td class="muted">{r.firstAt ? new Date(r.firstAt).toLocaleDateString('es-MX') : '—'}</td>
                     <td class="count">{r.count}</td>
                   </tr>
@@ -702,8 +714,10 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
 
   /* Mini table */
   .mini-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-  .mini-table th { text-align: left; font-size: 0.68rem; text-transform: uppercase; color: #bbb; padding-bottom: 0.5rem; border-bottom: 1px solid #f0f0f0; }
-  .mini-table td { padding: 0.45rem 0; border-bottom: 1px solid #f9f9f9; vertical-align: middle; }
+  .mini-table th { text-align: left; font-size: 0.68rem; text-transform: uppercase; color: #bbb; padding: 0 0.5rem 0.5rem; border-bottom: 1px solid #f0f0f0; }
+  .mini-table th:first-child { padding-left: 0; }
+  .mini-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid #f9f9f9; vertical-align: middle; }
+  .mini-table td:first-child { padding-left: 0; }
   .pos { color: #bbb; font-weight: 700; width: 24px; }
   .count { font-weight: 700; color: var(--rojo); text-align: right; }
   .muted { color: #bbb; font-size: 0.8rem; }
@@ -746,6 +760,7 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
   .pct-low  { background: #f3f4f6; color: #6b7280; }
   .row-complete td { background: #f0fdf4; }
   .date-cell { font-size: 0.78rem; white-space: nowrap; }
+  .code-cell { font-family: monospace; font-size: 0.75rem; color: #6b7280; }
   .album-cell { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* ── Collector expandable ── */
