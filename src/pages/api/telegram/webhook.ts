@@ -118,6 +118,12 @@ export const POST: APIRoute = async ({ request }) => {
   const chatId    = cq.message.chat.id as number
   const messageId = cq.message.message_id as number
 
+  // Solo el chat autorizado puede ejecutar acciones
+  if (String(chatId) !== import.meta.env.TELEGRAM_CHAT_ID) {
+    await answerCallback(cq.id, '⛔ No autorizado')
+    return new Response('ok', { status: 200 })
+  }
+
   // Responder inmediatamente para quitar el "loading" del botón
   await answerCallback(cq.id, action === 'retry' ? '⏳ Publicando…' : '✓ Ignorado')
 

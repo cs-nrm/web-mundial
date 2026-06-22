@@ -97,6 +97,32 @@ async function publishEventOnce(event) {
   await markPublished(event.id, { ig: resIg.data, tw: resTw.data, fb: resFb.data })
 }
 
+async function notifySuccess(event) {
+  const token  = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return
+
+  const label = {
+    gol:          `⚽ Gol${event.player_name ? ` de ${event.player_name}` : ''}${event.minute ? ` (${event.minute}')` : ''}`,
+    inicio:       '🟢 Inicio de partido',
+    medio_tiempo: '🔵 Medio tiempo',
+    final:        '🏁 Final del partido',
+  }[event.event_type] ?? event.event_type
+
+  const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
+  const match = `${event.team_home}${score} vs ${event.team_away}`
+
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: `✅ ${label}\n${match}`,
+    }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch(e => console.error('[telegram] Error notificación éxito:', e.message))
+}
+
 // Notificación Telegram con botones inline
 async function notifyTelegram(event, errorMsg) {
   const token  = process.env.TELEGRAM_BOT_TOKEN
@@ -155,6 +181,7 @@ export async function autoPublish(event) {
     try {
       await withTimeout(publishEventOnce(event), TIMEOUT_MS)
       console.log(`[publisher] ✅ Evento ${event.id} publicado (intento ${attempt}/${MAX_ATTEMPTS})`)
+      await notifySuccess(event)
       return true
     } catch (err) {
       lastError = err
