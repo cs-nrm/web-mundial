@@ -334,13 +334,10 @@ export async function autoPublish(event) {
     return false
   }
 
-  // Enviar mensaje inicial de progreso a Telegram
-  const tg = await sendProgressMessage(event)
   await updateStatusDetail(event.id, 'recibido').catch(() => {})
 
   const onProgress = (step) => {
     updateStatusDetail(event.id, step).catch(() => {})
-    if (tg) editProgressMessage(tg.chatId, tg.messageId, step, event).catch(() => {})
   }
 
   let lastError = null
@@ -350,12 +347,7 @@ export async function autoPublish(event) {
       const { imageUrl } = await withTimeout(publishEventOnce(event, onProgress), TIMEOUT_MS)
       console.log(`[publisher] ✅ Evento ${event.id} publicado (intento ${attempt}/${MAX_ATTEMPTS})`)
       await updateStatusDetail(event.id, null).catch(() => {})
-      if (tg) {
-        const imgLine = imageUrl ? `\n[Ver imagen](${imageUrl})` : ''
-        await editProgressMessage(tg.chatId, tg.messageId, 'publicado', event, imgLine)
-      } else {
-        await notifySuccess(event, imageUrl)
-      }
+      await notifySuccess(event, imageUrl)
       return true
     } catch (err) {
       lastError = err
@@ -369,10 +361,6 @@ export async function autoPublish(event) {
 
   // Ambos intentos fallaron
   await markError(event.id, lastError.message)
-  if (tg) {
-    await editProgressMessageError(tg.chatId, tg.messageId, lastError, event)
-  } else {
-    await notifyTelegram(event, lastError)
-  }
+  await notifyTelegram(event, lastError)
   return false
 }
