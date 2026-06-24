@@ -226,97 +226,66 @@ async function publishEventOnce(event, onProgress = () => {}) {
   return { imageUrl }
 }
 
-async function notifySuccess(event, imageUrl) {
+function formatEvent(event) {
+  const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
+  const match = `${event.team_home} vs ${event.team_away}`
+  const tag = {
+    gol:          `[GOL]${event.player_name ? ` ${event.player_name}` : ''}${event.minute ? ` (${event.minute}')` : ''}${score}`,
+    inicio:       `[INICIO DE PARTIDO]${score}`,
+    medio_tiempo: `[MEDIO TIEMPO]${score}`,
+    final:        `[FINAL]${score}`,
+  }[event.event_type] ?? `[${event.event_type.toUpperCase()}]`
+  return { match, tag }
+}
+
+async function tgSend(text, extra = {}) {
   const token  = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
   if (!token || !chatId) return
-
-  const label = {
-    gol:          `Gol${event.player_name ? ` de ${event.player_name}` : ''}${event.minute ? ` (${event.minute}')` : ''}`,
-    inicio:       'Inicio de partido',
-    medio_tiempo: 'Medio tiempo',
-    final:        'Final del partido',
-  }[event.event_type] ?? event.event_type
-
-  const score = event.score_home !== undefined ? ` ${event.score_home}–${event.score_away}` : ''
-  const match = `${event.team_home}${score} vs ${event.team_away}`
-  const imgLine = imageUrl ? `\n[Ver imagen](${imageUrl})` : ''
-
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `[Posteado exitosamente] ${label}\n${match}\n\n✓ Evento recibido\n✓ Imagen generada\n✓ Publicado en IG, TW, FB${imgLine}`,
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true,
-    }),
+    body: JSON.stringify({ chat_id: chatId, parse_mode: 'Markdown', disable_web_page_preview: true, text, ...extra }),
     signal: AbortSignal.timeout(10_000),
-  }).catch(e => console.error('[telegram] Error notificación éxito:', e.message))
+  }).catch(e => console.error('[telegram] Error:', e.message))
+}
+
+async function notifySuccess(event, imageUrl) {
+  const { match, tag } = formatEvent(event)
+  const imgLine = imageUrl ? `\n[Ver imagen](${imageUrl})` : ''
+  await tgSend(`${match}\n${tag}\n\n✓ Recibido\n✓ Imagen generada\n✓ Publicado IG · TW · FB${imgLine}`)
 }
 
 // Notificación Telegram con botones inline
 async function notifyTelegram(event, errorObj) {
-  const token  = process.env.TELEGRAM_BOT_TOKEN
-  const chatId = process.env.TELEGRAM_CHAT_ID
-  if (!token || !chatId) return
-
-  const label = {
-    gol:          `Gol${event.player_name ? ` — ${event.player_name}` : ''}${event.minute ? ` ${event.minute}'` : ''}`,
-    inicio:       'Inicio de partido',
-    medio_tiempo: 'Medio tiempo',
-    final:        'Final',
-  }[event.event_type] ?? event.event_type
-
-  const score = event.score_home !== undefined ? `${event.score_home}–${event.score_away}` : ''
-  const match = `${event.team_home} ${score} ${event.team_away}`.trim()
-  const err   = errorObj?.message?.slice(0, 150) || 'Error desconocido'
-
+  const { match, tag } = formatEvent(event)
+  const err = errorObj?.message?.slice(0, 150) || 'Error desconocido'
   const steps = {
-    imagen:    `✓ Evento recibido\n✗ Imagen generada\n— Publicado en redes`,
-    storage:   `✓ Evento recibido\n✓ Imagen generada\n✗ Subida a storage`,
-    metricool: `✓ Evento recibido\n✓ Imagen generada\n✗ Publicado en redes`,
+    imagen:    `✓ Recibido\n✗ Imagen generada\n— Publicado en redes`,
+    storage:   `✓ Recibido\n✓ Imagen generada\n✗ Subida a storage`,
+    metricool: `✓ Recibido\n✓ Imagen generada\n✗ Publicado en redes`,
   }
-  const stepLog = steps[errorObj?.step] ?? `✗ Evento recibido`
-  const text = `[ERROR] *No se pudo publicar* (2 intentos)\n\n${label}\n${match}\n\n${stepLog}\n\n\`${err}\``
-
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'Markdown',
+  const stepLog = steps[errorObj?.step] ?? `✗ Recibido`
+  await tgSend(
+    `${match}\n${tag}\n\n${stepLog}\n\n[ERROR] \`${err}\``,
+    {
       reply_markup: {
         inline_keyboard: [[
-          { text: '🔄 Reintentar', callback_data: `retry:${event.id}` },
-          { text: '✗ Ignorar',    callback_data: `ignore:${event.id}` },
+          { text: 'Reintentar', callback_data: `retry:${event.id}` },
+          { text: 'Ignorar',    callback_data: `ignore:${event.id}` },
         ]],
       },
-    }),
-    signal: AbortSignal.timeout(10_000),
-  }).catch(e => console.error('[telegram] Error enviando notificación:', e.message))
+    }
+  )
 }
 
 export async function notifyVarAnnulment(goal, teams) {
-  const token  = process.env.TELEGRAM_BOT_TOKEN
-  const chatId = process.env.TELEGRAM_CHAT_ID
-  if (!token || !chatId) return
-
-  const player = goal.playerName ? ` — ${goal.playerName}` : ''
+  const score = `${teams.scoreHome}–${teams.scoreAway}`
+  const match = `${teams.teamHome} vs ${teams.teamAway}`
+  const player = goal.playerName ? ` ${goal.playerName}` : ''
   const minute = goal.minute ? ` (${goal.minute}')` : ''
-  const match  = `${teams.teamHome} ${teams.scoreHome}–${teams.scoreAway} ${teams.teamAway}`
-
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `*GOL ANULADO POR VAR*${player}${minute}\n${match}\n\nEntra a las redes sociales a borrarlo manualmente.`,
-      parse_mode: 'Markdown',
-    }),
-    signal: AbortSignal.timeout(10_000),
-  }).catch(e => console.error('[telegram] Error notificación VAR:', e.message))
+  const sep = `**********************************`
+  await tgSend(`${match}\n[GOL ANULADO]${player}${minute} | ${score}\n\n${sep}\nBORRALO MANUALMENTE DE LAS REDES\n${sep}`)
 }
 
 async function isAutoPublishEnabled() {
