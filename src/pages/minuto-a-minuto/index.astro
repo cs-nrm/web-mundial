@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro'
 import MoreNews from '../../components/MoreNews.astro'
 import LeaderBoard from "../../components/LeaderBoard.astro";
+import IframeDF from '../../components/IframeDF.astro';
 ---
 <Layout title="Minuto a Minuto - Data Factory">
   <div class="container my-12 mx-auto px-4 md:px-12">
@@ -9,7 +10,11 @@ import LeaderBoard from "../../components/LeaderBoard.astro";
     <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Minuto a Minuto</h1>
     <div class="flex flex-col lg:flex-row gap-8">
       <div class="w-full flex-1 min-w-0">
-        <iframe src="https://enfoquenoticias.com.mx/df/html/v3/minapp/modules/futbol/gamecast/gamecast.html?channel=deportes.futbol.mundial.789659&lang=es_LA" width="100%" height="1000" scrolling="auto" style="width: 1px; min-width: 100%; *width: 100%;" class=" border-0"></iframe>
+        <IframeDF
+          src="https://enfoquenoticias.com.mx/df/html/v3/minapp/modules/futbol/gamecast/gamecast.html?channel=deportes.futbol.mundial.789659&lang=es_LA"
+          minHeight={1600}
+          title="Minuto a Minuto"
+        />
       </div>
       <aside class="w-full lg:w-[350px] flex-shrink-0 min-w-[0]">
         <div class="bg-white p-5 rounded-xl sticky top-4">

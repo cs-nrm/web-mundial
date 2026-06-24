@@ -5,6 +5,7 @@ import BoxBanner from '../../components/BoxBanner.astro';
 import MoreNews from '../../components/MoreNews.astro';
 import DoubleBox from '../../components/DoubleBox.astro';
 import LeaderBoard from "../../components/LeaderBoard.astro";
+import IframeDF from '../../components/IframeDF.astro';
 ---
 
 <Layout title="Grupos - Data Factory">
@@ -13,7 +14,11 @@ import LeaderBoard from "../../components/LeaderBoard.astro";
     <h1 class="titulos rojo uppercase goodtime text-center p-4 my-4 text-2xl lg:text-3xl font-bold ">Grupos</h1>
     <div class="flex flex-col lg:flex-row gap-8">
       <div class="w-full flex-1 min-w-0">
-        <iframe src="https://enfoquenoticias.com.mx/df/html/v3/minapp/page/page.html?channel=deportes.futbol.mundial&lang=es_LA&page=fixture" width="100%" height="1200" scrolling="auto" class="w-full min-w-0 border-0"></iframe>
+        <IframeDF
+          src="https://enfoquenoticias.com.mx/df/html/v3/minapp/page/page.html?channel=deportes.futbol.mundial&lang=es_LA&page=fixture"
+          minHeight={2200}
+          title="Grupos y Fixture"
+        />
       </div>
       <aside class="w-full lg:w-[350px] flex-shrink-0 min-w-[0]">
         <div class="bg-white p-5 rounded-xl sticky top-4">

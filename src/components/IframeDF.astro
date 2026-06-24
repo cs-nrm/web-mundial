@@ -1,0 +1,78 @@
+---
+interface Props {
+  src: string;
+  minHeight?: number;
+  title?: string;
+}
+
+const { src, minHeight = 1400, title = 'DataFactory Widget' } = Astro.props;
+const id = `df-iframe-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class="df-iframe-wrapper" data-iframe-id={id}>
+  <iframe
+    id={id}
+    src={src}
+    width="100%"
+    style={`height: ${minHeight}px; min-height: ${minHeight}px;`}
+    scrolling="no"
+    class="df-iframe border-0 w-full block"
+    {title}
+    loading="lazy"
+  ></iframe>
+</div>
+
+<script is:inline define:vars={{ id, minHeight }}>
+(function () {
+  const iframe = document.getElementById(id);
+  if (!iframe) return;
+
+  function setHeight(h) {
+    const val = Math.max(h, minHeight);
+    iframe.style.height = val + 'px';
+  }
+
+  // Listen for postMessage from DataFactory iframes
+  window.addEventListener('message', function (e) {
+    if (e.source !== iframe.contentWindow) return;
+
+    let h = null;
+
+    // Format 1: { height: 1234 }  or  { iframeHeight: 1234 }
+    if (e.data && typeof e.data === 'object') {
+      h = e.data.height ?? e.data.iframeHeight ?? e.data.frameHeight ?? null;
+    }
+
+    // Format 2: "1234"  or  "resize:1234"
+    if (h === null && typeof e.data === 'string') {
+      const num = parseInt(e.data.replace(/\D/g, ''), 10);
+      if (!isNaN(num) && num > 100) h = num;
+    }
+
+    if (h !== null && !isNaN(h)) setHeight(h);
+  });
+
+  // Fallback: try to read scrollHeight if same-origin (unlikely cross-origin)
+  iframe.addEventListener('load', function () {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      const h = doc.body.scrollHeight || doc.documentElement.scrollHeight;
+      if (h > 100) setHeight(h);
+    } catch (_) {
+      // Cross-origin — silently ignore
+    }
+  });
+})();
+</script>
+
+<style>
+.df-iframe-wrapper {
+  width: 100%;
+  overflow: hidden;
+}
+.df-iframe {
+  border: none;
+  display: block;
+  transition: height 0.3s ease;
+}
+</style>
