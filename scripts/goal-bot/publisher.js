@@ -245,14 +245,14 @@ async function tgSend(text, extra = {}) {
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, parse_mode: 'Markdown', disable_web_page_preview: true, text, ...extra }),
+    body: JSON.stringify({ chat_id: chatId, parse_mode: 'HTML', disable_web_page_preview: true, text, ...extra }),
     signal: AbortSignal.timeout(10_000),
   }).catch(e => console.error('[telegram] Error:', e.message))
 }
 
 async function notifySuccess(event, imageUrl) {
   const { match, tag } = formatEvent(event)
-  const imgLine = imageUrl ? `\n[Ver imagen](${imageUrl})` : ''
+  const imgLine = imageUrl ? `\n<a href="${imageUrl}">Ver imagen</a>` : ''
   await tgSend(`${match}\n${tag}\n\n✓ Recibido\n✓ Imagen generada\n✓ Publicado IG · TW · FB${imgLine}`)
 }
 
@@ -267,7 +267,7 @@ async function notifyTelegram(event, errorObj) {
   }
   const stepLog = steps[errorObj?.step] ?? `✗ Recibido`
   await tgSend(
-    `${match}\n${tag}\n\n${stepLog}\n\n[ERROR] \`${err}\``,
+    `${match}\n${tag}\n\n${stepLog}\n\n[ERROR] <code>${err}</code>`,
     {
       reply_markup: {
         inline_keyboard: [[
