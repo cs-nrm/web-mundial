@@ -19,6 +19,11 @@ function log(msg) {
   console.log(`[${new Date().toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City' })}] ${msg}`)
 }
 
+// Nombre placeholder de eliminatoria aún sin resolver (ej. "3  Grupo A-B-C-D-F", "1  Grupo I")
+function isPlaceholder(name) {
+  return !name || /grupo/i.test(name) || /^\s*\d/.test(name)
+}
+
 // Misma función que captions.js para asegurar URLs consistentes
 function makeSlug(teamHome, teamAway) {
   const toSlug = (s) =>
@@ -84,7 +89,7 @@ async function sync() {
   // Cargar partidos existentes con nombres ya resueltos
   const { data: existingRows = [] } = await supabase
     .from('df_partidos')
-    .select('match_id, equipo_local, status')
+    .select('match_id, equipo_local, equipo_visitante, status')
   const resolvedIds = new Set((existingRows ?? []).filter(m => m.equipo_local).map(m => m.match_id))
 
   let upserted = 0
@@ -107,20 +112,30 @@ async function sync() {
     // Si ya existe con nombres, actualizar fecha + status/score si aplica
     if (resolvedIds.has(id)) {
       const row = (existingRows ?? []).find(m => m.match_id === id)
-      // Consultar ficha solo si está en vivo (max 1-2 partidos a la vez)
-      if (row?.status === 'en_vivo') {
+      const updateData = { fecha_utc: fechaUtc.toISOString(), synced_at: new Date().toISOString() }
+
+      // Re-resolver nombres si siguen como placeholder de eliminatoria (ej. "3 Grupo A-B")
+      if (isPlaceholder(row?.equipo_local) || isPlaceholder(row?.equipo_visitante)) {
         const ficha = await fetchFicha(id)
-        const updateData = { fecha_utc: fechaUtc.toISOString(), synced_at: new Date().toISOString() }
+        if (ficha && !isPlaceholder(ficha.teamHome) && !isPlaceholder(ficha.teamAway)) {
+          updateData.equipo_local = ficha.teamHome
+          updateData.equipo_visitante = ficha.teamAway
+          updateData.slug = makeSlug(ficha.teamHome, ficha.teamAway)
+          if (ficha.sede) updateData.sede = ficha.sede
+          if (ficha.status) updateData.status = ficha.status
+          if (ficha.scoreHome != null) updateData.score_local = ficha.scoreHome
+          if (ficha.scoreAway != null) updateData.score_visitante = ficha.scoreAway
+          log(`  RESUELTO ${id}: ${ficha.teamHome} vs ${ficha.teamAway} → /${updateData.slug}/`)
+        }
+      } else if (row?.status === 'en_vivo') {
+        // Consultar ficha solo si está en vivo (max 1-2 partidos a la vez)
+        const ficha = await fetchFicha(id)
         if (ficha?.status) updateData.status = ficha.status
         if (ficha?.scoreHome != null) updateData.score_local = ficha.scoreHome
         if (ficha?.scoreAway != null) updateData.score_visitante = ficha.scoreAway
-        await supabase.from('df_partidos').update(updateData).eq('match_id', id)
-      } else {
-        await supabase
-          .from('df_partidos')
-          .update({ fecha_utc: fechaUtc.toISOString(), synced_at: new Date().toISOString() })
-          .eq('match_id', id)
       }
+
+      await supabase.from('df_partidos').update(updateData).eq('match_id', id)
       continue
     }
 
