@@ -160,10 +160,9 @@ async function editProgressMessageError(chatId, messageId, errorObj, event) {
   }).catch(() => {})
 }
 
-// Intento puro — lanza error con paso fallido, no toca la DB de estado
-async function publishEventOnce(event, onProgress = () => {}) {
+// Construye los captions por red a partir de los handles guardados
+async function buildCaptions(event) {
   const supabase = getSupabase()
-
   const { data: rawHandles = [] } = await supabase
     .from('social_handles').select('team_name, ig, tw')
   const normalizeKey = (s) =>
@@ -171,13 +170,17 @@ async function publishEventOnce(event, onProgress = () => {}) {
   const handlesMap = Object.fromEntries(
     (rawHandles ?? []).map((h) => [normalizeKey(h.team_name), { ig: h.ig, tw: h.tw }])
   )
+  return {
+    textIg: captionInstagram(event, handlesMap),
+    textTw: captionTwitter(event, handlesMap),
+    textFb: captionFacebook(event, handlesMap),
+  }
+}
 
-  const textIg = captionInstagram(event, handlesMap)
-  const textTw = captionTwitter(event, handlesMap)
-  const textFb = captionFacebook(event, handlesMap)
+// Genera la imagen y la sube a Storage; devuelve la URL pública. Lanza error con .step
+async function generateAndUpload(event) {
+  const supabase = getSupabase()
 
-  // Paso 1: Generar imagen
-  onProgress('generando_imagen')
   let imageBuffer
   try {
     imageBuffer = await generateImage(event)
@@ -187,7 +190,6 @@ async function publishEventOnce(event, onProgress = () => {}) {
     throw err
   }
 
-  // Paso 2: Subir a Storage
   const filename = `${event.id}-${Date.now()}.jpg`
   const { error: uploadErr } = await supabase.storage
     .from(STORAGE_BUCKET)
@@ -199,7 +201,16 @@ async function publishEventOnce(event, onProgress = () => {}) {
   }
 
   const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(filename)
-  const imageUrl = urlData.publicUrl
+  return urlData.publicUrl
+}
+
+// Intento puro — lanza error con paso fallido, no toca la DB de estado
+async function publishEventOnce(event, onProgress = () => {}) {
+  const { textIg, textTw, textFb } = await buildCaptions(event)
+
+  // Pasos 1-2: generar imagen + subir a Storage
+  onProgress('generando_imagen')
+  const imageUrl = await generateAndUpload(event)
 
   // Paso 3: Postear a Metricool
   onProgress('posteando')
@@ -250,10 +261,37 @@ async function tgSend(text, extra = {}) {
   }).catch(e => console.error('[telegram] Error:', e.message))
 }
 
+// Envía la imagen como foto a Telegram (la URL pública del storage)
+async function tgSendPhoto(photoUrl, caption) {
+  const token  = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+  if (!token || !chatId) return
+  await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, photo: photoUrl, caption: caption?.slice(0, 1024) }),
+    signal: AbortSignal.timeout(15_000),
+  }).catch(e => console.error('[telegram] Error sendPhoto:', e.message))
+}
+
 async function notifySuccess(event, imageUrl) {
   const { match, tag } = formatEvent(event)
   const imgLine = imageUrl ? `\n<a href="${imageUrl}">Ver imagen</a>` : ''
   await tgSend(`${match}\n${tag}\n\n✓ Recibido\n✓ Imagen generada\n✓ Publicado IG · TW · FB${imgLine}`)
+}
+
+// Modo sin posteo: genera imagen + la guarda en storage + la manda por Telegram para publicar a mano.
+// NO toca Metricool. Lanza error con .step si falla la imagen/storage.
+async function previewToTelegram(event) {
+  await updateStatusDetail(event.id, 'generando_imagen').catch(() => {})
+  const imageUrl = await generateAndUpload(event)
+  await updateStatusDetail(event.id, null).catch(() => {})
+
+  const { textIg } = await buildCaptions(event)
+  const { match, tag } = formatEvent(event)
+  const caption = `🖼️ Imagen lista — publicar a mano\n${match} ${tag}\n\n${textIg}`
+  await tgSendPhoto(imageUrl, caption)
+  return { imageUrl }
 }
 
 // Notificación Telegram con botones inline
@@ -299,7 +337,16 @@ async function isAutoPublishEnabled() {
 export async function autoPublish(event) {
   const enabled = await isAutoPublishEnabled()
   if (!enabled) {
-    console.log(`[publisher] Modo automático desactivado — evento ${event.id} queda en cola`)
+    // Posteo desactivado: generar imagen, guardarla y enviarla por Telegram para publicar a mano.
+    console.log(`[publisher] Posteo desactivado — imagen a Telegram, sin postear (evento ${event.id})`)
+    try {
+      await withTimeout(previewToTelegram(event), TIMEOUT_MS)
+      console.log(`[publisher] 🖼️ Evento ${event.id} enviado a Telegram (sin postear), queda en cola`)
+    } catch (err) {
+      console.error(`[publisher] Error en modo sin posteo: ${err.message}`)
+      await markError(event.id, err.message).catch(() => {})
+      await notifyTelegram(event, err).catch(() => {})
+    }
     return false
   }
 
