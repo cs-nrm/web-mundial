@@ -1,20 +1,35 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro'
 import { createSupabaseAdminClient } from '../../../lib/supabase'
-import { canAccess, SOCIAL_ROLES } from '../../../lib/admin'
+import { canAccess, SOCIAL_ROLES, MANAGE_ROLES } from '../../../lib/admin'
 import type { UserRole } from '../../../lib/perfil'
 import { getFlagUrl } from '../../../lib/flags.js'
+// @ts-ignore – módulo JS en scripts/, contexto SSR de Node
+import { captionInstagram, captionTwitter, captionFacebook } from '../../../../scripts/goal-bot/captions.js'
 
-if (!canAccess(Astro.locals.role as UserRole, SOCIAL_ROLES)) {
+const role = Astro.locals.role as UserRole
+if (!canAccess(role, SOCIAL_ROLES)) {
   return Astro.redirect('/admin')
 }
+// El toggle de modo automático queda reservado a admin/superadmin
+const canToggleAuto = canAccess(role, MANAGE_ROLES)
 
 const supabase = createSupabaseAdminClient()
-const [{ data: events = [] }, { data: configRow }] = await Promise.all([
+const [{ data: events = [] }, { data: configRow }, { data: rawHandles = [] }] = await Promise.all([
   supabase.from('goal_posts').select('*').neq('status', 'descartado').order('created_at', { ascending: false }).limit(300),
   supabase.from('social_config').select('auto_publish').eq('id', 'main').maybeSingle(),
+  supabase.from('social_handles').select('team_name, ig, tw'),
 ])
 const autoPublish: boolean = configRow?.auto_publish ?? true
+
+// Captions por red para copiar a mano (mismos que usa el bot)
+const normalizeKey = (s: string) => s?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\.+$/, '').trim()
+const handlesMap = Object.fromEntries((rawHandles ?? []).map((h: any) => [normalizeKey(h.team_name), { ig: h.ig, tw: h.tw }]))
+const captionsFor = (ev: any) => ({
+  ig: captionInstagram(ev, handlesMap),
+  tw: captionTwitter(ev, handlesMap),
+  fb: captionFacebook(ev, handlesMap),
+})
 
 // Agrupar por partido
 const matchMap = new Map<string, { teamHome: string; teamAway: string; matchId: string; events: any[] }>()
@@ -75,22 +90,24 @@ const EVENT_LABEL: Record<string, string> = {
         </div>
       </div>
 
-      <!-- Toggle modo automático -->
-      <div class="auto-toggle-row">
-        <span class="toggle-label">Modo automático</span>
-        <button
-          id="auto-toggle"
-          class={`toggle-btn ${autoPublish ? 'on' : 'off'}`}
-          data-state={autoPublish ? 'on' : 'off'}
-          onclick="toggleAutoMode()"
-          title={autoPublish ? 'Desactivar publicación automática' : 'Activar publicación automática'}
-        >
-          <span class="toggle-track">
-            <span class="toggle-thumb"></span>
-          </span>
-          <span class="toggle-text" id="toggle-text">{autoPublish ? 'Activado' : 'Desactivado'}</span>
-        </button>
-      </div>
+      <!-- Toggle modo automático (solo admin/superadmin) -->
+      {canToggleAuto && (
+        <div class="auto-toggle-row">
+          <span class="toggle-label">Modo automático</span>
+          <button
+            id="auto-toggle"
+            class={`toggle-btn ${autoPublish ? 'on' : 'off'}`}
+            data-state={autoPublish ? 'on' : 'off'}
+            onclick="toggleAutoMode()"
+            title={autoPublish ? 'Desactivar publicación automática' : 'Activar publicación automática'}
+          >
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="toggle-text" id="toggle-text">{autoPublish ? 'Activado' : 'Desactivado'}</span>
+          </button>
+        </div>
+      )}
 
       <div class="stat-pills">
         <span class="pill pill-done">✅ {counts.publicado} publicado{counts.publicado !== 1 ? 's' : ''}</span>
@@ -137,50 +154,70 @@ const EVENT_LABEL: Record<string, string> = {
         </div>
 
         <div class="events-list">
-          {group.events.map(ev => (
-            <div class={`event-row status-${ev.status}`} data-id={ev.id}>
-              <div class="row-left">
-                <span class={`badge-type type-${ev.event_type}`}>
-                  {EVENT_LABEL[ev.event_type] ?? ev.event_type}
-                </span>
-                {ev.event_type === 'gol' && ev.player_name && (
-                  <span class="row-player">{ev.player_name}{ev.minute > 0 ? ` ${ev.minute}'` : ''}</span>
-                )}
-                {ev.score_home !== undefined && (
-                  <span class="row-score">{ev.score_home}–{ev.score_away}</span>
-                )}
-              </div>
+          {group.events.map(ev => {
+            const cap = captionsFor(ev)
+            return (
+            <div class="event-item">
+              <div class={`event-row status-${ev.status}`} data-id={ev.id}>
+                <div class="row-left">
+                  <span class={`badge-type type-${ev.event_type}`}>
+                    {EVENT_LABEL[ev.event_type] ?? ev.event_type}
+                  </span>
+                  {ev.event_type === 'gol' && ev.player_name && (
+                    <span class="row-player">{ev.player_name}{ev.minute > 0 ? ` ${ev.minute}'` : ''}</span>
+                  )}
+                  {ev.score_home !== undefined && (
+                    <span class="row-score">{ev.score_home}–{ev.score_away}</span>
+                  )}
+                </div>
 
-              <div class="row-right">
-                {ev.status === 'publicado' && (
-                  <span class="status-ok">✅ {fmtTime(ev.published_at ?? ev.created_at)}</span>
-                )}
-                {ev.status === 'pendiente' && autoPublish && (
-                  <span class="status-pending">{
-                    ev.status_detail === 'generando_imagen' ? '⏳ Generando imagen…' :
-                    ev.status_detail === 'posteando'        ? '⏳ Posteando…' :
-                    ev.status_detail === 'recibido'         ? '⏳ Evento recibido…' :
-                    '⏳ Publicando…'
-                  }</span>
-                )}
-                {ev.status === 'pendiente' && !autoPublish && (
-                  <button class="btn-publish-manual" data-id={ev.id} onclick="manualPublish(this)">
-                    Publicar
-                  </button>
-                )}
-                {ev.status === 'error' && (
-                  <div class="error-row">
+                <div class="row-right">
+                  {ev.status === 'publicado' && (
+                    <span class="status-ok">✅ {fmtTime(ev.published_at ?? ev.created_at)}</span>
+                  )}
+                  {ev.status === 'pendiente' && autoPublish && (
+                    <span class="status-pending">{
+                      ev.status_detail === 'generando_imagen' ? '⏳ Generando imagen…' :
+                      ev.status_detail === 'posteando'        ? '⏳ Posteando…' :
+                      ev.status_detail === 'recibido'         ? '⏳ Evento recibido…' :
+                      '⏳ Publicando…'
+                    }</span>
+                  )}
+                  {ev.status === 'error' && (
                     <span class="status-err" title={typeof ev.error_detail === 'string' ? ev.error_detail : JSON.stringify(ev.error_detail)}>
                       ⚠ Error {fmtFull(ev.created_at)}
                     </span>
-                    <button class="btn-retry" data-id={ev.id} onclick="retryPublish(this)">
-                      Reintentar
-                    </button>
+                  )}
+                  <button class="btn-copys" onclick="toggleCopys(this)">📋 Copys</button>
+                </div>
+              </div>
+
+              <div class="copys-panel" style="display:none">
+                <div class="copy-net">
+                  <div class="copy-head">
+                    <span class="copy-label">Instagram</span>
+                    <button class="btn-copy" onclick="copyFrom(this)">Copiar</button>
                   </div>
-                )}
+                  <pre class="copy-text">{cap.ig}</pre>
+                </div>
+                <div class="copy-net">
+                  <div class="copy-head">
+                    <span class="copy-label">X / Twitter</span>
+                    <button class="btn-copy" onclick="copyFrom(this)">Copiar</button>
+                  </div>
+                  <pre class="copy-text">{cap.tw}</pre>
+                </div>
+                <div class="copy-net">
+                  <div class="copy-head">
+                    <span class="copy-label">Facebook</span>
+                    <button class="btn-copy" onclick="copyFrom(this)">Copiar</button>
+                  </div>
+                  <pre class="copy-text">{cap.fb}</pre>
+                </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     ))}
@@ -194,6 +231,41 @@ function toggleGroup(header) {
   var chevron = header.querySelector('.group-chevron')
   group.classList.toggle('collapsed')
   chevron.textContent = group.classList.contains('collapsed') ? '▸' : '▾'
+}
+
+function toggleCopys(btn) {
+  var item = btn.closest('.event-item')
+  var panel = item.querySelector('.copys-panel')
+  var open = panel.style.display !== 'none'
+  panel.style.display = open ? 'none' : 'block'
+  btn.classList.toggle('active', !open)
+}
+
+function copyFrom(btn) {
+  var net = btn.closest('.copy-net')
+  var text = net.querySelector('.copy-text').textContent
+  function done() {
+    var old = btn.textContent
+    btn.textContent = 'Copiado ✓'
+    btn.classList.add('copied')
+    setTimeout(function () { btn.textContent = old; btn.classList.remove('copied') }, 1500)
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done) })
+  } else {
+    fallbackCopy(text, done)
+  }
+}
+
+function fallbackCopy(text, done) {
+  var ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.position = 'fixed'
+  ta.style.opacity = '0'
+  document.body.appendChild(ta)
+  ta.select()
+  try { document.execCommand('copy'); done() } catch (e) { alert('No se pudo copiar') }
+  document.body.removeChild(ta)
 }
 
 async function toggleAutoMode() {
@@ -509,16 +581,17 @@ async function retryPublish(btn) {
     background: white;
   }
 
+  .event-item { border-bottom: 1px solid #f3f4f6; }
+  .event-item:last-child { border-bottom: none; }
+
   .event-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     padding: 0.6rem 1rem;
-    border-bottom: 1px solid #f3f4f6;
     font-size: 0.82rem;
   }
-  .event-row:last-child { border-bottom: none; }
   .event-row.status-publicado { background: #f0fdf4; }
   .event-row.status-error     { background: #fff7f7; }
   .event-row.status-pendiente { background: #fffbeb; }
@@ -565,4 +638,65 @@ async function retryPublish(btn) {
   }
   .btn-retry:hover:not(:disabled) { background: #fee2e2; }
   .btn-retry:disabled { opacity: 0.5; cursor: default; }
+
+  /* Copys por red */
+  .btn-copys {
+    background: #1a1a2e;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.7rem;
+    border-radius: 0.35rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-copys:hover { background: #2a2a4e; }
+  .btn-copys.active { background: #EA262A; }
+
+  .copys-panel {
+    padding: 0.75rem 1rem 1rem;
+    background: #f8fafc;
+    border-top: 1px dashed #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .copy-net {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  .copy-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.65rem;
+    background: #f3f4f6;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .copy-label { font-size: 0.75rem; font-weight: 700; color: #374151; }
+  .btn-copy {
+    background: #EA262A;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.7rem;
+    border-radius: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-copy:hover { background: #c91f23; }
+  .btn-copy.copied { background: #16a34a; }
+  .copy-text {
+    margin: 0;
+    padding: 0.6rem 0.7rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: #1f2937;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
 </style>

@@ -287,10 +287,26 @@ async function previewToTelegram(event) {
   const imageUrl = await generateAndUpload(event)
   await updateStatusDetail(event.id, null).catch(() => {})
 
-  const { textIg } = await buildCaptions(event)
+  const { textIg, textTw, textFb } = await buildCaptions(event)
   const { match, tag } = formatEvent(event)
-  const caption = `🖼️ Imagen lista — publicar a mano\n${match} ${tag}\n\n${textIg}`
-  await tgSendPhoto(imageUrl, caption)
+
+  // Mensaje 1: la imagen con encabezado corto
+  await tgSendPhoto(imageUrl, `🖼️ ${match} ${tag}`)
+
+  // Mensaje 2: textos listos para copiar. Cada bloque <pre> trae botón de copiar en Telegram.
+  const esc = (s) => (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const copyMsg = [
+    '📋 Para copiar:',
+    '',
+    'Instagram',
+    `<pre>${esc(textIg)}</pre>`,
+    'X / Twitter',
+    `<pre>${esc(textTw)}</pre>`,
+    'Facebook',
+    `<pre>${esc(textFb)}</pre>`,
+  ].join('\n')
+  await tgSend(copyMsg)
+
   return { imageUrl }
 }
 
