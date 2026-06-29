@@ -204,6 +204,18 @@ async function generateAndUpload(event) {
   return urlData.publicUrl
 }
 
+// Guarda la URL de la imagen en el evento para mostrarla en el admin. Nunca lanza
+// (si la columna image_url aún no existe, solo avisa en consola).
+async function saveImageUrl(id, imageUrl) {
+  try {
+    const supabase = getSupabase()
+    const { error } = await supabase.from('goal_posts').update({ image_url: imageUrl }).eq('id', id)
+    if (error) console.warn(`[publisher] No se pudo guardar image_url: ${error.message}`)
+  } catch (e) {
+    console.warn(`[publisher] image_url: ${e.message}`)
+  }
+}
+
 // Intento puro — lanza error con paso fallido, no toca la DB de estado
 async function publishEventOnce(event, onProgress = () => {}) {
   const { textIg, textTw, textFb } = await buildCaptions(event)
@@ -211,6 +223,7 @@ async function publishEventOnce(event, onProgress = () => {}) {
   // Pasos 1-2: generar imagen + subir a Storage
   onProgress('generando_imagen')
   const imageUrl = await generateAndUpload(event)
+  await saveImageUrl(event.id, imageUrl)
 
   // Paso 3: Postear a Metricool
   onProgress('posteando')
@@ -285,6 +298,7 @@ async function notifySuccess(event, imageUrl) {
 async function previewToTelegram(event) {
   await updateStatusDetail(event.id, 'generando_imagen').catch(() => {})
   const imageUrl = await generateAndUpload(event)
+  await saveImageUrl(event.id, imageUrl)
   await updateStatusDetail(event.id, null).catch(() => {})
 
   const { textIg, textTw, textFb } = await buildCaptions(event)
