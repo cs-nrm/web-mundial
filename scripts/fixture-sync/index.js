@@ -19,9 +19,10 @@ function log(msg) {
   console.log(`[${new Date().toLocaleTimeString('es-MX', { timeZone: 'America/Mexico_City' })}] ${msg}`)
 }
 
-// Nombre placeholder de eliminatoria aún sin resolver (ej. "3  Grupo A-B-C-D-F", "1  Grupo I")
+// Nombre placeholder de eliminatoria aún sin resolver (ej. "3  Grupo A-B-C-D-F", "1  Grupo I",
+// "Ganador partido 73", "Perdedor partido 75")
 function isPlaceholder(name) {
-  return !name || /grupo/i.test(name) || /^\s*\d/.test(name)
+  return !name || /grupo|ganador|perdedor/i.test(name) || /^\s*\d/.test(name)
 }
 
 // Misma función que captions.js para asegurar URLs consistentes
