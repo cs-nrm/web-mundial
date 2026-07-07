@@ -7,16 +7,18 @@ const supabase = createSupabaseAdminClient()
 const now = new Date()
 const cdmxNow = new Date(now.getTime() - 6 * 60 * 60_000)
 const todayCdmx  = cdmxNow.toISOString().slice(0, 10)
-const ayerCdmx        = new Date(cdmxNow.getTime() - 24 * 60 * 60_000).toISOString().slice(0, 10)
-const pasadoMananaCdmx = new Date(cdmxNow.getTime() + 48 * 60 * 60_000).toISOString().slice(0, 10)
+const ayerCdmx = new Date(cdmxNow.getTime() - 24 * 60 * 60_000).toISOString().slice(0, 10)
 
-// Mostrar ayer + hoy + mañana para que la barra nunca quede vacía
-const { data: matches = [] } = await supabase
+// Mostrar ayer + hoy + todos los partidos futuros con equipos ya confirmados
+// (los de rondas futuras con equipo aún no definido, ej. "Ganador partido 95", se filtran abajo)
+const { data: rawMatches = [] } = await supabase
   .from('df_partidos')
   .select('match_id, slug, equipo_local, equipo_visitante, fecha_utc, status, score_local, score_visitante, grupo, minuto')
   .gte('fecha_utc', `${ayerCdmx}T06:00:00Z`)
-  .lt('fecha_utc',  `${pasadoMananaCdmx}T06:00:00Z`)
   .order('fecha_utc', { ascending: true })
+
+const isPlaceholder = (nombre: string | null) => /^(ganador|perdedor) partido/i.test(nombre ?? '')
+const matches = (rawMatches ?? []).filter(m => !isPlaceholder(m.equipo_local) && !isPlaceholder(m.equipo_visitante))
 
 function formatHora(fechaUtc: string) {
   return new Date(fechaUtc).toLocaleTimeString('es-MX', {
