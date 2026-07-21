@@ -419,6 +419,17 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
         )}
       </div>
 
+      <div class="panel">
+        <div class="panel-hdr">
+          <h2>Matriz cartas × usuarios</h2>
+          <a class="btn-csv" href={`/api/admin/estadisticas/matriz-album?estacion=${estacion}`}>⬇ CSV</a>
+        </div>
+        <p class="empty" style="text-align:left">
+          Una fila por usuario, una columna por carta. En cada cruce, la fecha y hora
+          (CDMX) en que ese usuario redimió esa carta.
+        </p>
+      </div>
+
       <div class="two-col">
         <div class="panel">
           <div class="panel-hdr"><h2>Cartas — canjes totales</h2><button class="btn-csv" data-filename="cartas">⬇ CSV</button></div>
@@ -743,6 +754,7 @@ function progresoUrl(id: string) { return `?tab=progreso&album_id=${id}` }
     font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.75rem;
     border-radius: 0.4rem; border: 1.5px solid #e5e7eb; background: white;
     color: #374151; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    text-decoration: none; display: inline-block;
   }
   .btn-csv:hover { border-color: var(--rojo); color: var(--rojo); }
 
